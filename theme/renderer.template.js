@@ -501,12 +501,83 @@ html[data-agy-dark="1"] #hakimi-muse-shadow {
   background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.44) 0%, transparent 72%);
 }
 
-/* Pure-GPU Celebration Sparkles (✦ ✧ ★ ✦) */
+/* Pure-GPU Ambient Halo behind Hakimi (radial-gradient only, zero filter: drop-shadow) */
+#hakimi-muse-aura {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 138px;
+  height: 112px;
+  margin: -60px 0 0 -69px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.26) 0%, rgba(99, 102, 241, 0.12) 48%, transparent 74%);
+  opacity: 0.24;
+  transform: translate3d(0, 0, 0) scale(0.92);
+  transition: opacity 0.24s ease, transform 0.24s ease;
+  will-change: opacity, transform;
+}
+#hakimi-muse-sprite.mode-write #hakimi-muse-aura {
+  background: radial-gradient(ellipse at center, rgba(251, 191, 36, 0.36) 0%, rgba(168, 85, 247, 0.22) 48%, transparent 74%);
+  opacity: 0.92;
+  transform: translate3d(0, 0, 0) scale(1.06);
+}
+#hakimi-muse-sprite.mode-laptop #hakimi-muse-aura {
+  background: radial-gradient(ellipse at center, rgba(56, 189, 248, 0.34) 0%, rgba(99, 102, 241, 0.24) 48%, transparent 74%);
+  opacity: 0.95;
+  transform: translate3d(0, 0, 0) scale(1.08);
+}
+#hakimi-muse-sprite.mode-done #hakimi-muse-aura,
+#hakimi-muse-sprite.mode-spin #hakimi-muse-aura {
+  background: radial-gradient(ellipse at center, rgba(250, 204, 21, 0.44) 0%, rgba(236, 72, 153, 0.24) 50%, transparent 74%);
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1.14);
+}
+html[data-agy-dark="1"] #hakimi-muse-aura {
+  opacity: 0.38;
+}
+html[data-agy-dark="1"] #hakimi-muse-sprite.mode-write #hakimi-muse-aura,
+html[data-agy-dark="1"] #hakimi-muse-sprite.mode-laptop #hakimi-muse-aura,
+html[data-agy-dark="1"] #hakimi-muse-sprite.mode-done #hakimi-muse-aura,
+html[data-agy-dark="1"] #hakimi-muse-sprite.mode-spin #hakimi-muse-aura {
+  opacity: 1;
+}
+
+/* Pure-GPU Celebration Sparkles (✦ ✧ ★ ✦) & Floating Code Glyphs (fn() { } >_) */
 #hakimi-muse-fx {
   position: absolute;
-  inset: -14px -18px 0 -18px;
+  inset: -18px -32px 0 -32px;
   pointer-events: none;
   overflow: visible;
+}
+.hakimi-glyph {
+  position: absolute;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transition: opacity 0.22s ease;
+}
+.hakimi-glyph.g1 { left: 14%; top: 10%; color: #38bdf8; }
+.hakimi-glyph.g2 { left: -4%; top: 36%; color: #f59e0b; }
+.hakimi-glyph.g3 { right: 10%; top: 18%; color: #fb923c; }
+.hakimi-glyph.g4 { right: -4%; top: 42%; color: #60a5fa; }
+#hakimi-muse-fx.working .hakimi-glyph { opacity: 0.92; }
+#hakimi-muse-fx.working .hakimi-glyph.g1 { animation: hakimi-glyph-float 2.1s ease-in-out infinite; }
+#hakimi-muse-fx.working .hakimi-glyph.g2 { animation: hakimi-glyph-float 2.4s ease-in-out 0.35s infinite; }
+#hakimi-muse-fx.working .hakimi-glyph.g3 { animation: hakimi-glyph-float 1.95s ease-in-out 0.7s infinite; }
+#hakimi-muse-fx.working .hakimi-glyph.g4 { animation: hakimi-glyph-float 2.55s ease-in-out 1.05s infinite; }
+@keyframes hakimi-glyph-float {
+  0%, 100% { transform: translate3d(0, 2px, 0) scale(0.96); opacity: 0.58; }
+  50%      { transform: translate3d(0, -7px, 0) scale(1.06); opacity: 1; }
+}
+html.agy-page-hidden .hakimi-glyph { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  #hakimi-muse-fx.working .hakimi-glyph { animation: none !important; opacity: 0.75; }
 }
 .hakimi-spark {
   position: absolute;
@@ -1799,6 +1870,7 @@ function buildPoseObjectUrls() {
 
 let stageEl = null;
 let spriteEl = null;
+let auraEl = null;
 let bodyEl = null;
 let shadowEl = null;
 let fxEl = null;
@@ -1860,8 +1932,12 @@ const museMotion = {
   action: 'stand', // 'stand' | 'walk' | 'spin' | 'dance' | 'victory'
   actionStartMs: 0,
   actionDurationMs: 0,
+  spinGlideVx: 0,
+  spinResumeWalk: false,
   hopStartMs: 0,
   nextWalkAt: 0,
+  nextWorkScootAt: 0,
+  nextRunSpinAt: 0,
   nextTrickAt: 0,
   reducedMotion: false,
   lastStageTx: -99999,
@@ -2123,9 +2199,12 @@ function triggerHakimiCelebration(kind, speakLine) {
   const now = performance.now();
   museMotion.action = kind === 'spin' ? 'spin' : 'victory';
   museMotion.actionStartMs = now;
-  museMotion.actionDurationMs = kind === 'spin' ? 920 : 2500;
-  museMotion.nextWalkAt = now + museMotion.actionDurationMs + 2400;
-  museMotion.nextTrickAt = now + 18000 + Math.random() * 6000;
+  museMotion.actionDurationMs = kind === 'spin' ? 780 : 2900;
+  museMotion.spinGlideVx = 0;
+  museMotion.spinResumeWalk = false;
+  museMotion.nextWalkAt = now + museMotion.actionDurationMs + 1400;
+  museMotion.nextTrickAt = now + 11000 + Math.random() * 5000;
+  if (spriteEl) spriteEl.classList.add('mode-spin');
   fireHakimiSparkles();
   if (speakLine) say(speakLine, 2600);
   startMuseMotionLoop();
@@ -2141,13 +2220,21 @@ function setMuseMode(nextMode, statusLabel, opts) {
   }
 
   const working = nextMode === 'laptop' || nextMode === 'write';
+  if (spriteEl) {
+    spriteEl.classList.toggle('mode-write', nextMode === 'write');
+    spriteEl.classList.toggle('mode-laptop', nextMode === 'laptop');
+    spriteEl.classList.toggle('mode-done', nextMode === 'done');
+  }
+  if (fxEl) {
+    fxEl.classList.toggle('working', working);
+  }
   if (working) {
     donePillUntil = 0;
     window.clearTimeout(donePillTimer);
     donePillTimer = 0;
     startDomSpeedSampler();
-    if (museMotion.action === 'walk') {
-      museMotion.action = 'stand';
+    if (!museMotion.nextWorkScootAt) {
+      museMotion.nextWorkScootAt = performance.now() + 2600 + Math.random() * 2400;
     }
     if (pillEl && pillTextEl) {
       const label = statusLabel || (nextMode === 'laptop' ? '正在敲电脑处理…' : '正在伏案构思…');
@@ -2247,17 +2334,20 @@ function applyStageTransform(xPx, yPx) {
   if (sayVisible) updateSayBubbleFromCache();
 }
 
-function pickNextBorderWalkTarget() {
+function pickNextBorderWalkTarget(isWorking) {
   const span = museGeom.maxX - museGeom.minX;
   if (span < 36) return museGeom.centerX;
-  const minDist = Math.min(120, Math.max(42, span * 0.26));
-  for (let tries = 0; tries < 6; tries++) {
+  const minDist = isWorking
+    ? Math.min(130, Math.max(48, span * 0.22))
+    : Math.min(250, Math.max(88, span * 0.45));
+  for (let tries = 0; tries < 8; tries++) {
     const cand = museGeom.minX + Math.random() * span;
     if (Math.abs(cand - museMotion.x) >= minDist) return cand;
   }
-  return museMotion.x > (museGeom.minX + span * 0.5)
-    ? (museGeom.minX + span * 0.14)
-    : (museGeom.maxX - span * 0.14);
+  const mid = museGeom.minX + span * 0.5;
+  return museMotion.x > mid
+    ? (museGeom.minX + span * (0.06 + Math.random() * 0.16))
+    : (museGeom.maxX - span * (0.06 + Math.random() * 0.16));
 }
 
 function shouldRunMuseMotion() {
@@ -2294,45 +2384,54 @@ function stepMuseMotion(ts) {
   let shadowScale = 1;
   let displayFacing = museMotion.facing;
 
-  // 1. Victory dance (360° spin + celebratory dance) or spontaneous spin/dance
+  // 1. Victory dance (720° double-spin leap + celebratory dance) or parkour spin/dance
   if (museMotion.action === 'victory') {
     const elapsed = ts - museMotion.actionStartMs;
     if (elapsed >= museMotion.actionDurationMs) {
       museMotion.action = 'stand';
-    } else if (elapsed < 760) {
-      // Phase 1: energetic jump + full 360° spin!
-      const p = elapsed / 760;
+      if (spriteEl) spriteEl.classList.remove('mode-spin');
+    } else if (elapsed < 980) {
+      // Phase 1: high celebratory leap + 720° double spin!
+      const p = elapsed / 980;
       const eased = 1 - Math.pow(1 - p, 3);
-      bodyY = -Math.sin(p * Math.PI) * 19;
-      rotDeg = eased * 360 * museMotion.facing;
-      const pop = 1 + Math.sin(p * Math.PI) * 0.10;
+      bodyY = -Math.sin(p * Math.PI) * 24;
+      rotDeg = eased * 720 * museMotion.facing;
+      const pop = 1 + Math.sin(p * Math.PI) * 0.12;
       sx = pop;
       sy = pop;
-      shadowScale = Math.max(0.55, 1 - Math.sin(p * Math.PI) * 0.36);
+      shadowScale = Math.max(0.50, 1 - Math.sin(p * Math.PI) * 0.40);
     } else {
       // Phase 2: rhythmic victory dance with double hops & joyful sway
-      const d = (elapsed - 760) / 1000;
-      const hop = Math.abs(Math.sin(d * 8.4));
-      bodyY = -hop * 10.5;
-      rotDeg = Math.sin(d * 8.4) * 11.5;
-      displayFacing = (Math.floor(d * 2.1) % 2 === 0) ? museMotion.facing : -museMotion.facing;
-      sx = 1 + (1 - hop) * 0.05;
-      sy = 1 - (1 - hop) * 0.04;
-      shadowScale = 1 - hop * 0.22;
+      if (spriteEl) spriteEl.classList.remove('mode-spin');
+      const d = (elapsed - 980) / 1000;
+      const hop = Math.abs(Math.sin(d * 8.8));
+      bodyY = -hop * 11.5;
+      rotDeg = Math.sin(d * 8.8) * 12.5;
+      displayFacing = (Math.floor(d * 2.2) % 2 === 0) ? museMotion.facing : -museMotion.facing;
+      sx = 1 + (1 - hop) * 0.055;
+      sy = 1 - (1 - hop) * 0.045;
+      shadowScale = 1 - hop * 0.24;
     }
   } else if (museMotion.action === 'spin') {
     const elapsed = ts - museMotion.actionStartMs;
     if (elapsed >= museMotion.actionDurationMs) {
-      museMotion.action = 'stand';
+      const resumeWalk = museMotion.spinResumeWalk && (currentMode === 'idle' || currentMode === 'write' || currentMode === 'laptop');
+      museMotion.spinGlideVx = 0;
+      museMotion.spinResumeWalk = false;
+      museMotion.action = resumeWalk ? 'walk' : 'stand';
+      if (spriteEl) spriteEl.classList.remove('mode-spin');
     } else {
       const p = elapsed / museMotion.actionDurationMs;
       const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-      bodyY = -Math.sin(p * Math.PI) * 16;
+      if (museMotion.spinGlideVx) {
+        museMotion.x += museMotion.spinGlideVx * dt;
+      }
+      bodyY = -Math.sin(p * Math.PI) * 20;
       rotDeg = eased * 360 * museMotion.facing;
-      const pop = 1 + Math.sin(p * Math.PI) * 0.08;
+      const pop = 1 + Math.sin(p * Math.PI) * 0.10;
       sx = pop;
       sy = pop;
-      shadowScale = Math.max(0.60, 1 - Math.sin(p * Math.PI) * 0.32);
+      shadowScale = Math.max(0.56, 1 - Math.sin(p * Math.PI) * 0.36);
     }
   } else if (museMotion.action === 'dance') {
     const elapsed = ts - museMotion.actionStartMs;
@@ -2340,31 +2439,60 @@ function stepMuseMotion(ts) {
       museMotion.action = 'stand';
     } else {
       const d = elapsed / 1000;
-      const beat = Math.abs(Math.sin(d * 7.8));
-      bodyY = -beat * 8.5;
-      rotDeg = Math.sin(d * 7.8) * 10;
-      displayFacing = (Math.floor(d * 1.6) % 2 === 0) ? museMotion.facing : -museMotion.facing;
-      sx = 1 + (1 - beat) * 0.045;
+      const beat = Math.abs(Math.sin(d * 8.2));
+      bodyY = -beat * 9.5;
+      rotDeg = Math.sin(d * 8.2) * 11;
+      displayFacing = (Math.floor(d * 1.8) % 2 === 0) ? museMotion.facing : -museMotion.facing;
+      sx = 1 + (1 - beat) * 0.05;
       sy = 1 - (1 - beat) * 0.04;
-      shadowScale = 1 - beat * 0.18;
+      shadowScale = 1 - beat * 0.20;
     }
-  } else if (currentMode === 'laptop') {
-    // Energetic rapid typing bounce & side groove
-    const beat = Math.sin(t * 14.5);
-    const groove = Math.sin(t * 6.4);
-    bodyY = -Math.abs(beat) * 2.8 - 0.8;
-    rotDeg = groove * 3.6;
-    sx = 1 + beat * 0.022;
-    sy = 1 - beat * 0.022;
-    shadowScale = 1 - Math.abs(beat) * 0.07;
-  } else if (currentMode === 'write') {
-    // Focused rhythmic writing bob & pen-stroke tilt
-    const stroke = Math.sin(t * 7.2);
-    bodyY = -1.4 + stroke * 1.8;
-    rotDeg = Math.sin(t * 5.2) * 3.8;
-    sx = 1 + stroke * 0.018;
-    sy = 1 - stroke * 0.018;
-    shadowScale = 0.98;
+  } else if (currentMode === 'laptop' || currentMode === 'write') {
+    // Working mode: lively coding/writing animation + periodic energetic border scoots!
+    if (museMotion.action === 'walk') {
+      const dx = museMotion.targetX - museMotion.x;
+      const dist = Math.abs(dx);
+      if (dist <= 1.5) {
+        museMotion.x = museMotion.targetX;
+        museMotion.action = 'stand';
+        museMotion.nextWorkScootAt = ts + 4800 + Math.random() * 3800;
+      } else {
+        museMotion.facing = dx >= 0 ? 1 : -1;
+        displayFacing = museMotion.facing;
+        const speed = Math.min(155, Math.max(92, dist * 1.85));
+        const step = Math.min(dist, speed * dt);
+        museMotion.x += Math.sign(dx) * step;
+        const hop = Math.abs(Math.sin(t * 14.2));
+        bodyY = -hop * 6.0 - 0.8;
+        rotDeg = museMotion.facing * 5.0 + Math.sin(t * 14.2) * 3.8;
+        sx = 1 + (1 - hop) * 0.036;
+        sy = 1 - (1 - hop) * 0.032;
+        shadowScale = 1 - hop * 0.16;
+      }
+    } else {
+      if (currentMode === 'laptop') {
+        const beat = Math.sin(t * 15.2);
+        const groove = Math.sin(t * 6.8);
+        bodyY = -Math.abs(beat) * 3.2 - 1.0;
+        rotDeg = groove * 4.0;
+        sx = 1 + beat * 0.024;
+        sy = 1 - beat * 0.024;
+        shadowScale = 1 - Math.abs(beat) * 0.08;
+      } else {
+        const stroke = Math.sin(t * 7.8);
+        bodyY = -1.6 + stroke * 2.1;
+        rotDeg = Math.sin(t * 5.6) * 4.2;
+        sx = 1 + stroke * 0.020;
+        sy = 1 - stroke * 0.020;
+        shadowScale = 0.98;
+      }
+      if (!museMotion.nextWorkScootAt) museMotion.nextWorkScootAt = ts + 3200 + Math.random() * 2600;
+      if (ts >= museMotion.nextWorkScootAt && (museGeom.maxX - museGeom.minX) >= 64) {
+        museMotion.targetX = pickNextBorderWalkTarget(true);
+        museMotion.facing = museMotion.targetX >= museMotion.x ? 1 : -1;
+        museMotion.action = 'walk';
+      }
+    }
   } else if (currentMode === 'sleepy') {
     // Slow cozy breathing
     const zzz = Math.sin(t * 1.15);
@@ -2373,45 +2501,63 @@ function stepMuseMotion(ts) {
     sx = 1 + zzz * 0.015;
     sy = 1 - zzz * 0.015;
   } else {
-    // Idle: full-border strolling + spontaneous mini-dances & 360° spins
+    // Idle: energetic full-border running + mid-run 360° parkour spins + playful dances!
     if (museMotion.action === 'walk') {
       const dx = museMotion.targetX - museMotion.x;
       const dist = Math.abs(dx);
-      if (dist <= 1.2) {
+      if (dist <= 1.5) {
         museMotion.x = museMotion.targetX;
         museMotion.action = 'stand';
-        museMotion.nextWalkAt = ts + 5200 + Math.random() * 3000;
+        museMotion.nextWalkAt = ts + 1600 + Math.random() * 1900;
       } else {
         museMotion.facing = dx >= 0 ? 1 : -1;
         displayFacing = museMotion.facing;
-        const speed = Math.min(92, Math.max(32, dist * 1.35));
-        const step = Math.min(dist, speed * dt);
-        museMotion.x += Math.sign(dx) * step;
-        const hop = Math.abs(Math.sin(t * 10.5));
-        bodyY = -hop * 5.2;
-        rotDeg = Math.sin(t * 10.5) * 4.8;
-        sx = 1 + (1 - hop) * 0.03;
-        sy = 1 - (1 - hop) * 0.03;
-        shadowScale = 1 - hop * 0.14;
+        // Mid-run 360° parkour spin jump!
+        if (!museMotion.nextRunSpinAt) museMotion.nextRunSpinAt = ts + 3800 + Math.random() * 2400;
+        if (dist > 96 && ts >= museMotion.nextRunSpinAt) {
+          museMotion.action = 'spin';
+          museMotion.actionStartMs = ts;
+          museMotion.actionDurationMs = 740;
+          museMotion.spinGlideVx = museMotion.facing * 128;
+          museMotion.spinResumeWalk = true;
+          museMotion.nextRunSpinAt = ts + 7800 + Math.random() * 4800;
+          if (spriteEl) spriteEl.classList.add('mode-spin');
+          fireHakimiSparkles();
+        } else {
+          const speed = Math.min(205, Math.max(115, dist * 2.15));
+          const step = Math.min(dist, speed * dt);
+          museMotion.x += Math.sign(dx) * step;
+          const hop = Math.abs(Math.sin(t * 15.5));
+          bodyY = -hop * 7.8;
+          rotDeg = museMotion.facing * 6.5 + Math.sin(t * 15.5) * 4.5;
+          sx = 1 + (1 - hop) * 0.045;
+          sy = 1 - (1 - hop) * 0.04;
+          shadowScale = 1 - hop * 0.22;
+        }
       }
     } else {
       // Standing idle with lively breathing
-      const br = Math.sin(t * 2.2);
-      bodyY = -1.1 + br * 1.7;
-      rotDeg = Math.sin(t * 1.25) * 1.4;
-      if (!museMotion.nextWalkAt) museMotion.nextWalkAt = ts + 4200 + Math.random() * 2800;
-      if (!museMotion.nextTrickAt) museMotion.nextTrickAt = ts + 16000 + Math.random() * 8000;
+      const br = Math.sin(t * 2.6);
+      bodyY = -1.2 + br * 2.0;
+      rotDeg = Math.sin(t * 1.45) * 1.8;
+      if (!museMotion.nextWalkAt) museMotion.nextWalkAt = ts + 1100 + Math.random() * 1100;
+      if (!museMotion.nextTrickAt) museMotion.nextTrickAt = ts + 9500 + Math.random() * 5500;
 
       if (ts >= museMotion.nextTrickAt) {
-        const doSpin = Math.random() < 0.45;
+        const doSpin = Math.random() < 0.55;
         museMotion.action = doSpin ? 'spin' : 'dance';
         museMotion.actionStartMs = ts;
-        museMotion.actionDurationMs = doSpin ? 900 : 2100;
-        museMotion.nextTrickAt = ts + 17000 + Math.random() * 7500;
-        museMotion.nextWalkAt = ts + museMotion.actionDurationMs + 3200;
-        if (doSpin) fireHakimiSparkles();
+        museMotion.actionDurationMs = doSpin ? 780 : 1950;
+        museMotion.spinGlideVx = 0;
+        museMotion.spinResumeWalk = false;
+        museMotion.nextTrickAt = ts + 11500 + Math.random() * 6000;
+        museMotion.nextWalkAt = ts + museMotion.actionDurationMs + 1400;
+        if (doSpin) {
+          if (spriteEl) spriteEl.classList.add('mode-spin');
+          fireHakimiSparkles();
+        }
       } else if (ts >= museMotion.nextWalkAt && (museGeom.maxX - museGeom.minX) >= 36) {
-        museMotion.targetX = pickNextBorderWalkTarget();
+        museMotion.targetX = pickNextBorderWalkTarget(false);
         museMotion.facing = museMotion.targetX >= museMotion.x ? 1 : -1;
         museMotion.action = 'walk';
       }
@@ -2615,9 +2761,10 @@ function mountMuseHakimi() {
   museMotion.reducedMotion = isReducedMotionPreferred();
 
   const existing = document.getElementById('hakimi-muse-stage');
-  if (existing && document.getElementById('hakimi-muse-sprite') && existing.querySelector('.hakimi-body') && existing.querySelector('.muse-pill-rate')) {
+  if (existing && document.getElementById('hakimi-muse-sprite') && existing.querySelector('#hakimi-muse-aura') && existing.querySelector('.hakimi-glyph') && existing.querySelector('.hakimi-body') && existing.querySelector('.muse-pill-rate')) {
     stageEl = existing;
     spriteEl = document.getElementById('hakimi-muse-sprite');
+    auraEl = document.getElementById('hakimi-muse-aura');
     bodyEl = spriteEl.querySelector('.hakimi-body');
     shadowEl = document.getElementById('hakimi-muse-shadow');
     fxEl = document.getElementById('hakimi-muse-fx');
@@ -2654,6 +2801,11 @@ function mountMuseHakimi() {
   spriteEl.id = 'hakimi-muse-sprite';
   spriteEl.title = '左键对话报速 · 双击 360° 转圈跳舞 · Shift+双击打盹 · 右键折叠';
 
+  auraEl = document.createElement('div');
+  auraEl.id = 'hakimi-muse-aura';
+  auraEl.setAttribute('aria-hidden', 'true');
+  spriteEl.appendChild(auraEl);
+
   shadowEl = document.createElement('div');
   shadowEl.id = 'hakimi-muse-shadow';
   spriteEl.appendChild(shadowEl);
@@ -2662,6 +2814,10 @@ function mountMuseHakimi() {
   fxEl.id = 'hakimi-muse-fx';
   fxEl.setAttribute('aria-hidden', 'true');
   fxEl.innerHTML =
+    '<span class="hakimi-glyph g1">fn()</span>' +
+    '<span class="hakimi-glyph g2">{ }</span>' +
+    '<span class="hakimi-glyph g3">&gt;_</span>' +
+    '<span class="hakimi-glyph g4">{ }</span>' +
     '<span class="hakimi-spark s1">✦</span>' +
     '<span class="hakimi-spark s2">✧</span>' +
     '<span class="hakimi-spark s3">★</span>' +

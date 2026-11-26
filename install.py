@@ -24,6 +24,7 @@ import json
 import os
 import pathlib
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -113,6 +114,45 @@ def enable_plugins_in_config(config_json: pathlib.Path, plugin_names, dry_run: b
     print(f"[ok] enabled {plugin_names} in {config_json}")
 
 
+def _restart_stale_pulse_sidecar(pulse_plugin_dir: pathlib.Path, dry_run: bool):
+    """Signal a running gemini-pulse sidecar to exit so Antigravity respawns it with updated routes."""
+    if os.name != "posix":
+        return
+    runtime_file = pulse_plugin_dir / "sidecars" / "pulse" / "runtime.json"
+    if not runtime_file.is_file():
+        return
+    try:
+        meta = json.loads(runtime_file.read_text(encoding="utf-8"))
+        pid = int(meta.get("pid") or 0)
+    except Exception:
+        return
+    if pid <= 1 or pid == os.getpid():
+        return
+    try:
+        proc = subprocess.run(
+            ["ps", "-ww", "-p", str(pid), "-o", "command="],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+        cmd = (proc.stdout or "").strip()
+    except Exception:
+        return
+    if "gemini-pulse" not in cmd or "server.mjs" not in cmd:
+        return
+    if dry_run:
+        print(f"[dry-run] signal stale gemini-pulse sidecar (pid={pid}) to reload")
+        return
+    try:
+        os.kill(pid, signal.SIGTERM)
+        print(f"[ok] signaled stale gemini-pulse sidecar (pid={pid}) to reload cleanly")
+    except ProcessLookupError:
+        pass
+    except Exception as exc:
+        print(f"[warn] could not signal gemini-pulse sidecar pid={pid}: {exc}")
+
+
 def deploy_assets_and_plugins(target_home: pathlib.Path, dry_run: bool, enable_pulse: bool = True, deploy_injector: bool = True):
     custom_theme_dir = target_home / ".gemini" / "antigravity" / "custom_theme"
     app_dir = custom_theme_dir / "app"
@@ -153,6 +193,8 @@ def deploy_assets_and_plugins(target_home: pathlib.Path, dry_run: bool, enable_p
                 "sidecars/pulse/port.txt",
             ) if pname == "gemini-pulse" else ()
             copy_tree_clean(psrc, plugins_dir / pname, dry_run, preserve_relpaths=preserve)
+            if pname == "gemini-pulse":
+                _restart_stale_pulse_sidecar(plugins_dir / pname, dry_run)
             installed_plugins.append(pname)
     if installed_plugins:
         enable_plugins_in_config(config_json, installed_plugins, dry_run)
