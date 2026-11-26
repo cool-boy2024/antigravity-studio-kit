@@ -1,0 +1,20 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "gemini-pulse",
+  "displayName": "Pulse · 上下文与配额仪表盘",
+  "version": "1.2.0",
+  "description": "Antigravity Studio Kit 轻量本地遥测 Sidecar：双视角统计 512K 自动压缩阈值与 1M 物理上限、追踪 5h/周配额池余量及 7 日用量趋势，常规轮询 <2KB 并强制回环随机令牌鉴权。",
+  "logo": "assets/logo.svg",
+  "license": "MIT",
+  "keywords": [
+    "antigravity-studio-kit",
+    "pulse",
+    "quota",
+    "context-window",
+    "telemetry",
+    "sidecar"
+  ],
+  "suggestedPrompts": [
+    "查看当前会话上下文占比与各模型配额池余量"
+  ]
+}

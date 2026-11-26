@@ -1,0 +1,18 @@
+{
+  "name": "theme-canvas",
+  "displayName": "Theme Canvas · 工作台视觉与维护",
+  "version": "2.2.0",
+  "description": "Antigravity Studio Kit 视觉与本地化维护技能：管理四套 120Hz 零重排主题（极简工作台 / 暖纸书房 / 晨光画布 / 原生界面）、全量增量中文汉化及 Windows/macOS 无损升级维护。",
+  "author": {
+    "name": "cool-boy2024 (Antigravity Studio Kit)"
+  },
+  "license": "MIT",
+  "keywords": [
+    "antigravity-studio-kit",
+    "theme",
+    "localization",
+    "inline-followup",
+    "120hz",
+    "chinese"
+  ]
+}

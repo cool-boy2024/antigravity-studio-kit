@@ -1,0 +1,28 @@
+name: Verify Antigravity Studio Kit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Rebuild theme pack (zero external deps)
+        run: python theme/build_pack.py
+      - name: Run cross-platform verification & privacy leak check
+        run: python scripts/verify_kit.py
+      - name: Check install.py dry-run
+        run: python install.py --dry-run --skip-asar

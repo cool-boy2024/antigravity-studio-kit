@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.bak
+*.tmp
+*.tmp.*
+*.orig
+port.txt
+runtime.json
+settings.json
+node_modules/
+.DS_Store
+Thumbs.db
+mac-preview/output/
+dist-release/

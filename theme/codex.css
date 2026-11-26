@@ -1,0 +1,531 @@
+/* ============================================================
+   Antigravity · Codex 极简工作台皮肤（严格作用域隔离 + 120Hz 零卡顿）
+   ------------------------------------------------------------
+   灵感来自 Codex Desktop：纯白画布 + 极浅冷灰侧栏 + 1px 精致发丝线 +
+   高对比纯黑交互锚点；深色模式采用炭黑石墨分层。
+   无 :has() 全局选择器、无 background-attachment:fixed、无 mask-composite。
+   ============================================================ */
+
+/* 1. Codex Light Tokens ------------------------------------- */
+html[data-agy-theme="codex"] {
+  --cx-bg: #ffffff;
+  --cx-bg-2: #f7f7f8;
+  --cx-side: #f7f7f8;
+  --cx-side-elev: #ffffff;
+  --cx-side-hover: rgba(13, 13, 13, 0.045);
+  --cx-side-border: #e9e9ec;
+  --cx-side-sep: rgba(13, 13, 13, 0.07);
+  --cx-row-selected: #ececef;
+  --cx-row-selected-border: rgba(13, 13, 13, 0.08);
+
+  --cx-ink: #0d0d0d;
+  --cx-ink-2: #5c5c66;
+  --cx-ink-3: #868692;
+  --cx-line: #e4e4e9;
+  --cx-line-soft: #f0f0f3;
+
+  --cx-accent: #111113;
+  --cx-accent-hover: #2c2c31;
+  --cx-accent-strong: #09090b;
+  --cx-accent-soft: rgba(17, 17, 19, 0.065);
+  --cx-accent-ring: rgba(17, 17, 19, 0.22);
+  --cx-send-ink: #ffffff;
+
+  /* 同步自定义控件 --gs-* 令牌 */
+  --gs-bg: var(--cx-bg);
+  --gs-bg-2: var(--cx-bg-2);
+  --gs-side: var(--cx-side);
+  --gs-side-elev: var(--cx-side-elev);
+  --gs-side-hover: var(--cx-side-hover);
+  --gs-ink: var(--cx-ink);
+  --gs-ink-2: var(--cx-ink-2);
+  --gs-ink-3: var(--cx-ink-3);
+  --gs-line: var(--cx-line);
+  --gs-line-soft: var(--cx-line-soft);
+  --gs-accent: var(--cx-accent);
+  --gs-accent-hover: var(--cx-accent-hover);
+  --gs-accent-soft: var(--cx-accent-soft);
+  --gs-accent-ring: var(--cx-accent-ring);
+
+  /* 宿主 token 覆盖 */
+  --background: var(--cx-bg) !important;
+  --bg-canvas: var(--cx-bg) !important;
+  --color-background: var(--cx-bg) !important;
+  --sidebar: var(--cx-side) !important;
+  --color-sidebar: var(--cx-side) !important;
+  --sidebar-secondary: var(--cx-row-selected) !important;
+  --card: #ffffff !important;
+  --color-card: #ffffff !important;
+  --popover: #ffffff !important;
+  --color-popover: #ffffff !important;
+  --popover-foreground: var(--cx-ink) !important;
+  --border: var(--cx-line) !important;
+  --color-border: var(--cx-line) !important;
+  --foreground: var(--cx-ink) !important;
+  --muted-foreground: var(--cx-ink-2) !important;
+  --primary: var(--cx-accent) !important;
+  --color-primary: var(--cx-accent) !important;
+  --primary-foreground: #ffffff !important;
+  --color-primary-foreground: #ffffff !important;
+}
+
+/* Codex Dark Tokens（深邃石墨工作台） */
+html[data-agy-theme="codex"][data-agy-dark="1"],
+html[data-agy-theme="codex"] body.theme-dark {
+  --cx-bg: #131316;
+  --cx-bg-2: #19191d;
+  --cx-side: #0c0c0e;
+  --cx-side-elev: #1b1b20;
+  --cx-side-hover: rgba(255, 255, 255, 0.055);
+  --cx-side-border: #232329;
+  --cx-side-sep: rgba(255, 255, 255, 0.07);
+  --cx-row-selected: #202026;
+  --cx-row-selected-border: rgba(255, 255, 255, 0.11);
+
+  --cx-ink: #f3f3f6;
+  --cx-ink-2: #a1a1ad;
+  --cx-ink-3: #787886;
+  --cx-line: #282830;
+  --cx-line-soft: #1e1e24;
+
+  --cx-accent: #f3f3f6;
+  --cx-accent-hover: #ffffff;
+  --cx-accent-strong: #ffffff;
+  --cx-accent-soft: rgba(255, 255, 255, 0.09);
+  --cx-accent-ring: rgba(255, 255, 255, 0.25);
+  --cx-send-ink: #111113;
+
+  --gs-bg: var(--cx-bg);
+  --gs-bg-2: var(--cx-bg-2);
+  --gs-side: var(--cx-side);
+  --gs-side-elev: var(--cx-side-elev);
+  --gs-side-hover: var(--cx-side-hover);
+  --gs-ink: var(--cx-ink);
+  --gs-ink-2: var(--cx-ink-2);
+  --gs-ink-3: var(--cx-ink-3);
+  --gs-line: var(--cx-line);
+  --gs-line-soft: var(--cx-line-soft);
+  --gs-accent: var(--cx-accent);
+  --gs-accent-hover: var(--cx-accent-hover);
+  --gs-accent-soft: var(--cx-accent-soft);
+  --gs-accent-ring: var(--cx-accent-ring);
+
+  --background: var(--cx-bg) !important;
+  --bg-canvas: var(--cx-bg) !important;
+  --color-background: var(--cx-bg) !important;
+  --sidebar: var(--cx-side) !important;
+  --color-sidebar: var(--cx-side) !important;
+  --sidebar-secondary: var(--cx-row-selected) !important;
+  --card: var(--cx-side-elev) !important;
+  --color-card: var(--cx-side-elev) !important;
+  --popover: var(--cx-side-elev) !important;
+  --color-popover: var(--cx-side-elev) !important;
+  --popover-foreground: var(--cx-ink) !important;
+  --border: var(--cx-line) !important;
+  --color-border: var(--cx-line) !important;
+  --foreground: var(--cx-ink) !important;
+  --muted-foreground: var(--cx-ink-2) !important;
+  --primary: var(--cx-accent) !important;
+  --color-primary: var(--cx-accent) !important;
+  --primary-foreground: #111113 !important;
+  --color-primary-foreground: #111113 !important;
+}
+
+/* 2. Base --------------------------------------------------- */
+html[data-agy-theme="codex"],
+html[data-agy-theme="codex"] body {
+  background-color: var(--cx-bg) !important;
+  background-image: none !important;
+  color: var(--cx-ink) !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-agy-theme="codex"] ::selection {
+  background: rgba(17, 17, 19, 0.14) !important;
+}
+html[data-agy-theme="codex"][data-agy-dark="1"] ::selection {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+html[data-agy-theme="codex"] ::-webkit-scrollbar { width: 9px; height: 9px; }
+html[data-agy-theme="codex"] ::-webkit-scrollbar-track { background: transparent; }
+html[data-agy-theme="codex"] ::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 134, 0.22);
+  border-radius: 99px;
+  border: 2.5px solid transparent;
+  background-clip: content-box;
+}
+html[data-agy-theme="codex"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 134, 0.40);
+  background-clip: content-box;
+}
+
+/* 3. Sidebar（Codex 冷灰极简侧栏 + 发丝分割线） --------------- */
+html[data-agy-theme="codex"] div[role="navigation"].bg-sidebar,
+html[data-agy-theme="codex"] div[role="navigation"][aria-label="Sidebar"] {
+  background: var(--cx-side) !important;
+  border-right: 1px solid var(--cx-side-border) !important;
+  box-shadow: none !important;
+}
+
+html[data-agy-theme="codex"] div[role="navigation"] .bg-sidebar {
+  background: var(--cx-side) !important;
+  background-color: var(--cx-side) !important;
+}
+
+html[data-agy-theme="codex"] div[role="navigation"] [class*="group/section-header"] {
+  background: var(--cx-side) !important;
+  background-color: var(--cx-side) !important;
+  border-top: 1px solid var(--cx-side-sep) !important;
+  margin-top: 8px !important;
+  padding-top: 10px !important;
+}
+
+html[data-agy-theme="codex"] div[role="navigation"].bg-sidebar .text-xs,
+html[data-agy-theme="codex"] div[role="navigation"].bg-sidebar h2,
+html[data-agy-theme="codex"] div[role="navigation"].bg-sidebar span.text-xs {
+  color: var(--cx-ink-3) !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.025em !important;
+}
+
+html[data-agy-theme="codex"] div[role="navigation"] button.agy-button-custom,
+html[data-agy-theme="codex"] div[role="navigation"] a.agy-button-custom:not([data-testid="new-conversation-button"]) {
+  border-radius: 8px !important;
+  transition: background-color 0.11s ease, color 0.11s ease !important;
+}
+
+html[data-agy-theme="codex"] div[role="navigation"] button.agy-button-custom:hover,
+html[data-agy-theme="codex"] div[role="navigation"] a.agy-button-custom:not([data-testid="new-conversation-button"]):hover {
+  background: var(--cx-side-hover) !important;
+  color: var(--cx-ink) !important;
+  box-shadow: none !important;
+}
+
+/* 会话行：Codex 紧凑清晰卡片 */
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"] {
+  position: relative !important;
+  border: none !important;
+  border-radius: 8px !important;
+  margin: 1px 6px !important;
+  padding: 6px 10px !important;
+  transition: background-color 0.11s ease, color 0.11s ease !important;
+  --row-bg: var(--cx-side);
+}
+
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"]::before,
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"]::after {
+  display: none !important;
+  content: none !important;
+}
+
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"]:hover {
+  background: var(--cx-side-hover) !important;
+  box-shadow: none !important;
+  --row-bg: var(--cx-row-selected);
+}
+
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"][data-selected="true"],
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"].bg-sidebar-secondary {
+  border: none !important;
+  background: var(--cx-row-selected) !important;
+  box-shadow: inset 2.5px 0 0 var(--cx-accent), inset 0 0 0 1px var(--cx-row-selected-border) !important;
+  --row-bg: var(--cx-row-selected);
+}
+
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"][data-selected="true"] span,
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"].bg-sidebar-secondary span {
+  color: var(--cx-ink) !important;
+  font-weight: 600 !important;
+}
+
+html[data-agy-theme="codex"] div[data-testid="conversation-row-sidebar"] .agy-row-actions {
+  background: linear-gradient(to right, transparent 0%, var(--row-bg) 32%) !important;
+}
+
+/* 新建对话：Codex 极简发丝边框胶囊 */
+html[data-agy-theme="codex"] a[data-testid="new-conversation-button"] {
+  position: relative !important;
+  border-radius: 10px !important;
+  background: var(--cx-side-elev) !important;
+  border: 1px solid var(--cx-line) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  color: var(--cx-ink) !important;
+  font-weight: 600 !important;
+  height: 35px !important;
+  transition: background-color 0.11s ease, border-color 0.11s ease !important;
+}
+
+html[data-agy-theme="codex"] a[data-testid="new-conversation-button"]:hover {
+  background: var(--cx-bg-2) !important;
+  border-color: var(--cx-ink-3) !important;
+}
+
+html[data-agy-theme="codex"] div[role="navigation"].bg-sidebar > div:last-child {
+  border-top: 1px solid var(--cx-side-sep) !important;
+}
+
+/* 4. Main surface ------------------------------------------- */
+html[data-agy-theme="codex"] main,
+html[data-agy-theme="codex"] div[class*="bg-background"]:not([role="dialog"]) {
+  background-color: var(--cx-bg) !important;
+}
+
+html[data-agy-theme="codex"] .md-sticky-message-bleed,
+html[data-agy-theme="codex"] div.pointer-events-none.absolute.bottom-0.z-10.w-full:not(.agy-hover-actions) {
+  display: none !important;
+}
+
+/* 5. Composer：Codex 悬浮卡片（1px 精致边框 + 极轻投影） -------- */
+html[data-agy-theme="codex"] .surface-composer {
+  position: relative !important;
+  background: var(--cx-side-elev) !important;
+  border: 1px solid var(--cx-line) !important;
+  padding: 0 !important;
+  border-radius: 18px !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    0 6px 20px rgba(0, 0, 0, 0.04) !important;
+  transition: border-color 0.12s ease !important;
+}
+
+html[data-agy-theme="codex"] .surface-composer:focus-within {
+  border-color: var(--cx-ink-2) !important;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.065) !important;
+}
+
+html[data-agy-theme="codex"][data-agy-dark="1"] .surface-composer {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.28) !important;
+}
+html[data-agy-theme="codex"][data-agy-dark="1"] .surface-composer:focus-within {
+  border-color: #4b4b57 !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.40) !important;
+}
+
+html[data-agy-theme="codex"] .surface-composer-card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 17px !important;
+  box-shadow: none !important;
+}
+
+html[data-agy-theme="codex"] .surface-composer-card p.pointer-events-none {
+  color: var(--cx-ink-3) !important;
+  opacity: 1 !important;
+}
+
+/* 语音实时钮 */
+html[data-agy-theme="codex"] span[data-testid="voice-live-pill"] {
+  background: var(--cx-bg-2) !important;
+  color: var(--cx-ink) !important;
+  border: 1px solid var(--cx-line) !important;
+  box-shadow: none !important;
+}
+html[data-agy-theme="codex"] span[data-testid="voice-live-pill"]:hover {
+  background: var(--cx-row-selected) !important;
+}
+
+/* 麦克风 */
+html[data-agy-theme="codex"] button[data-tooltip-id="input-send-button-record-tooltip"] {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+html[data-agy-theme="codex"] button[data-tooltip-id="input-send-button-record-tooltip"] svg {
+  color: var(--cx-ink-2) !important;
+}
+html[data-agy-theme="codex"] button[data-tooltip-id="input-send-button-record-tooltip"]:hover {
+  background: var(--cx-side-hover) !important;
+}
+
+/* 发送键：Codex 标志性高对比黑白圆钮 */
+html[data-agy-theme="codex"] button[data-testid="input-send-button"],
+html[data-agy-theme="codex"] button[aria-label*="Send"],
+html[data-agy-theme="codex"] button[aria-label*="发送"] {
+  background: var(--cx-accent) !important;
+  color: var(--cx-send-ink) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transition: background-color 0.11s ease, opacity 0.11s ease !important;
+}
+html[data-agy-theme="codex"] button[data-testid="input-send-button"]:hover,
+html[data-agy-theme="codex"] button[aria-label*="Send"]:hover,
+html[data-agy-theme="codex"] button[aria-label*="发送"]:hover {
+  background: var(--cx-accent-hover) !important;
+}
+
+/* 6. 正文与链接 --------------------------------------------- */
+html[data-agy-theme="codex"] [data-quotable="true"] .markdown-body,
+html[data-agy-theme="codex"] [data-testid="planner-response-text"] {
+  color: var(--cx-ink) !important;
+}
+html[data-agy-theme="codex"] a[href^="http"]:not([class*="bg-primary"]):not([class*="bg-blue"]) { color: #2563eb !important; }
+html[data-agy-theme="codex"][data-agy-dark="1"] a[href^="http"]:not([class*="bg-primary"]):not([class*="bg-blue"]) { color: #60a5fa !important; }
+
+/* Primary & blue CTA buttons: guaranteed high-contrast foreground text (incl. Settings Upgrade button in dark mode) */
+html[data-agy-theme="codex"] button[class*="bg-primary"]:not([class*="bg-primary/1"]):not([class*="bg-primary/2"]):not([class*="bg-primary/5"]),
+html[data-agy-theme="codex"] a[class*="bg-primary"]:not([class*="bg-primary/1"]):not([class*="bg-primary/2"]):not([class*="bg-primary/5"]),
+html[data-agy-theme="codex"] button[class*="bg-primary"]:not([class*="bg-primary/1"]):not([class*="bg-primary/2"]):not([class*="bg-primary/5"]) *,
+html[data-agy-theme="codex"] a[class*="bg-primary"]:not([class*="bg-primary/1"]):not([class*="bg-primary/2"]):not([class*="bg-primary/5"]) * {
+  color: var(--primary-foreground) !important;
+}
+html[data-agy-theme="codex"] button[class*="bg-blue"]:not([class*="bg-blue-50"]):not([class*="bg-blue-100"]):not([class*="bg-blue-200"]):not([class*="bg-blue-500/1"]):not([class*="bg-blue-500/2"]):not([class*="bg-blue-600/1"]):not([class*="bg-blue-600/2"]),
+html[data-agy-theme="codex"] a[class*="bg-blue"]:not([class*="bg-blue-50"]):not([class*="bg-blue-100"]):not([class*="bg-blue-200"]):not([class*="bg-blue-500/1"]):not([class*="bg-blue-500/2"]):not([class*="bg-blue-600/1"]):not([class*="bg-blue-600/2"]),
+html[data-agy-theme="codex"] button[class*="bg-blue"]:not([class*="bg-blue-50"]):not([class*="bg-blue-100"]):not([class*="bg-blue-200"]):not([class*="bg-blue-500/1"]):not([class*="bg-blue-500/2"]):not([class*="bg-blue-600/1"]):not([class*="bg-blue-600/2"]) *,
+html[data-agy-theme="codex"] a[class*="bg-blue"]:not([class*="bg-blue-50"]):not([class*="bg-blue-100"]):not([class*="bg-blue-200"]):not([class*="bg-blue-500/1"]):not([class*="bg-blue-500/2"]):not([class*="bg-blue-600/1"]):not([class*="bg-blue-600/2"]) * {
+  color: #ffffff !important;
+}
+
+/* 7. 浮层与设置弹窗（区分亮/暗，零半透明穿帮，下拉浮层始终高于弹窗） --- */
+html[data-agy-theme="codex"] [data-radix-popper-content-wrapper],
+html[data-agy-theme="codex"] [data-floating-ui-portal],
+html[data-agy-theme="codex"] [role="listbox"],
+html[data-agy-theme="codex"] [role="menu"],
+html[data-agy-theme="codex"] [data-radix-menu-content],
+html[data-agy-theme="codex"] [data-radix-select-content],
+html[data-agy-theme="codex"] div[class*="popover-content"],
+html[data-agy-theme="codex"] div[class*="dropdown-content"] {
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+}
+
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="dialog"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="menu"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="tooltip"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="listbox"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-menu-content],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-select-content],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-tooltip-content],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[data-side][role="tooltip"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="popover-content"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="tooltip"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="dropdown-content"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .settings-modal-container,
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="modal-container"] {
+  --background: #ffffff !important;
+  --bg-canvas: #ffffff !important;
+  --color-background: #ffffff !important;
+  --popover: #ffffff !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-agy-theme="codex"][data-agy-dark="1"] [role="menu"],
+html[data-agy-theme="codex"][data-agy-dark="1"] [role="listbox"],
+html[data-agy-theme="codex"][data-agy-dark="1"] [data-radix-menu-content],
+html[data-agy-theme="codex"][data-agy-dark="1"] [data-radix-select-content],
+html[data-agy-theme="codex"][data-agy-dark="1"] div[class*="dropdown-content"],
+html[data-agy-theme="codex"][data-agy-dark="1"] div[class*="popover-content"] {
+  background-color: var(--cx-side-elev) !important;
+  color: var(--cx-ink) !important;
+  opacity: 1 !important;
+}
+
+html[data-agy-theme="codex"] [role="menu"],
+html[data-agy-theme="codex"] [role="listbox"],
+html[data-agy-theme="codex"] [data-radix-menu-content],
+html[data-agy-theme="codex"] [data-radix-select-content],
+html[data-agy-theme="codex"] div[class*="dropdown-content"],
+html[data-agy-theme="codex"] div[class*="popover-content"] {
+  border: 1px solid var(--cx-line) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 12px 28px rgba(0, 0, 0, 0.10) !important;
+}
+
+html[data-agy-theme="codex"] [role="menuitem"]:hover,
+html[data-agy-theme="codex"] [role="menuitemradio"]:hover,
+html[data-agy-theme="codex"] [role="option"]:hover,
+html[data-agy-theme="codex"] [role="menuitem"][data-highlighted],
+html[data-agy-theme="codex"] [role="menuitemradio"][data-highlighted],
+html[data-agy-theme="codex"] [role="option"][data-highlighted] {
+  background: var(--cx-side-hover) !important;
+}
+
+html[data-agy-theme="codex"] [role="tooltip"],
+html[data-agy-theme="codex"] [data-radix-tooltip-content],
+html[data-agy-theme="codex"] div[data-side][role="tooltip"],
+html[data-agy-theme="codex"] div[class*="tooltip"] {
+  color: var(--cx-ink) !important;
+  border: 1px solid var(--cx-line) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.09) !important;
+  z-index: 99999999 !important;
+}
+
+html[data-agy-theme="codex"] [role="tooltip"] *,
+html[data-agy-theme="codex"] [data-radix-tooltip-content] * {
+  color: var(--cx-ink) !important;
+}
+
+html[data-agy-theme="codex"] [role="dialog"],
+html[data-agy-theme="codex"] .settings-modal-container {
+  border: 1px solid var(--cx-line) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 28px 72px rgba(0, 0, 0, 0.14) !important;
+}
+
+html[data-agy-theme="codex"] .settings-modal-container aside,
+html[data-agy-theme="codex"] .settings-modal-container div[class*="sidebar"],
+html[data-agy-theme="codex"] .agy-dialog aside,
+html[data-agy-theme="codex"] .agy-dialog div[class*="sidebar"] {
+  background: var(--cx-side) !important;
+  background-color: var(--cx-side) !important;
+  border-right: 1px solid var(--cx-side-border) !important;
+}
+
+html[data-agy-theme="codex"] .settings-modal-container [aria-checked="true"],
+html[data-agy-theme="codex"] .settings-modal-container [data-state="checked"][class*="border"] {
+  border-color: var(--cx-accent) !important;
+  background: var(--cx-accent-soft) !important;
+}
+
+html[data-agy-theme="codex"] button[role="switch"][data-state="checked"],
+html[data-agy-theme="codex"] button[role="switch"][aria-checked="true"] {
+  background: var(--cx-accent) !important;
+}
+
+html[data-agy-theme="codex"] div[data-state="open"].fixed.inset-0:not([role="dialog"]),
+html[data-agy-theme="codex"] div[class*="backdrop"] {
+  background: rgba(13, 13, 16, 0.24) !important;
+}
+
+html[data-agy-theme="codex"] *:focus-visible {
+  outline-color: var(--cx-accent-ring) !important;
+}
+
+/* Inline Contextual Side-Reply Dialog (Codex Minimal styling) */
+html[data-agy-theme="codex"] #agy-inline-ask-popover {
+  border: 1px solid var(--cx-line);
+  border-radius: 13px;
+  background: var(--cx-side-elev);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 16px 38px rgba(0, 0, 0, 0.12);
+}
+html[data-agy-theme="codex"][data-agy-dark="1"] #agy-inline-ask-popover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.36), 0 20px 48px rgba(0, 0, 0, 0.54);
+}
+html[data-agy-theme="codex"] #agy-inline-ask-popover .agy-ia-head {
+  background: var(--cx-side);
+}
+html[data-agy-theme="codex"] #agy-inline-ask-trigger {
+  border-radius: 8px;
+  border-color: var(--cx-line);
+  background: var(--cx-side-elev);
+}
+html[data-agy-theme="codex"] #agy-inline-ask-trigger:hover,
+html[data-agy-theme="codex"] #agy-inline-ask-trigger[data-mode="selection"] {
+  border-color: var(--cx-accent);
+  color: var(--cx-ink);
+}
+html[data-agy-theme="codex"] .agy-ia-send {
+  background: var(--cx-accent);
+  color: var(--cx-send-ink);
+}
+html[data-agy-theme="codex"] .agy-ia-send:hover:not(:disabled) {
+  background: var(--cx-accent-hover);
+}
