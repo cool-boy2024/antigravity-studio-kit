@@ -4074,7 +4074,8 @@ function triggerHakimiWuhunRage(manual = false) {
         healShatterScreen('subagents');
         const composer = document.querySelector('.surface-composer');
         const input = composer?.querySelector('[contenteditable="true"][role="textbox"], [contenteditable="true"], textarea');
-        if (input && !readComposerValue(input).trim()) {
+        const curText = input ? readComposerValue(input).trim() : '';
+        if (input && !curText && !curText.includes('哈基米你可以的')) {
           writeComposerValue(input, '哈基米你可以的！请拆分成多个独立子任务，调用多个并行子 Agent 同时推进完成～');
         }
       } else {
@@ -5727,8 +5728,8 @@ function writeComposerValue(inputEl, text) {
       document.execCommand('delete', false);
       inserted = readComposerValue(inputEl).trim() === '';
     } else {
-      document.execCommand('insertText', false, text);
-      inserted = readComposerValue(inputEl).trim().length > 0;
+      const ok = document.execCommand('insertText', false, text);
+      inserted = Boolean(ok) || readComposerValue(inputEl).trim().length > 0;
     }
   } catch (_) {}
 
@@ -7170,46 +7171,38 @@ function syncNativeRangeProgress(input) {
 }
 
 function discoverRealEffortBinding(pop, matchedRows) {
-  // Path 2: Native discrete effort buttons / radios / tabs / pills inside the popover (or an open effort submenu)
-  const searchRoots = [pop];
-  const openSubmenus = document.querySelectorAll('[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content]');
-  for (let i = 0; i < openSubmenus.length; i++) {
-    const sm = openSubmenus[i];
-    if (sm !== pop && !isOwnControlElement(sm)) searchRoots.push(sm);
+  // Path 2: Native discrete effort buttons / radios / tabs / pills STRICTLY inside `pop` itself.
+  // NEVER scan external hover submenus (e.g. `Gemini 4 Carbon >`), otherwise mounting/unmounting
+  // #agy-real-effort-box shifts popover height on hover and causes a 60Hz vertical twitch loop!
+  const controls = pop.querySelectorAll('button, [role="radio"], [role="tab"], [role="menuitemradio"], [role="menuitem"], [role="option"]');
+  const groups = new Map();
+  for (let i = 0; i < controls.length; i++) {
+    const el = controls[i];
+    if (el.closest('#agy-real-effort-box') || isOwnControlElement(el)) continue;
+    const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!txt || txt.length > 22 || MODEL_NAME_STRICT_RX.test(txt)) continue;
+    const spec = parseEffortSpec(txt);
+    if (!spec) continue;
+    const host = el.closest('[role="radiogroup"], [role="tablist"], [role="group"]') || el.parentElement;
+    if (!host || !pop.contains(host)) continue;
+    if (!groups.has(host)) groups.set(host, []);
+    groups.get(host).push({
+      el,
+      rank: spec.rank,
+      label: spec.label,
+      short: spec.short,
+      disabled: Boolean(el.disabled || el.getAttribute('aria-disabled') === 'true'),
+      active: isElementSelectedOrChecked(el)
+    });
   }
-
-  for (let r = 0; r < searchRoots.length; r++) {
-    const root = searchRoots[r];
-    const controls = root.querySelectorAll('button, [role="radio"], [role="tab"], [role="menuitemradio"], [role="menuitem"], [role="option"]');
-    const groups = new Map();
-    for (let i = 0; i < controls.length; i++) {
-      const el = controls[i];
-      if (el.closest('#agy-real-effort-box') || isOwnControlElement(el)) continue;
-      const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!txt || txt.length > 22 || MODEL_NAME_STRICT_RX.test(txt)) continue;
-      const spec = parseEffortSpec(txt);
-      if (!spec) continue;
-      const host = el.closest('[role="radiogroup"], [role="tablist"], [role="group"]') || el.parentElement;
-      if (!host) continue;
-      if (!groups.has(host)) groups.set(host, []);
-      groups.get(host).push({
-        el,
-        rank: spec.rank,
-        label: spec.label,
-        short: spec.short,
-        disabled: Boolean(el.disabled || el.getAttribute('aria-disabled') === 'true'),
-        active: isElementSelectedOrChecked(el)
-      });
+  for (const [, list] of groups) {
+    const byRank = new Map();
+    for (let i = 0; i < list.length; i++) {
+      if (!byRank.has(list[i].rank)) byRank.set(list[i].rank, list[i]);
     }
-    for (const [, list] of groups) {
-      const byRank = new Map();
-      for (let i = 0; i < list.length; i++) {
-        if (!byRank.has(list[i].rank)) byRank.set(list[i].rank, list[i]);
-      }
-      if (byRank.size >= 2) {
-        const options = Array.from(byRank.values()).sort((a, b) => a.rank - b.rank);
-        return { mode: 'native-buttons', options };
-      }
+    if (byRank.size >= 2) {
+      const options = Array.from(byRank.values()).sort((a, b) => a.rank - b.rank);
+      return { mode: 'native-buttons', options };
     }
   }
 
@@ -7478,6 +7471,12 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
 function decorateSingleModelPopover(pop) {
   if (!pop || pop.nodeType !== 1 || isOwnControlElement(pop)) return;
   if (pop.classList.contains('settings-modal-container')) return;
+  if (readThemeMode() === 'native') {
+    const staleBox = pop.querySelector('#agy-real-effort-box');
+    if (staleBox) staleBox.remove();
+    return;
+  }
+  if (pop.parentElement && pop.parentElement.closest('.agy-model-popover')) return;
 
   const fullText = (pop.textContent || '').slice(0, 2600);
   if (!MODEL_NAME_STRICT_RX.test(fullText)) return;
@@ -7504,6 +7503,12 @@ function decorateSingleModelPopover(pop) {
 
   const hasControlHint = Boolean(orchestratorBtn) || THINKING_LABEL_RX.test(fullText) || /主\s*Agent|Main\s*Agent/i.test(fullText);
   if (matchedRows.length < 2 && !(matchedRows.length >= 1 && hasControlHint)) return;
+
+  const structuralSig = matchedRows.length + ':' + (orchestratorBtn ? 1 : 0) + ':' + pop.querySelectorAll('input[type="range"], [role="slider"]').length;
+  if (pop.classList.contains('agy-model-popover') && pop.dataset.agyModelSig === structuralSig) {
+    return;
+  }
+  pop.dataset.agyModelSig = structuralSig;
 
   if (!pop.classList.contains('agy-model-popover')) {
     pop.classList.add('agy-model-popover');
@@ -7835,7 +7840,6 @@ function ensureObserver() {
     window.__AGY_HAKIMI_HEARTBEAT__ = window.setInterval(() => {
       if (document.hidden) return;
       syncHakimiStateNow();
-      decorateModelPopovers();
     }, 850);
   }
 
@@ -7868,7 +7872,7 @@ function ensureObserver() {
       }
 
       if (m.type === 'attributes') {
-        structuralChanged = true;
+        if (m.attributeName === 'data-testid') structuralChanged = true;
         if (!excluded && (m.attributeName === 'aria-label' || m.attributeName === 'placeholder' || m.attributeName === 'title')) {
           enqueueTranslateNode(m.target);
         }

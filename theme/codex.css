@@ -378,17 +378,10 @@ html[data-agy-theme="codex"] a[class*="bg-blue"]:not([class*="bg-blue-50"]):not(
   color: #ffffff !important;
 }
 
-/* 7. 浮层与设置弹窗（区分亮/暗，零半透明穿帮，下拉浮层始终高于弹窗） --- */
+/* 7. 浮层与设置弹窗（区分亮/暗，零半透明穿帮，保留原生子菜单/Tooltip 指针事件与层级） --- */
 html[data-agy-theme="codex"] [data-radix-popper-content-wrapper],
-html[data-agy-theme="codex"] [data-floating-ui-portal],
-html[data-agy-theme="codex"] [role="listbox"],
-html[data-agy-theme="codex"] [role="menu"],
-html[data-agy-theme="codex"] [data-radix-menu-content],
-html[data-agy-theme="codex"] [data-radix-select-content],
-html[data-agy-theme="codex"] div[class*="popover-content"],
-html[data-agy-theme="codex"] div[class*="dropdown-content"] {
-  z-index: 999999 !important;
-  pointer-events: auto !important;
+html[data-agy-theme="codex"] [data-floating-ui-portal] {
+  z-index: 1200 !important;
 }
 
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
@@ -400,7 +393,6 @@ html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-select-content
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[data-side][role="tooltip"],
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="tooltip"],
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .settings-modal-container,
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="modal-container"] {
@@ -449,13 +441,13 @@ html[data-agy-theme="codex"] [role="option"][data-highlighted] {
 
 html[data-agy-theme="codex"] [role="tooltip"],
 html[data-agy-theme="codex"] [data-radix-tooltip-content],
-html[data-agy-theme="codex"] div[data-side][role="tooltip"],
-html[data-agy-theme="codex"] div[class*="tooltip"] {
+html[data-agy-theme="codex"] div[data-side][role="tooltip"] {
   color: var(--cx-ink) !important;
   border: 1px solid var(--cx-line) !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.09) !important;
-  z-index: 99999999 !important;
+  pointer-events: none !important;
+  z-index: 1400 !important;
 }
 
 html[data-agy-theme="codex"] [role="tooltip"] *,
@@ -554,7 +546,6 @@ html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover {
     inset 0 1px 0 rgba(255, 255, 255, 0.92),
     inset 0 0 0 0.5px rgba(15, 23, 42, 0.07) !important;
   opacity: 1 !important;
-  overflow: visible !important;
 }
 
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover {

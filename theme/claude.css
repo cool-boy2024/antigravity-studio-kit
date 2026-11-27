@@ -397,17 +397,10 @@ html[data-agy-theme="claude"] a[class*="bg-blue"]:not([class*="bg-blue-50"]):not
   color: #ffffff !important;
 }
 
-/* 7. 浮层与设置弹窗（区分亮/暗，零半透明穿帮，下拉浮层始终高于弹窗） --- */
+/* 7. 浮层与设置弹窗（区分亮/暗，零半透明穿帮，保留原生子菜单/Tooltip 指针事件与层级） --- */
 html[data-agy-theme="claude"] [data-radix-popper-content-wrapper],
-html[data-agy-theme="claude"] [data-floating-ui-portal],
-html[data-agy-theme="claude"] [role="listbox"],
-html[data-agy-theme="claude"] [role="menu"],
-html[data-agy-theme="claude"] [data-radix-menu-content],
-html[data-agy-theme="claude"] [data-radix-select-content],
-html[data-agy-theme="claude"] div[class*="popover-content"],
-html[data-agy-theme="claude"] div[class*="dropdown-content"] {
-  z-index: 999999 !important;
-  pointer-events: auto !important;
+html[data-agy-theme="claude"] [data-floating-ui-portal] {
+  z-index: 1200 !important;
 }
 
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
@@ -419,7 +412,6 @@ html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [data-radix-select-conten
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[data-side][role="tooltip"],
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="tooltip"],
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .settings-modal-container,
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="modal-container"] {
@@ -468,13 +460,13 @@ html[data-agy-theme="claude"] [role="option"][data-highlighted] {
 
 html[data-agy-theme="claude"] [role="tooltip"],
 html[data-agy-theme="claude"] [data-radix-tooltip-content],
-html[data-agy-theme="claude"] div[data-side][role="tooltip"],
-html[data-agy-theme="claude"] div[class*="tooltip"] {
+html[data-agy-theme="claude"] div[data-side][role="tooltip"] {
   color: var(--ink) !important;
   border: 1px solid var(--line) !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 14px rgba(40, 30, 20, 0.10) !important;
-  z-index: 99999999 !important;
+  pointer-events: none !important;
+  z-index: 1400 !important;
 }
 
 html[data-agy-theme="claude"] [role="tooltip"] *,

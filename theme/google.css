@@ -445,25 +445,12 @@ html[data-agy-theme="google"] a[class*="bg-blue"]:not([class*="bg-blue-50"]):not
   color: #ffffff !important;
 }
 
-/* 6. 浮层与设置弹窗（区分亮/暗，零半透明穿帮，下拉浮层始终高于弹窗） --- */
+/* 6. 浮层与设置弹窗（区分亮/暗，零半透明穿帮，保留原生子菜单/Tooltip 指针事件与层级） --- */
 html:not([data-agy-theme]) [data-radix-popper-content-wrapper],
 html:not([data-agy-theme]) [data-floating-ui-portal],
-html:not([data-agy-theme]) [role="listbox"],
-html:not([data-agy-theme]) [role="menu"],
-html:not([data-agy-theme]) [data-radix-menu-content],
-html:not([data-agy-theme]) [data-radix-select-content],
-html:not([data-agy-theme]) div[class*="popover-content"],
-html:not([data-agy-theme]) div[class*="dropdown-content"],
 html[data-agy-theme="google"] [data-radix-popper-content-wrapper],
-html[data-agy-theme="google"] [data-floating-ui-portal],
-html[data-agy-theme="google"] [role="listbox"],
-html[data-agy-theme="google"] [role="menu"],
-html[data-agy-theme="google"] [data-radix-menu-content],
-html[data-agy-theme="google"] [data-radix-select-content],
-html[data-agy-theme="google"] div[class*="popover-content"],
-html[data-agy-theme="google"] div[class*="dropdown-content"] {
-  z-index: 999999 !important;
-  pointer-events: auto !important;
+html[data-agy-theme="google"] [data-floating-ui-portal] {
+  z-index: 1200 !important;
 }
 
 html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
@@ -475,7 +462,6 @@ html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-select-content]:
 html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[data-side][role="tooltip"],
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
-html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="tooltip"],
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) .settings-modal-container,
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="modal-container"],
@@ -488,7 +474,6 @@ html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-select-conten
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[data-side][role="tooltip"],
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="tooltip"],
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) .settings-modal-container,
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="modal-container"] {
@@ -556,16 +541,15 @@ html[data-agy-theme="google"] [role="option"][data-highlighted] {
 html:not([data-agy-theme]) [role="tooltip"],
 html:not([data-agy-theme]) [data-radix-tooltip-content],
 html:not([data-agy-theme]) div[data-side][role="tooltip"],
-html:not([data-agy-theme]) div[class*="tooltip"],
 html[data-agy-theme="google"] [role="tooltip"],
 html[data-agy-theme="google"] [data-radix-tooltip-content],
-html[data-agy-theme="google"] div[data-side][role="tooltip"],
-html[data-agy-theme="google"] div[class*="tooltip"] {
+html[data-agy-theme="google"] div[data-side][role="tooltip"] {
   color: var(--gs-ink) !important;
   border: 1px solid var(--gs-line) !important;
   border-radius: 8px !important;
   box-shadow: 0 4px 14px rgba(60, 64, 67, 0.11) !important;
-  z-index: 99999999 !important;
+  pointer-events: none !important;
+  z-index: 1400 !important;
 }
 
 html:not([data-agy-theme]) [role="tooltip"] *,
