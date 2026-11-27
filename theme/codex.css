@@ -1114,16 +1114,16 @@ html[data-agy-wallpaper="on"] body > #__next {
 }
 
 /* 主画布、嵌套 bg-background / bg-canvas 与运行时识别的实色布局壳全部透底，交由单一 #agy-wallpaper-veil 控透 */
-/* 使用 :where() 控住排除项权重为 0，确保下方弹窗内部保护规则 (0,5,2) 必然胜出！ */
-html[data-agy-wallpaper="on"] [data-agy-wp-shell="1"],
-html[data-agy-wallpaper="on"][data-agy-theme] [data-agy-wp-shell="1"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [data-agy-wp-shell="1"]:where(:not([role="dialog"]):not([role="menu"])),
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] main,
-html[data-agy-wallpaper="on"] main,
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] div[class*="bg-background"]:where(:not([role="dialog"]):not([role="menu"]):not([role="listbox"]):not(.settings-modal-container):not(.agy-model-popover)),
-html[data-agy-wallpaper="on"] div[class*="bg-background"]:where(:not([role="dialog"]):not([role="menu"]):not([role="listbox"]):not(.settings-modal-container):not(.agy-model-popover)),
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] div[class*="bg-canvas"]:where(:not([role="dialog"]):not(.settings-modal-container)),
-html[data-agy-wallpaper="on"] div[class*="bg-canvas"]:where(:not([role="dialog"]):not(.settings-modal-container)) {
+/* 必须排除弹窗与设置框内所有后代元素，确保设置弹窗、下拉菜单与浮层 100% 实底不穿透！ */
+html[data-agy-wallpaper="on"] [data-agy-wp-shell="1"]:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *),
+html[data-agy-wallpaper="on"][data-agy-theme] [data-agy-wp-shell="1"]:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *),
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [data-agy-wp-shell="1"]:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *):where(:not([role="dialog"]):not([role="menu"])),
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] main:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *),
+html[data-agy-wallpaper="on"] main:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *),
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] div[class*="bg-background"]:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *):where(:not([role="dialog"]):not([role="menu"]):not([role="listbox"]):not(.settings-modal-container):not(.agy-model-popover)),
+html[data-agy-wallpaper="on"] div[class*="bg-background"]:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *):where(:not([role="dialog"]):not([role="menu"]):not([role="listbox"]):not(.settings-modal-container):not(.agy-model-popover)),
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] div[class*="bg-canvas"]:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *):where(:not([role="dialog"]):not(.settings-modal-container)),
+html[data-agy-wallpaper="on"] div[class*="bg-canvas"]:not([role="dialog"] *):not([aria-modal="true"] *):not(.settings-modal-container *):not([class*="modal"] *):not(div.fixed.inset-0 *):where(:not([role="dialog"]):not(.settings-modal-container)) {
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
@@ -1172,7 +1172,7 @@ html[data-agy-wallpaper="on"][data-agy-dark="1"] .surface-composer {
     var(--gs-quad-soft, linear-gradient(115deg, rgba(56, 189, 248, 0.52), rgba(168, 85, 247, 0.52))) border-box !important;
 }
 
-/* 弹窗 / 设置框 / 对话框 / 下拉菜单在壁纸模式下始终保持清晰不透明（含深色模式与内部面板），绝不透底穿帮 */
+/* 弹窗 / 设置框 / 对话框 / 下拉菜单在壁纸模式下始终保持清晰纯实色不透明（含深色模式与内部面板），绝不透底穿帮 */
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [role="alertdialog"],
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [aria-modal="true"],
@@ -1184,14 +1184,15 @@ html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [data-radix-select-conten
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) .settings-modal-container,
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) .agy-dialog,
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[class*="modal-container"],
-html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[class*="settings-modal"] {
-  --background: var(--gs-bg, #ffffff) !important;
-  --bg-canvas: var(--gs-bg, #ffffff) !important;
-  --color-background: var(--gs-bg, #ffffff) !important;
-  --surface: var(--gs-bg, #ffffff) !important;
-  --color-surface: var(--gs-bg, #ffffff) !important;
-  background: var(--gs-bg, #ffffff) !important;
-  background-color: var(--gs-bg, #ffffff) !important;
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[class*="settings-modal"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div.fixed.inset-0 > div {
+  --background: #ffffff !important;
+  --bg-canvas: #ffffff !important;
+  --color-background: #ffffff !important;
+  --surface: #ffffff !important;
+  --color-surface: #ffffff !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
   opacity: 1 !important;
 }
 html[data-agy-wallpaper="on"][data-agy-dark="1"] [role="dialog"]:not(.agy-model-popover),
@@ -1205,45 +1206,78 @@ html[data-agy-wallpaper="on"][data-agy-dark="1"] [data-radix-select-content]:not
 html[data-agy-wallpaper="on"][data-agy-dark="1"] .settings-modal-container,
 html[data-agy-wallpaper="on"][data-agy-dark="1"] .agy-dialog,
 html[data-agy-wallpaper="on"][data-agy-dark="1"] div[class*="modal-container"],
-html[data-agy-wallpaper="on"][data-agy-dark="1"] div[class*="settings-modal"] {
-  --background: var(--gs-bg, #14161d) !important;
-  --bg-canvas: var(--gs-bg, #14161d) !important;
-  --color-background: var(--gs-bg, #14161d) !important;
-  --surface: var(--gs-bg-2, #1a1d26) !important;
-  --color-surface: var(--gs-bg-2, #1a1d26) !important;
-  background: var(--gs-bg, #14161d) !important;
-  background-color: var(--gs-bg, #14161d) !important;
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div[class*="settings-modal"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div.fixed.inset-0 > div {
+  --background: #14161d !important;
+  --bg-canvas: #14161d !important;
+  --color-background: #14161d !important;
+  --surface: #1a1d26 !important;
+  --color-surface: #1a1d26 !important;
+  background: #14161d !important;
+  background-color: #14161d !important;
   opacity: 1 !important;
 }
-/* 覆盖内部 bg-background / bg-canvas / main / 下拉菜单，确保设置弹窗右侧与所有二级浮层 100% 实底清晰 */
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [role="dialog"] main,
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [aria-modal="true"] main,
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] .settings-modal-container main,
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] .agy-dialog main,
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [role="dialog"] div[class*="bg-background"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [aria-modal="true"] div[class*="bg-background"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] .settings-modal-container div[class*="bg-background"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] .agy-dialog div[class*="bg-background"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [role="dialog"] div[class*="bg-canvas"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [aria-modal="true"] div[class*="bg-canvas"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] .settings-modal-container div[class*="bg-canvas"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] .agy-dialog div[class*="bg-canvas"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [role="dialog"] [data-agy-wp-shell="1"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [aria-modal="true"] [data-agy-wp-shell="1"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] .settings-modal-container [data-agy-wp-shell="1"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [data-radix-popper-content-wrapper] div[class*="bg-background"],
-html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] [data-radix-select-content] div[class*="bg-background"],
-html[data-agy-wallpaper="on"] [role="dialog"] main,
-html[data-agy-wallpaper="on"] [aria-modal="true"] main,
-html[data-agy-wallpaper="on"] .settings-modal-container main,
-html[data-agy-wallpaper="on"] [role="dialog"] div[class*="bg-background"],
-html[data-agy-wallpaper="on"] [aria-modal="true"] div[class*="bg-background"],
-html[data-agy-wallpaper="on"] .settings-modal-container div[class*="bg-background"],
-html[data-agy-wallpaper="on"] [role="dialog"] [data-agy-wp-shell="1"],
-html[data-agy-wallpaper="on"] [aria-modal="true"] [data-agy-wp-shell="1"],
-html[data-agy-wallpaper="on"] .settings-modal-container [data-agy-wp-shell="1"] {
-  background: var(--background) !important;
-  background-color: var(--background) !important;
+
+/* 覆盖设置弹窗内部全部面板、侧栏、main、bg-background 与所有子容器，100% 纯正实底无透底 */
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [role="dialog"] aside,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [aria-modal="true"] aside,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] .settings-modal-container aside,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [class*="modal-container"] aside,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div.fixed.inset-0 > div aside,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [role="dialog"] div[class*="sidebar"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] .settings-modal-container div[class*="sidebar"] {
+  background: #181b24 !important;
+  background-color: #181b24 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [role="dialog"] aside,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [aria-modal="true"] aside,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) .settings-modal-container aside,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [class*="modal-container"] aside,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div.fixed.inset-0 > div aside,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [role="dialog"] div[class*="sidebar"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) .settings-modal-container div[class*="sidebar"] {
+  background: #f8fafc !important;
+  background-color: #f8fafc !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [role="dialog"] main,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [aria-modal="true"] main,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] .settings-modal-container main,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [role="dialog"] div[class*="bg-background"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [aria-modal="true"] div[class*="bg-background"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] .settings-modal-container div[class*="bg-background"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [class*="modal-container"] div[class*="bg-background"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [class*="settings-modal"] div[class*="bg-background"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div.fixed.inset-0 > div div[class*="bg-background"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [role="dialog"] div[class*="bg-canvas"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [aria-modal="true"] div[class*="bg-canvas"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] .settings-modal-container div[class*="bg-canvas"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [role="dialog"] [data-agy-wp-shell="1"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [aria-modal="true"] [data-agy-wp-shell="1"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] .settings-modal-container [data-agy-wp-shell="1"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [data-radix-popper-content-wrapper] div[class*="bg-background"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] [data-radix-select-content] div[class*="bg-background"] {
+  background: #14161d !important;
+  background-color: #14161d !important;
+}
+
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [role="dialog"] main,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [aria-modal="true"] main,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) .settings-modal-container main,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [role="dialog"] div[class*="bg-background"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [aria-modal="true"] div[class*="bg-background"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) .settings-modal-container div[class*="bg-background"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [class*="modal-container"] div[class*="bg-background"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [class*="settings-modal"] div[class*="bg-background"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div.fixed.inset-0 > div div[class*="bg-background"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [role="dialog"] div[class*="bg-canvas"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) [aria-modal="true"] div[class*="bg-canvas"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) .settings-modal-container div[class*="bg-canvas"] {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
 }
 html[data-agy-wallpaper="on"][data-agy-dark="1"] div[data-state="open"].fixed.inset-0:not([role="dialog"]),
 html[data-agy-wallpaper="on"][data-agy-dark="1"] div[class*="backdrop"] {

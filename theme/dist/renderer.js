@@ -880,7 +880,7 @@ const WP_SHELL_SKIP_SEL = [
   '.monaco-editor', '.cm-editor', '.hljs', 'pre', 'code', 'table', 'iframe', 'video', 'canvas'
 ].join(',');
 
-const WP_MODAL_GUARD_SEL = '[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-radix-dialog-content], .settings-modal-container, .agy-dialog, [class*="settings-modal"], [class*="modal-container"]';
+const WP_MODAL_GUARD_SEL = '[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-radix-dialog-content], [data-radix-portal], .settings-modal-container, .agy-dialog, [class*="settings-modal"], [class*="modal-container"], [class*="modal-content"], div.fixed.inset-0, [data-state="open"]';
 
 const WP_SHELL_TAGS = new Set(['DIV', 'MAIN', 'SECTION', 'ARTICLE', 'ASIDE', 'NAV', 'HEADER', 'FOOTER']);
 let wpShellSyncTimer = 0;
