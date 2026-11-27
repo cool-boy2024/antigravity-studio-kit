@@ -139,7 +139,22 @@ def _restart_stale_pulse_sidecar(pulse_plugin_dir: pathlib.Path, dry_run: bool):
         cmd = (proc.stdout or "").strip()
     except Exception:
         return
-    if "gemini-pulse" not in cmd or "server.mjs" not in cmd:
+    if "server.mjs" not in cmd:
+        return
+    is_pulse = "gemini-pulse" in cmd
+    if not is_pulse and "sidecar_sdk/register_loader.js" in cmd:
+        try:
+            cwd_proc = subprocess.run(
+                ["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
+                capture_output=True,
+                text=True,
+                timeout=2,
+                check=False,
+            )
+            is_pulse = "gemini-pulse/sidecars/pulse" in (cwd_proc.stdout or "")
+        except Exception:
+            is_pulse = False
+    if not is_pulse:
         return
     if dry_run:
         print(f"[dry-run] signal stale gemini-pulse sidecar (pid={pid}) to reload")

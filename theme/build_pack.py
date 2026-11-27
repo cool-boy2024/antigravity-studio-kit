@@ -17,9 +17,16 @@ import sys
 BASE = os.path.dirname(os.path.abspath(__file__))
 MUSE_ART = os.path.join(BASE, "art", "muse-poses")
 POSES_CACHE = os.path.join(MUSE_ART, "poses-cache.json")
+WALLPAPERS_ART = os.path.join(BASE, "art", "wallpapers")
 DIST = os.path.join(BASE, "dist")
 
 MUSE_POSES = ["idle", "laptop1", "laptop2", "write1", "write2", "done", "sleepy"]
+WALLPAPER_SPECS = [
+    ("cyber-sakura", "cyber-sakura.jpg", "image/jpeg"),
+    ("starlight-aurora", "starlight-aurora.jpg", "image/jpeg"),
+    ("crimson-eclipse", "crimson-eclipse.svg", "image/svg+xml"),
+    ("cloud-atelier", "cloud-atelier.svg", "image/svg+xml"),
+]
 TARGET_W = 360
 MAX_COLORS = 224
 
@@ -93,6 +100,19 @@ def load_poses(reencode=False):
     return found
 
 
+def load_wallpapers():
+    packed = {}
+    for key, filename, mime in WALLPAPER_SPECS:
+        p = os.path.join(WALLPAPERS_ART, filename)
+        if not os.path.isfile(p):
+            continue
+        with open(p, "rb") as fh:
+            raw = fh.read()
+        packed[key] = f"data:{mime};base64," + base64.b64encode(raw).decode("ascii")
+    print(f"[wallpapers] packed {len(packed)} HD backgrounds ({', '.join(packed.keys())})")
+    return packed
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--reencode-poses", action="store_true", help="Re-quantize PNG poses via Pillow + numpy")
@@ -100,6 +120,7 @@ def main():
 
     os.makedirs(DIST, exist_ok=True)
     found = load_poses(reencode=args.reencode_poses)
+    wallpapers = load_wallpapers()
 
     tpl_path = os.path.join(BASE, "renderer.template.js")
     out_path = os.path.join(DIST, "renderer.js")
@@ -128,6 +149,8 @@ def main():
     # Keep __AGY_THEMES__ empty because all themes are pre-parsed in User-Origin theme.css.
     out = tpl.replace("__HAKIMI_POSES__", json.dumps(found, ensure_ascii=False))
     out = out.replace("__AGY_THEMES__", "{}")
+    if "__AGY_WALLPAPERS__" in out:
+        out = out.replace("__AGY_WALLPAPERS__", json.dumps(wallpapers, ensure_ascii=False))
 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(out)

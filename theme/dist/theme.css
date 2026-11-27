@@ -466,30 +466,30 @@ html[data-agy-theme="google"] div[class*="dropdown-content"] {
   pointer-events: auto !important;
 }
 
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="dialog"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="menu"],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="menu"]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="tooltip"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="listbox"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-menu-content],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-select-content],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="listbox"]:not(.agy-model-popover),
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-menu-content]:not(.agy-model-popover),
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-select-content]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[data-side][role="tooltip"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="popover-content"],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="tooltip"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="dropdown-content"],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) .settings-modal-container,
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="modal-container"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="dialog"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="menu"],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="menu"]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="tooltip"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="listbox"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-menu-content],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-select-content],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="listbox"]:not(.agy-model-popover),
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-menu-content]:not(.agy-model-popover),
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-select-content]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[data-side][role="tooltip"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="popover-content"],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="tooltip"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="dropdown-content"],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) .settings-modal-container,
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="modal-container"] {
   --background: #ffffff !important;
@@ -504,18 +504,18 @@ html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="modal-contain
   -webkit-backdrop-filter: none !important;
 }
 
-html:not([data-agy-theme])[data-agy-dark="1"] [role="menu"],
-html:not([data-agy-theme])[data-agy-dark="1"] [role="listbox"],
-html:not([data-agy-theme])[data-agy-dark="1"] [data-radix-menu-content],
-html:not([data-agy-theme])[data-agy-dark="1"] [data-radix-select-content],
-html:not([data-agy-theme])[data-agy-dark="1"] div[class*="dropdown-content"],
-html:not([data-agy-theme])[data-agy-dark="1"] div[class*="popover-content"],
-html[data-agy-theme="google"][data-agy-dark="1"] [role="menu"],
-html[data-agy-theme="google"][data-agy-dark="1"] [role="listbox"],
-html[data-agy-theme="google"][data-agy-dark="1"] [data-radix-menu-content],
-html[data-agy-theme="google"][data-agy-dark="1"] [data-radix-select-content],
-html[data-agy-theme="google"][data-agy-dark="1"] div[class*="dropdown-content"],
-html[data-agy-theme="google"][data-agy-dark="1"] div[class*="popover-content"] {
+html:not([data-agy-theme])[data-agy-dark="1"] [role="menu"]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] [role="listbox"]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] [data-radix-menu-content]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] [data-radix-select-content]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] div[class*="dropdown-content"]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] div[class*="popover-content"]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] [role="menu"]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] [role="listbox"]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] [data-radix-menu-content]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] [data-radix-select-content]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] div[class*="dropdown-content"]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] div[class*="popover-content"]:not(.agy-model-popover) {
   background-color: #161d26 !important;
   color: var(--gs-ink) !important;
   opacity: 1 !important;
@@ -1140,17 +1140,17 @@ html[data-agy-theme="claude"] div[class*="dropdown-content"] {
   pointer-events: auto !important;
 }
 
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [role="dialog"],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [role="menu"],
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [role="menu"]:not(.agy-model-popover),
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [role="tooltip"],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [role="listbox"],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [data-radix-menu-content],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [data-radix-select-content],
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [role="listbox"]:not(.agy-model-popover),
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [data-radix-menu-content]:not(.agy-model-popover),
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [data-radix-select-content]:not(.agy-model-popover),
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[data-side][role="tooltip"],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="popover-content"],
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="tooltip"],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="dropdown-content"],
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .settings-modal-container,
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="modal-container"] {
   --background: #ffffff !important;
@@ -1165,12 +1165,12 @@ html[data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="modal-contain
   -webkit-backdrop-filter: none !important;
 }
 
-html[data-agy-theme="claude"][data-agy-dark="1"] [role="menu"],
-html[data-agy-theme="claude"][data-agy-dark="1"] [role="listbox"],
-html[data-agy-theme="claude"][data-agy-dark="1"] [data-radix-menu-content],
-html[data-agy-theme="claude"][data-agy-dark="1"] [data-radix-select-content],
-html[data-agy-theme="claude"][data-agy-dark="1"] div[class*="dropdown-content"],
-html[data-agy-theme="claude"][data-agy-dark="1"] div[class*="popover-content"] {
+html[data-agy-theme="claude"][data-agy-dark="1"] [role="menu"]:not(.agy-model-popover),
+html[data-agy-theme="claude"][data-agy-dark="1"] [role="listbox"]:not(.agy-model-popover),
+html[data-agy-theme="claude"][data-agy-dark="1"] [data-radix-menu-content]:not(.agy-model-popover),
+html[data-agy-theme="claude"][data-agy-dark="1"] [data-radix-select-content]:not(.agy-model-popover),
+html[data-agy-theme="claude"][data-agy-dark="1"] div[class*="dropdown-content"]:not(.agy-model-popover),
+html[data-agy-theme="claude"][data-agy-dark="1"] div[class*="popover-content"]:not(.agy-model-popover) {
   background-color: var(--paper-elev) !important;
   color: var(--ink) !important;
   opacity: 1 !important;
@@ -1674,17 +1674,17 @@ html[data-agy-theme="codex"] div[class*="dropdown-content"] {
   pointer-events: auto !important;
 }
 
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="dialog"],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="menu"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="menu"]:not(.agy-model-popover),
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="tooltip"],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="listbox"],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-menu-content],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-select-content],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [role="listbox"]:not(.agy-model-popover),
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-menu-content]:not(.agy-model-popover),
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-select-content]:not(.agy-model-popover),
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[data-side][role="tooltip"],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="popover-content"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="tooltip"],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="dropdown-content"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .settings-modal-container,
 html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="modal-container"] {
   --background: #ffffff !important;
@@ -1699,12 +1699,12 @@ html[data-agy-theme="codex"]:not([data-agy-dark="1"]) div[class*="modal-containe
   -webkit-backdrop-filter: none !important;
 }
 
-html[data-agy-theme="codex"][data-agy-dark="1"] [role="menu"],
-html[data-agy-theme="codex"][data-agy-dark="1"] [role="listbox"],
-html[data-agy-theme="codex"][data-agy-dark="1"] [data-radix-menu-content],
-html[data-agy-theme="codex"][data-agy-dark="1"] [data-radix-select-content],
-html[data-agy-theme="codex"][data-agy-dark="1"] div[class*="dropdown-content"],
-html[data-agy-theme="codex"][data-agy-dark="1"] div[class*="popover-content"] {
+html[data-agy-theme="codex"][data-agy-dark="1"] [role="menu"]:not(.agy-model-popover),
+html[data-agy-theme="codex"][data-agy-dark="1"] [role="listbox"]:not(.agy-model-popover),
+html[data-agy-theme="codex"][data-agy-dark="1"] [data-radix-menu-content]:not(.agy-model-popover),
+html[data-agy-theme="codex"][data-agy-dark="1"] [data-radix-select-content]:not(.agy-model-popover),
+html[data-agy-theme="codex"][data-agy-dark="1"] div[class*="dropdown-content"]:not(.agy-model-popover),
+html[data-agy-theme="codex"][data-agy-dark="1"] div[class*="popover-content"]:not(.agy-model-popover) {
   background-color: var(--cx-side-elev) !important;
   color: var(--cx-ink) !important;
   opacity: 1 !important;
@@ -1811,4 +1811,591 @@ html[data-agy-theme="codex"] .agy-ia-send {
 }
 html[data-agy-theme="codex"] .agy-ia-send:hover:not(:disabled) {
   background: var(--cx-accent-hover);
+}
+
+/* ============================================================
+   9. 模型选择液态毛玻璃弹窗 + 模型彩色圆点/档位色字 +
+      酒红液态高光 Orchestrator 胶囊与真实思考强度滑块（跨主题联动，零 :has()）
+   ============================================================ */
+
+/* 9.1 弹窗磨砂玻璃容器（亮色 / 暗色自适应，仅作用于 .agy-model-popover） */
+html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover,
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover,
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover,
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover {
+  --popover: rgba(252, 253, 255, 0.84) !important;
+  --background: rgba(252, 253, 255, 0.84) !important;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.88) 0%, rgba(244, 246, 251, 0.80) 100%) !important;
+  background-color: rgba(252, 253, 255, 0.84) !important;
+  backdrop-filter: blur(22px) saturate(175%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(175%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.78) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 14px 38px rgba(15, 23, 42, 0.14),
+    0 3px 10px rgba(15, 23, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 0 0 0.5px rgba(15, 23, 42, 0.07) !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover {
+  background: linear-gradient(155deg, rgba(253, 250, 245, 0.89) 0%, rgba(245, 240, 232, 0.82) 100%) !important;
+  border-color: rgba(235, 224, 208, 0.85) !important;
+}
+
+html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover,
+html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover,
+html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover,
+html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover {
+  --popover: rgba(28, 29, 36, 0.86) !important;
+  --background: rgba(28, 29, 36, 0.86) !important;
+  background: linear-gradient(155deg, rgba(34, 35, 44, 0.88) 0%, rgba(22, 23, 30, 0.82) 100%) !important;
+  background-color: rgba(28, 29, 36, 0.86) !important;
+  backdrop-filter: blur(22px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(165%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.54),
+    0 4px 12px rgba(0, 0, 0, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  opacity: 1 !important;
+}
+
+/* 9.2 模型专属语义色令牌（亮/暗高对比） */
+html:not([data-agy-theme]) [data-agy-model-tone="neon"],
+html[data-agy-theme="google"] [data-agy-model-tone="neon"],
+html[data-agy-theme="claude"] [data-agy-model-tone="neon"],
+html[data-agy-theme="codex"] [data-agy-model-tone="neon"] {
+  --agy-m-color: #cf2647;
+  --agy-m-glow: rgba(207, 38, 71, 0.34);
+}
+html:not([data-agy-theme]) [data-agy-model-tone="carbon"],
+html[data-agy-theme="google"] [data-agy-model-tone="carbon"],
+html[data-agy-theme="claude"] [data-agy-model-tone="carbon"],
+html[data-agy-theme="codex"] [data-agy-model-tone="carbon"] {
+  --agy-m-color: #b46d1e;
+  --agy-m-glow: rgba(180, 109, 30, 0.32);
+}
+html:not([data-agy-theme]) [data-agy-model-tone="argon"],
+html[data-agy-theme="google"] [data-agy-model-tone="argon"],
+html[data-agy-theme="claude"] [data-agy-model-tone="argon"],
+html[data-agy-theme="codex"] [data-agy-model-tone="argon"] {
+  --agy-m-color: #4f46e5;
+  --agy-m-glow: rgba(79, 70, 229, 0.32);
+}
+html:not([data-agy-theme]) [data-agy-model-tone="hydrogen"],
+html[data-agy-theme="google"] [data-agy-model-tone="hydrogen"],
+html[data-agy-theme="claude"] [data-agy-model-tone="hydrogen"],
+html[data-agy-theme="codex"] [data-agy-model-tone="hydrogen"] {
+  --agy-m-color: #0e8aa3;
+  --agy-m-glow: rgba(14, 138, 163, 0.32);
+}
+html:not([data-agy-theme]) [data-agy-model-tone="flash"],
+html[data-agy-theme="google"] [data-agy-model-tone="flash"],
+html[data-agy-theme="claude"] [data-agy-model-tone="flash"],
+html[data-agy-theme="codex"] [data-agy-model-tone="flash"] {
+  --agy-m-color: #d49400;
+  --agy-m-glow: rgba(212, 148, 0, 0.32);
+}
+html:not([data-agy-theme]) [data-agy-model-tone="opus"],
+html[data-agy-theme="google"] [data-agy-model-tone="opus"],
+html[data-agy-theme="claude"] [data-agy-model-tone="opus"],
+html[data-agy-theme="codex"] [data-agy-model-tone="opus"] {
+  --agy-m-color: #cc4435;
+  --agy-m-glow: rgba(204, 68, 53, 0.32);
+}
+html:not([data-agy-theme]) [data-agy-model-tone="sonnet"],
+html[data-agy-theme="google"] [data-agy-model-tone="sonnet"],
+html[data-agy-theme="claude"] [data-agy-model-tone="sonnet"],
+html[data-agy-theme="codex"] [data-agy-model-tone="sonnet"] {
+  --agy-m-color: #c75b45;
+  --agy-m-glow: rgba(199, 91, 69, 0.30);
+}
+html:not([data-agy-theme]) [data-agy-model-tone="gpt"],
+html[data-agy-theme="google"] [data-agy-model-tone="gpt"],
+html[data-agy-theme="claude"] [data-agy-model-tone="gpt"],
+html[data-agy-theme="codex"] [data-agy-model-tone="gpt"] {
+  --agy-m-color: #6366f1;
+  --agy-m-glow: rgba(99, 102, 241, 0.30);
+}
+
+html[data-agy-dark="1"] [data-agy-model-tone="neon"] { --agy-m-color: #fb7185; --agy-m-glow: rgba(251, 113, 133, 0.40); }
+html[data-agy-dark="1"] [data-agy-model-tone="carbon"] { --agy-m-color: #f59e0b; --agy-m-glow: rgba(245, 158, 11, 0.38); }
+html[data-agy-dark="1"] [data-agy-model-tone="argon"] { --agy-m-color: #818cf8; --agy-m-glow: rgba(129, 140, 248, 0.38); }
+html[data-agy-dark="1"] [data-agy-model-tone="hydrogen"] { --agy-m-color: #22d3ee; --agy-m-glow: rgba(34, 211, 238, 0.38); }
+html[data-agy-dark="1"] [data-agy-model-tone="flash"] { --agy-m-color: #fbbf24; --agy-m-glow: rgba(251, 191, 36, 0.38); }
+html[data-agy-dark="1"] [data-agy-model-tone="opus"] { --agy-m-color: #f87171; --agy-m-glow: rgba(248, 113, 113, 0.38); }
+html[data-agy-dark="1"] [data-agy-model-tone="sonnet"] { --agy-m-color: #fb923c; --agy-m-glow: rgba(251, 146, 60, 0.38); }
+html[data-agy-dark="1"] [data-agy-model-tone="gpt"] { --agy-m-color: #a5b4fc; --agy-m-glow: rgba(165, 180, 252, 0.36); }
+
+/* 9.3 模型行：左侧专属彩色圆点 + 档位色字 + 柔和玻璃选中态 */
+html:not([data-agy-theme]) .agy-model-popover .agy-model-item,
+html[data-agy-theme="google"] .agy-model-popover .agy-model-item,
+html[data-agy-theme="claude"] .agy-model-popover .agy-model-item,
+html[data-agy-theme="codex"] .agy-model-popover .agy-model-item {
+  position: relative !important;
+  padding-left: 24px !important;
+  border-radius: 9px !important;
+  transition: background-color 0.11s ease !important;
+}
+
+html:not([data-agy-theme]) .agy-model-popover .agy-model-item::before,
+html[data-agy-theme="google"] .agy-model-popover .agy-model-item::before,
+html[data-agy-theme="claude"] .agy-model-popover .agy-model-item::before,
+html[data-agy-theme="codex"] .agy-model-popover .agy-model-item::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 10px !important;
+  top: 50% !important;
+  width: 6.5px !important;
+  height: 6.5px !important;
+  margin-top: -3.25px !important;
+  border-radius: 50% !important;
+  background: var(--agy-m-color, var(--gs-accent, #1a73e8)) !important;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.45), 0 0 6px var(--agy-m-glow, rgba(26, 115, 232, 0.30)) !important;
+  pointer-events: none !important;
+}
+
+html[data-agy-dark="1"] .agy-model-popover .agy-model-item::before {
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35), 0 0 7px var(--agy-m-glow, rgba(138, 180, 248, 0.36)) !important;
+}
+
+html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
+html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"],
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"],
+html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"] {
+  background: rgba(15, 23, 42, 0.055) !important;
+}
+
+html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
+html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
+html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
+html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
+html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
+html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
+html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
+html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
+html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
+html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
+html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
+html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
+html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"],
+html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"],
+html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"],
+html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"] {
+  background: rgba(255, 255, 255, 0.085) !important;
+}
+
+html:not([data-agy-theme]) .agy-model-popover .agy-model-item [data-agy-effort="1"],
+html[data-agy-theme="google"] .agy-model-popover .agy-model-item [data-agy-effort="1"],
+html[data-agy-theme="claude"] .agy-model-popover .agy-model-item [data-agy-effort="1"],
+html[data-agy-theme="codex"] .agy-model-popover .agy-model-item [data-agy-effort="1"] {
+  color: var(--agy-m-color, var(--gs-accent, #1a73e8)) !important;
+  font-weight: 600 !important;
+}
+
+/* 9.4 酒红液态高光 Orchestrator 胶囊按钮 */
+html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill,
+html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill,
+html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill,
+html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill {
+  position: relative !important;
+  border-radius: 999px !important;
+  min-height: 32px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  background: linear-gradient(180deg, #5e1724 0%, #872133 46%, #4a0e19 100%) !important;
+  border: 1px solid rgba(168, 48, 69, 0.62) !important;
+  color: #fff6f7 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 226, 232, 0.36),
+    inset 0 -2px 5px rgba(22, 2, 6, 0.56),
+    0 4px 12px rgba(98, 18, 34, 0.30),
+    0 1px 2px rgba(0, 0, 0, 0.22) !important;
+  overflow: hidden !important;
+  transition: filter 0.12s ease, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill::after,
+html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill::after,
+html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill::after,
+html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 8px !important;
+  right: 8px !important;
+  top: 1.5px !important;
+  height: 44% !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.02) 100%) !important;
+  pointer-events: none !important;
+}
+
+html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill *,
+html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill *,
+html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill *,
+html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill * {
+  color: #fff6f7 !important;
+}
+
+html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill:hover,
+html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill:hover,
+html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill:hover,
+html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill:hover {
+  filter: brightness(1.09) !important;
+  transform: translate3d(0, -0.5px, 0) !important;
+}
+
+html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
+html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
+html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
+html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
+html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill[data-state="unchecked"],
+html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill[data-state="unchecked"],
+html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill[data-state="unchecked"],
+html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill[data-state="unchecked"] {
+  opacity: 0.72 !important;
+  filter: saturate(0.70) !important;
+}
+
+/* 9.5 思考强度红色标签与酒红液态高光滑块条（原生 Slider + 真实绑定增强滑块） */
+.agy-model-popover .agy-thinking-level {
+  color: #cf2647 !important;
+  font-weight: 600 !important;
+}
+html[data-agy-dark="1"] .agy-model-popover .agy-thinking-level {
+  color: #fb7185 !important;
+}
+
+.agy-model-popover .agy-thinking-track {
+  height: 22px !important;
+  border-radius: 999px !important;
+  background: rgba(15, 23, 42, 0.13) !important;
+  box-shadow:
+    inset 0 1.5px 3px rgba(15, 23, 42, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.70) !important;
+  overflow: hidden !important;
+}
+
+html[data-agy-dark="1"] .agy-model-popover .agy-thinking-track {
+  background: rgba(255, 255, 255, 0.11) !important;
+  box-shadow:
+    inset 0 1.5px 4px rgba(0, 0, 0, 0.48),
+    0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.agy-model-popover .agy-thinking-range {
+  height: 100% !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #621826 0%, #8c2336 46%, #4a0e19 100%) !important;
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 224, 230, 0.36),
+    inset 0 -2px 4px rgba(22, 2, 6, 0.48) !important;
+}
+
+.agy-model-popover .agy-thinking-thumb {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e7eaf0 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.28),
+    inset 0 1px 1px rgba(255, 255, 255, 0.98) !important;
+  cursor: pointer !important;
+}
+
+.agy-model-popover input[type="range"].agy-thinking-range-input {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 100% !important;
+  height: 22px !important;
+  border-radius: 999px !important;
+  outline: none !important;
+  cursor: pointer !important;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 48%),
+    linear-gradient(
+      90deg,
+      #7c1e2f 0%,
+      #5b1421 var(--agy-slider-pct, 60%),
+      rgba(15, 23, 42, 0.13) var(--agy-slider-pct, 60%),
+      rgba(15, 23, 42, 0.13) 100%
+    ) !important;
+  box-shadow:
+    inset 0 1.5px 3px rgba(15, 23, 42, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.68) !important;
+}
+
+html[data-agy-dark="1"] .agy-model-popover input[type="range"].agy-thinking-range-input {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 48%),
+    linear-gradient(
+      90deg,
+      #8b2235 0%,
+      #5a1421 var(--agy-slider-pct, 60%),
+      rgba(255, 255, 255, 0.12) var(--agy-slider-pct, 60%),
+      rgba(255, 255, 255, 0.12) 100%
+    ) !important;
+  box-shadow:
+    inset 0 1.5px 4px rgba(0, 0, 0, 0.50),
+    0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+.agy-model-popover input[type="range"].agy-thinking-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e7eaf0 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.94) !important;
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.30),
+    inset 0 1px 1px rgba(255, 255, 255, 0.98) !important;
+}
+
+/* 9.5b 真实绑定型液态玻璃思考强度滑块（直接驱动原生档位按钮 / 模型变体） */
+#agy-real-effort-box {
+  margin-top: 8px;
+  padding: 9px 10px 8px;
+  border-top: 1px solid rgba(128, 138, 155, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  user-select: none;
+}
+.agy-re-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.agy-re-title {
+  font-weight: 600;
+  color: var(--gs-ink, #1b1f24);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.agy-re-live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #cf2647;
+  box-shadow: 0 0 6px rgba(207, 38, 71, 0.55);
+}
+html[data-agy-dark="1"] .agy-re-live-dot {
+  background: #fb7185;
+  box-shadow: 0 0 7px rgba(251, 113, 133, 0.65);
+}
+.agy-re-track {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.13);
+  box-shadow:
+    inset 0 1.5px 3.5px rgba(15, 23, 42, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+html[data-agy-dark="1"] .agy-re-track {
+  background: rgba(255, 255, 255, 0.11);
+  box-shadow:
+    inset 0 1.5px 4px rgba(0, 0, 0, 0.52),
+    0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.agy-re-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 66%;
+  min-width: 24px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #6b1a29 0%, #98253a 46%, #4b0e19 100%);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 224, 232, 0.42),
+    inset 0 -2px 5px rgba(22, 2, 6, 0.52),
+    0 2px 10px rgba(135, 33, 51, 0.34);
+  transition: width 0.14s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+  overflow: hidden;
+}
+.agy-re-fill::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 1.5px;
+  height: 44%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.02) 100%);
+}
+.agy-re-track.dragging .agy-re-fill,
+.agy-re-track.dragging .agy-re-thumb {
+  transition: none !important;
+}
+.agy-re-thumb {
+  position: absolute;
+  top: 1px;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #e4e8f0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 2px 7px rgba(15, 23, 42, 0.32),
+    0 0 0 2px rgba(255, 255, 255, 0.22),
+    inset 0 1px 1px rgba(255, 255, 255, 1);
+  pointer-events: none;
+  transition: left 0.14s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.12s ease;
+}
+.agy-re-track:hover .agy-re-thumb,
+.agy-re-track.dragging .agy-re-thumb {
+  transform: scale(1.06);
+}
+.agy-re-ticks {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 2px;
+}
+.agy-re-tick {
+  border: none;
+  background: transparent;
+  padding: 1px 4px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--gs-ink-3, #64748b);
+  cursor: pointer;
+  transition: color 0.11s ease, background-color 0.11s ease;
+}
+.agy-re-tick:hover {
+  color: var(--gs-ink, #1b1f24);
+  background: rgba(128, 138, 155, 0.12);
+}
+.agy-re-tick.active {
+  color: #cf2647;
+  font-weight: 700;
+}
+html[data-agy-dark="1"] .agy-re-tick.active {
+  color: #fb7185;
+}
+.agy-re-tick:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 9.6 底部输入栏当前模型触发器：模型名跟随专属语义色高亮 */
+.surface-composer .agy-composer-model-btn {
+  border-radius: 8px !important;
+  transition: background-color 0.11s ease !important;
+}
+.surface-composer .agy-composer-model-btn [data-agy-model-label="1"],
+.surface-composer .agy-composer-model-btn[data-agy-whole-tint="1"] {
+  color: var(--agy-m-color, var(--gs-accent, #1a73e8)) !important;
+  font-weight: 500 !important;
+}
+
+/* ============================================================
+   10. 120Hz 零重排炫酷壁纸 + 通透毛玻璃工作台模式（零 background-attachment:fixed）
+   ============================================================ */
+html[data-agy-wallpaper="on"],
+html[data-agy-wallpaper="on"] body {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+html[data-agy-wallpaper="on"] body {
+  position: relative !important;
+  z-index: 0 !important;
+}
+
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) main,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[class*="bg-background"]:not([role="dialog"]):not(.settings-modal-container) {
+  background-color: rgba(252, 253, 255, var(--agy-wp-main-alpha, 0.72)) !important;
+}
+html[data-agy-wallpaper="on"][data-agy-dark="1"] main,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div[class*="bg-background"]:not([role="dialog"]):not(.settings-modal-container) {
+  background-color: rgba(13, 17, 25, var(--agy-wp-main-alpha, 0.68)) !important;
+}
+html[data-agy-wallpaper="on"][data-agy-theme="claude"]:not([data-agy-dark="1"]) main,
+html[data-agy-wallpaper="on"][data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="bg-background"]:not([role="dialog"]):not(.settings-modal-container) {
+  background-color: rgba(250, 249, 245, var(--agy-wp-main-alpha, 0.74)) !important;
+}
+html[data-agy-wallpaper="on"][data-agy-theme="claude"][data-agy-dark="1"] main,
+html[data-agy-wallpaper="on"][data-agy-theme="claude"][data-agy-dark="1"] div[class*="bg-background"]:not([role="dialog"]):not(.settings-modal-container) {
+  background-color: rgba(28, 26, 23, var(--agy-wp-main-alpha, 0.70)) !important;
+}
+
+/* 侧栏保持通透但不建 transform/will-change 合成层，避免裁切弹出菜单 */
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"].bg-sidebar,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"][aria-label="Sidebar"],
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"] .bg-sidebar,
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"] [class*="group/section-header"] {
+  background: rgba(244, 247, 252, var(--agy-wp-side-alpha, 0.66)) !important;
+  background-color: rgba(244, 247, 252, var(--agy-wp-side-alpha, 0.66)) !important;
+}
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"].bg-sidebar,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"][aria-label="Sidebar"],
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"] .bg-sidebar,
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"] [class*="group/section-header"] {
+  background: rgba(11, 14, 22, var(--agy-wp-side-alpha, 0.64)) !important;
+  background-color: rgba(11, 14, 22, var(--agy-wp-side-alpha, 0.64)) !important;
+}
+
+/* 输入框在壁纸模式下升级为磨砂玻璃悬浮质感 */
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) .surface-composer {
+  backdrop-filter: blur(18px) saturate(165%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(165%) !important;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.78)) padding-box,
+    var(--gs-quad-soft, linear-gradient(115deg, rgba(66, 133, 244, 0.55), rgba(168, 85, 247, 0.55))) border-box !important;
+}
+html[data-agy-wallpaper="on"][data-agy-dark="1"] .surface-composer {
+  backdrop-filter: blur(20px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%) !important;
+  background:
+    linear-gradient(rgba(20, 25, 36, 0.82), rgba(16, 20, 30, 0.78)) padding-box,
+    var(--gs-quad-soft, linear-gradient(115deg, rgba(56, 189, 248, 0.52), rgba(168, 85, 247, 0.52))) border-box !important;
+}
+
+/* 冲刺态输入框：哈基米在顶部奔跑时，整个会话框发出同步能量脉冲边框光晕 */
+.surface-composer.agy-composer-sprinting {
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.32),
+    0 -4px 20px rgba(99, 102, 241, 0.24),
+    0 8px 28px rgba(15, 23, 42, 0.16) !important;
+  transition: box-shadow 0.22s ease !important;
+}
+html[data-agy-dark="1"] .surface-composer.agy-composer-sprinting {
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.44),
+    0 -5px 26px rgba(139, 92, 246, 0.34),
+    0 10px 32px rgba(0, 0, 0, 0.46) !important;
 }

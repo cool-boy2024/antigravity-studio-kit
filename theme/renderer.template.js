@@ -4,9 +4,14 @@
 
 const POSES = __HAKIMI_POSES__;
 const AGY_THEMES = __AGY_THEMES__;
+const AGY_WALLPAPERS = __AGY_WALLPAPERS__;
 const THEME_STORE = 'agy-theme-mode:v1';
+const WP_STORE = 'agy-wallpaper-mode:v1';
+const WP_CUSTOM_STORE = 'agy-wallpaper-custom:v1';
+const WP_ALPHA_STORE = 'agy-wallpaper-alpha:v1';
 const MUSE_COLLAPSED_STORE = 'agy-hakimi-collapsed:v1';
 const VALID_THEMES = ['codex', 'claude', 'google', 'off'];
+const VALID_WALLPAPERS = ['cyber-sakura', 'starlight-aurora', 'crimson-eclipse', 'cloud-atelier', 'custom', 'none'];
 
 const THEME_META = {
   codex:  { dot: '#111113', darkDot: '#f3f3f6', label: '极简工作台', desc: '极简工作台' },
@@ -14,6 +19,151 @@ const THEME_META = {
   google: { dot: '#1a73e8', darkDot: '#8ab4f8', label: '晨光画布',   desc: '晨光画布' },
   off:    { dot: '#8e9299', darkDot: '#a1a1aa', label: '原生界面',   desc: '原生界面' }
 };
+
+const WALLPAPER_META = {
+  'cyber-sakura':     { label: '霓虹樱夜', accent: '#f472b6' },
+  'starlight-aurora': { label: '星海极光', accent: '#22d3ee' },
+  'crimson-eclipse':  { label: '绯红星环', accent: '#e11d48' },
+  'cloud-atelier':    { label: '晴空云境', accent: '#60a5fa' },
+  'custom':           { label: '本地自选', accent: '#a855f7' },
+  'none':             { label: '纯净无图', accent: '#64748b' }
+};
+
+function readWallpaperMode() {
+  try {
+    const v = localStorage.getItem(WP_STORE);
+    if (v && VALID_WALLPAPERS.includes(v)) return v;
+  } catch (_) {}
+  return AGY_WALLPAPERS && AGY_WALLPAPERS['cyber-sakura'] ? 'cyber-sakura' : 'none';
+}
+
+function readWallpaperAlpha() {
+  try {
+    const raw = Number(localStorage.getItem(WP_ALPHA_STORE));
+    if (Number.isFinite(raw) && raw >= 35 && raw <= 94) return Math.round(raw);
+  } catch (_) {}
+  return 72;
+}
+
+function readCustomWallpaperData() {
+  try { return localStorage.getItem(WP_CUSTOM_STORE) || ''; } catch (_) { return ''; }
+}
+
+function ensureWallpaperLayers() {
+  let bg = document.getElementById('agy-wallpaper-layer');
+  let veil = document.getElementById('agy-wallpaper-veil');
+  if (!bg) {
+    bg = document.createElement('div');
+    bg.id = 'agy-wallpaper-layer';
+    bg.className = 'notranslate';
+    bg.setAttribute('aria-hidden', 'true');
+    document.body.insertBefore(bg, document.body.firstChild);
+  }
+  if (!veil) {
+    veil = document.createElement('div');
+    veil.id = 'agy-wallpaper-veil';
+    veil.className = 'notranslate';
+    veil.setAttribute('aria-hidden', 'true');
+    bg.insertAdjacentElement('afterend', veil);
+  }
+  return { bg, veil };
+}
+
+function applyWallpaperAlpha(pct) {
+  const clamped = Math.max(35, Math.min(94, Math.round(Number(pct) || 72)));
+  const mainAlpha = (clamped / 100).toFixed(2);
+  const sideAlpha = Math.max(0.32, (clamped - 6) / 100).toFixed(2);
+  document.documentElement.style.setProperty('--agy-wp-main-alpha', mainAlpha);
+  document.documentElement.style.setProperty('--agy-wp-side-alpha', sideAlpha);
+  try { localStorage.setItem(WP_ALPHA_STORE, String(clamped)); } catch (_) {}
+  const valEl = document.getElementById('agy-wp-alpha-val');
+  if (valEl) valEl.textContent = clamped + '%';
+  return clamped;
+}
+
+function applyWallpaperMode(mode) {
+  let normalized = VALID_WALLPAPERS.includes(mode) ? mode : 'none';
+  let imgUrl = '';
+  if (normalized === 'custom') {
+    imgUrl = readCustomWallpaperData();
+    if (!imgUrl) normalized = 'cyber-sakura';
+  }
+  if (normalized !== 'none' && normalized !== 'custom') {
+    imgUrl = (AGY_WALLPAPERS && AGY_WALLPAPERS[normalized]) || '';
+    if (!imgUrl) normalized = 'none';
+  }
+
+  const { bg, veil } = ensureWallpaperLayers();
+  if (normalized === 'none' || !imgUrl) {
+    document.documentElement.setAttribute('data-agy-wallpaper', 'off');
+    bg.style.opacity = '0';
+    bg.style.backgroundImage = 'none';
+    veil.style.opacity = '0';
+  } else {
+    document.documentElement.setAttribute('data-agy-wallpaper', 'on');
+    bg.style.backgroundImage = 'url("' + imgUrl + '")';
+    bg.style.opacity = '1';
+    veil.style.opacity = '1';
+  }
+  applyWallpaperAlpha(readWallpaperAlpha());
+  try { localStorage.setItem(WP_STORE, normalized); } catch (_) {}
+  window.__agyCurrentWallpaper = normalized;
+  const menu = document.getElementById('agy-theme-menu');
+  if (menu) {
+    menu.querySelectorAll('.agy-wp-card, .agy-wp-pill').forEach((el) => {
+      el.classList.toggle('active', el.dataset.wp === normalized);
+    });
+  }
+  return normalized;
+}
+
+function openCustomWallpaperPicker() {
+  let picker = document.getElementById('agy-wp-file-input');
+  if (!picker) {
+    picker = document.createElement('input');
+    picker.id = 'agy-wp-file-input';
+    picker.type = 'file';
+    picker.accept = 'image/png,image/jpeg,image/webp,image/gif';
+    picker.style.display = 'none';
+    picker.addEventListener('change', () => {
+      const file = picker.files && picker.files[0];
+      picker.value = '';
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const maxW = 1600;
+          const maxH = 900;
+          const scale = Math.min(1, maxW / img.width, maxH / img.height);
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          let dataUrl = '';
+          try { dataUrl = canvas.toDataURL('image/webp', 0.84); } catch (_) {}
+          if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+            dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          }
+          try {
+            localStorage.setItem(WP_CUSTOM_STORE, dataUrl);
+            applyWallpaperMode('custom');
+            say('已换上你的专属炫酷壁纸！✨', 2200);
+          } catch (_) {
+            say('图片过大，请换一张分辨率稍小的壁纸哦～', 2600);
+          }
+        };
+        img.src = String(reader.result || '');
+      };
+      reader.readAsDataURL(file);
+    });
+    document.body.appendChild(picker);
+  }
+  picker.click();
+}
 
 function readThemeMode() {
   try {
@@ -252,7 +402,10 @@ const OWN_IDS = new Set([
   'hakimi-muse-stage', 'hakimi-say', 'agy-inline-theme-btn', 'agy-theme-menu',
   'agy-codex-ctx-btn', 'agy-codex-ctx-popover', 'agy-pulse-drawer',
   'agy-kit-update-wrap', 'agy-kit-update-pop',
-  'agy-inline-ask-trigger', 'agy-inline-ask-popover', 'agy-inline-ask-pins'
+  'agy-inline-ask-trigger', 'agy-inline-ask-popover', 'agy-inline-ask-pins',
+  'agy-wallpaper-layer', 'agy-wallpaper-veil', 'agy-wp-file-input',
+  'agy-composer-sprint-bar', 'hakimi-wuhun-overlay', 'hakimi-shatter-canvas',
+  'hakimi-comfort-card', 'hakimi-clones-layer', 'agy-real-effort-box'
 ]);
 
 function isExcludedElement(el) {
@@ -579,6 +732,390 @@ html.agy-page-hidden .hakimi-glyph { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
   #hakimi-muse-fx.working .hakimi-glyph { animation: none !important; opacity: 0.75; }
 }
+
+/* Neon Wind Speed-Lines behind Sprinting Hakimi */
+#hakimi-speed-lines {
+  position: absolute;
+  top: 28%;
+  left: -34px;
+  width: 34px;
+  height: 36px;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.14s ease;
+  will-change: opacity, transform;
+}
+#hakimi-muse-sprite.sprinting #hakimi-speed-lines {
+  opacity: 1;
+}
+#hakimi-muse-sprite.sprinting.facing-left #hakimi-speed-lines {
+  left: auto;
+  right: -34px;
+  transform: translate3d(0, 0, 0) scaleX(-1);
+}
+.hakimi-wind {
+  position: absolute;
+  right: 0;
+  height: 2.5px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, 0.92) 55%, rgba(250, 204, 21, 0.95) 100%);
+  will-change: transform, opacity;
+}
+.hakimi-wind.w1 { top: 4px; width: 28px; animation: hakimi-wind-dash 0.36s linear infinite; }
+.hakimi-wind.w2 { top: 15px; width: 34px; background: linear-gradient(90deg, transparent 0%, rgba(168, 85, 247, 0.90) 55%, rgba(56, 189, 248, 0.96) 100%); animation: hakimi-wind-dash 0.30s linear 0.10s infinite; }
+.hakimi-wind.w3 { top: 26px; width: 22px; animation: hakimi-wind-dash 0.40s linear 0.18s infinite; }
+@keyframes hakimi-wind-dash {
+  0%   { opacity: 0.95; transform: translate3d(6px, 0, 0) scaleX(0.6); }
+  55%  { opacity: 1; transform: translate3d(-6px, 0, 0) scaleX(1.15); }
+  100% { opacity: 0; transform: translate3d(-18px, 0, 0) scaleX(0.75); }
+}
+
+/* Fixed 120Hz GPU Wallpaper Backdrop Layer (zero background-attachment:fixed!) */
+#agy-wallpaper-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  contain: strict;
+  will-change: opacity;
+  transform: translate3d(0, 0, 0);
+  transition: opacity 0.28s ease;
+}
+#agy-wallpaper-veil {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  contain: strict;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.14) 0%, rgba(15, 23, 42, 0.08) 100%);
+  transition: opacity 0.28s ease;
+}
+html[data-agy-dark="1"] #agy-wallpaper-veil {
+  background: radial-gradient(ellipse at 50% 45%, rgba(9, 12, 20, 0.16) 0%, rgba(5, 7, 13, 0.42) 100%);
+}
+
+/* Composer Top-Border Racing Energy Track (Synced 1:1 with Hakimi Sprint at 120Hz) */
+#agy-composer-sprint-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 10px;
+  z-index: 44;
+  pointer-events: none;
+  overflow: visible;
+  opacity: 0;
+  contain: layout style;
+  will-change: transform, opacity;
+  transform: translate3d(-9999px, -9999px, 0);
+  transition: opacity 0.18s ease;
+}
+#agy-composer-sprint-bar.active {
+  opacity: 1;
+}
+#agy-sprint-rail {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 3px;
+  height: 2.5px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.10), rgba(168, 85, 247, 0.52), rgba(250, 204, 21, 0.48), rgba(56, 189, 248, 0.10));
+}
+#agy-sprint-comet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 148px;
+  height: 9px;
+  margin-left: -136px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent 0%, rgba(168, 85, 247, 0.28) 38%, rgba(56, 189, 248, 0.92) 82%, #fef08a 100%);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.85), 0 0 26px rgba(168, 85, 247, 0.55);
+  transform-origin: 136px 50%;
+  will-change: transform;
+}
+#agy-sprint-ripple {
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  border: 2px solid rgba(56, 189, 248, 0.90);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+#agy-sprint-ripple.pop {
+  animation: agy-sprint-shock 0.46s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes agy-sprint-shock {
+  0%   { opacity: 0.95; transform: translate3d(var(--rx, 0px), 0, 0) scale(0.35); }
+  100% { opacity: 0; transform: translate3d(var(--rx, 0px), 0, 0) scale(2.4); }
+}
+
+/* ==================== 法天象地 · 武魂真身 · 碎屏破压互动 ==================== */
+#hakimi-wuhun-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999990;
+  pointer-events: none;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+#hakimi-wuhun-overlay.open {
+  display: flex;
+}
+.wuhun-backdrop {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 54%, rgba(225, 29, 72, 0.22) 0%, rgba(88, 28, 135, 0.26) 44%, rgba(8, 10, 18, 0.42) 100%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+#hakimi-wuhun-overlay.phase-avatar .wuhun-backdrop,
+#hakimi-wuhun-overlay.phase-punch .wuhun-backdrop {
+  opacity: 1;
+}
+.wuhun-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(251, 191, 36, 0.72);
+  box-shadow: 0 0 28px rgba(244, 63, 94, 0.52), inset 0 0 22px rgba(251, 191, 36, 0.36);
+  opacity: 0;
+  transform: translate3d(0, 0, 0) scale(0.35);
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  will-change: transform, opacity;
+}
+.wuhun-ring.r1 { width: 320px; height: 320px; border-style: dashed; }
+.wuhun-ring.r2 { width: 450px; height: 450px; border-color: rgba(244, 63, 94, 0.76); border-width: 2.5px; }
+.wuhun-ring.r3 { width: 580px; height: 580px; border-color: rgba(168, 85, 247, 0.56); border-style: dotted; }
+#hakimi-wuhun-overlay.phase-avatar .wuhun-ring {
+  opacity: 0.92;
+  transform: translate3d(0, 0, 0) scale(1);
+  animation: wuhun-ring-spin 7.5s linear infinite;
+}
+#hakimi-wuhun-overlay.phase-avatar .wuhun-ring.r2 {
+  animation-direction: reverse;
+  animation-duration: 5.2s;
+}
+#hakimi-wuhun-overlay.phase-punch .wuhun-ring {
+  opacity: 0;
+  transform: translate3d(0, 0, 0) scale(2.1);
+}
+@keyframes wuhun-ring-spin {
+  from { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  to   { transform: translate3d(0, 0, 0) rotate(360deg) scale(1); }
+}
+.wuhun-avatar {
+  position: relative;
+  width: 260px;
+  height: 220px;
+  opacity: 0;
+  transform: translate3d(0, 120px, 0) scale(0.55);
+  transition: transform 0.62s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.32s ease;
+  will-change: transform, opacity;
+}
+.wuhun-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.90;
+}
+.wuhun-avatar-aura {
+  position: absolute;
+  inset: -44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(244, 63, 94, 0.38) 45%, transparent 72%);
+  z-index: -1;
+}
+#hakimi-wuhun-overlay.phase-avatar .wuhun-avatar {
+  opacity: 0.96;
+  transform: translate3d(0, -10px, 0) scale(1.65);
+}
+#hakimi-wuhun-overlay.phase-punch .wuhun-avatar {
+  opacity: 0.98;
+  transition: transform 0.20s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+  transform: translate3d(0, 0, 0) scale(3.15);
+}
+.wuhun-banner {
+  position: absolute;
+  top: 16%;
+  padding: 10px 26px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(136, 19, 55, 0.94), rgba(88, 28, 135, 0.94));
+  border: 1.5px solid rgba(251, 191, 36, 0.85);
+  box-shadow: 0 12px 36px rgba(225, 29, 72, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  color: #fef3c7;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transform: translate3d(0, -18px, 0) scale(0.86);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+#hakimi-wuhun-overlay.phase-avatar .wuhun-banner,
+#hakimi-wuhun-overlay.phase-punch .wuhun-banner {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+#hakimi-shatter-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999993;
+  pointer-events: none;
+  display: none;
+}
+#hakimi-shatter-canvas.active {
+  display: block;
+}
+@keyframes agy-screen-shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  15% { transform: translate3d(-7px, 5px, 0); }
+  32% { transform: translate3d(7px, -6px, 0); }
+  48% { transform: translate3d(-5px, -4px, 0); }
+  66% { transform: translate3d(5px, 4px, 0); }
+  82% { transform: translate3d(-2px, 2px, 0); }
+}
+body.agy-wuhun-shake {
+  animation: agy-screen-shake 0.36s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+#hakimi-comfort-card {
+  position: fixed;
+  left: 50%;
+  top: 56%;
+  z-index: 999997;
+  width: min(408px, calc(100vw - 28px));
+  padding: 15px 16px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 20px 56px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(225, 29, 72, 0.18);
+  color: #1b1f24;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  transform: translate3d(-50%, -50%, 0);
+  animation: agy-comfort-in 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+html[data-agy-dark="1"] #hakimi-comfort-card {
+  background: rgba(24, 24, 34, 0.90);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f3f4f6;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(251, 113, 133, 0.28);
+}
+#hakimi-comfort-card.open {
+  display: flex;
+}
+@keyframes agy-comfort-in {
+  from { opacity: 0; transform: translate3d(-50%, -44%, 0) scale(0.92); }
+  to   { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
+}
+.hcc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hcc-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #cf2647;
+}
+html[data-agy-dark="1"] .hcc-title { color: #fb7185; }
+.hcc-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.86;
+}
+.hcc-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.hcc-btn {
+  border: 1px solid rgba(128, 138, 155, 0.24);
+  background: rgba(128, 138, 155, 0.08);
+  color: inherit;
+  border-radius: 11px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: transform 0.11s ease, filter 0.11s ease, background-color 0.11s ease;
+}
+.hcc-btn:hover {
+  transform: translate3d(0, -1px, 0);
+  background: rgba(128, 138, 155, 0.15);
+}
+.hcc-btn.primary {
+  background: linear-gradient(135deg, #db2777 0%, #9333ea 55%, #2563eb 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(147, 51, 234, 0.34);
+}
+.hcc-btn.subagent {
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.32);
+}
+.hcc-btn small { font-weight: 500; opacity: 0.86; font-size: 10.5px; }
+
+/* Orbiting Parallel Sub-Agent Clone Badges beside Composer */
+#hakimi-clones-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 43;
+  pointer-events: none;
+  display: none;
+  gap: 8px;
+  align-items: center;
+  will-change: transform;
+}
+#hakimi-clones-layer.active {
+  display: flex;
+}
+.hakimi-clone-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.84);
+  border: 1px solid rgba(56, 189, 248, 0.52);
+  color: #e0f2fe;
+  font-size: 10.5px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.28);
+  animation: clone-bob 1.2s ease-in-out infinite;
+}
+.hakimi-clone-pill:nth-child(2) { border-color: rgba(168, 85, 247, 0.58); color: #f3e8ff; animation-delay: 0.25s; }
+.hakimi-clone-pill:nth-child(3) { border-color: rgba(250, 204, 21, 0.58); color: #fef9c3; animation-delay: 0.50s; }
+@keyframes clone-bob {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -4px, 0); }
+}
 .hakimi-spark {
   position: absolute;
   left: 50%;
@@ -777,16 +1314,17 @@ html[data-agy-dark="1"] #hakimi-muse-pill {
   to { opacity: 1; }
 }
 
-/* --- Codex-Style Context Ring Left of Permissions Button --- */
+/* --- Bottom Bar Tri-Metric Telemetry Strip (Context / 5h Quota / Weekly Quota) --- */
 #agy-codex-ctx-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 9px;
   height: 26px;
   padding: 0 8px;
-  margin-right: 3px;
-  border-radius: 7px;
+  margin-left: 4px;
+  margin-right: 4px;
+  border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--gs-ink-2, #5f6368);
@@ -805,37 +1343,56 @@ html[data-agy-dark="1"] #hakimi-muse-pill {
   color: var(--gs-ink, #1f1f1f);
   border-color: var(--gs-line, rgba(128, 138, 155, 0.22));
 }
-#agy-codex-ctx-btn svg.codex-ring-svg {
-  width: 14px;
-  height: 14px;
-  transform: rotate(-90deg);
+#agy-codex-ctx-btn .agy-tm-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  white-space: nowrap;
+}
+#agy-codex-ctx-btn .agy-tm-metric.is-hidden {
+  display: none;
+}
+#agy-codex-ctx-btn .agy-tm-ico {
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
+  opacity: 0.78;
 }
-#agy-codex-ctx-btn .codex-ring-bg {
-  stroke: currentColor;
-  stroke-opacity: 0.18;
+#agy-codex-ctx-btn .agy-tm-val {
+  letter-spacing: -0.01em;
 }
-#agy-codex-ctx-btn .codex-ring-fg {
-  stroke: var(--gs-accent, #1a73e8);
-  transition: stroke-dashoffset 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), stroke 0.16s ease;
+#agy-codex-ctx-btn .agy-tm-metric[data-level="warn"] {
+  color: #b45309;
 }
-#agy-codex-ctx-btn[data-level="warn"] .codex-ring-fg { stroke: #d97706; }
-#agy-codex-ctx-btn[data-level="warn"] .codex-ctx-pct { color: #b45309; }
-html[data-agy-dark="1"] #agy-codex-ctx-btn[data-level="warn"] .codex-ctx-pct { color: #fbbf24; }
-#agy-codex-ctx-btn[data-level="danger"] .codex-ring-fg { stroke: #dc2626; }
-#agy-codex-ctx-btn[data-level="danger"] .codex-ctx-pct { color: #dc2626; font-weight: 600; }
-html[data-agy-dark="1"] #agy-codex-ctx-btn[data-level="danger"] .codex-ctx-pct { color: #f87171; }
+#agy-codex-ctx-btn .agy-tm-metric[data-level="warn"] .agy-tm-ico {
+  opacity: 0.95;
+}
+html[data-agy-dark="1"] #agy-codex-ctx-btn .agy-tm-metric[data-level="warn"] {
+  color: #fbbf24;
+}
+#agy-codex-ctx-btn .agy-tm-metric[data-level="danger"] {
+  color: #cf2647;
+  font-weight: 600;
+}
+#agy-codex-ctx-btn .agy-tm-metric[data-level="danger"] .agy-tm-ico {
+  opacity: 1;
+}
+html[data-agy-dark="1"] #agy-codex-ctx-btn .agy-tm-metric[data-level="danger"] {
+  color: #fb7185;
+}
 
-/* Codex Hover Popover Card */
+/* Codex Hover Popover Card (Frosted Glass Polish) */
 #agy-codex-ctx-popover {
   position: fixed;
   z-index: 999992;
   width: 288px;
   padding: 12px 13px 10px;
-  border-radius: 12px;
-  background: var(--gs-side-elev, #ffffff);
-  border: 1px solid var(--gs-line, #e3e8ef);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.05);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(18px) saturate(165%);
+  -webkit-backdrop-filter: blur(18px) saturate(165%);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.90);
   color: var(--gs-ink, #1f1f1f);
   font-size: 12px;
   line-height: 1.45;
@@ -846,7 +1403,9 @@ html[data-agy-dark="1"] #agy-codex-ctx-btn[data-level="danger"] .codex-ctx-pct {
   animation: codex-pop-in 0.13s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 html[data-agy-dark="1"] #agy-codex-ctx-popover {
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.48);
+  background: rgba(26, 28, 36, 0.88);
+  border-color: rgba(255, 255, 255, 0.13);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 #agy-codex-ctx-popover.open {
   display: block;
@@ -1090,19 +1649,136 @@ html[data-agy-dark="1"] #agy-pulse-drawer {
 #agy-theme-menu {
   position: fixed;
   z-index: 999998;
-  min-width: 158px;
-  padding: 4px;
-  border-radius: 10px;
-  background: var(--gs-side-elev, #ffffff);
+  width: 248px;
+  padding: 7px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
   border: 1px solid var(--gs-line, #e3e8ef);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
   display: none;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   contain: layout style;
+}
+html[data-agy-dark="1"] #agy-theme-menu {
+  background: rgba(24, 26, 35, 0.92);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.56);
 }
 #agy-theme-menu.open {
   display: flex;
+}
+.agy-tm-sec {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--gs-ink-3, #64748b);
+  padding: 4px 7px 2px;
+  letter-spacing: 0.03em;
+}
+.agy-tm-sep {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--gs-line-soft, rgba(128, 138, 155, 0.18));
+}
+.agy-wp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  padding: 2px 3px 4px;
+}
+.agy-wp-card {
+  position: relative;
+  height: 52px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(128, 138, 155, 0.24);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+  transition: transform 0.11s ease, border-color 0.11s ease, box-shadow 0.11s ease;
+}
+.agy-wp-card:hover { transform: translate3d(0, -1px, 0); border-color: var(--gs-accent, #1a73e8); }
+.agy-wp-card.active {
+  border-color: #cf2647;
+  box-shadow: 0 0 0 2px rgba(207, 38, 71, 0.28);
+}
+html[data-agy-dark="1"] .agy-wp-card.active {
+  border-color: #fb7185;
+  box-shadow: 0 0 0 2px rgba(251, 113, 133, 0.32);
+}
+.agy-wp-card-lbl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.62) 100%);
+  text-align: left;
+}
+.agy-wp-row {
+  display: flex;
+  gap: 5px;
+  padding: 2px 3px;
+}
+.agy-wp-pill {
+  flex: 1;
+  border: 1px solid var(--gs-line, rgba(128, 138, 155, 0.26));
+  background: transparent;
+  color: var(--gs-ink-2, #525d6d);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.11s ease, background-color 0.11s ease, color 0.11s ease;
+}
+.agy-wp-pill:hover, .agy-wp-pill.active {
+  border-color: var(--gs-accent, #1a73e8);
+  color: var(--gs-accent, #1a73e8);
+  background: var(--gs-accent-soft, rgba(26, 115, 232, 0.10));
+}
+.agy-wp-alpha-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 2px;
+  font-size: 11px;
+  color: var(--gs-ink-2, #525d6d);
+}
+.agy-wp-alpha-row input[type="range"] {
+  flex: 1;
+  height: 4px;
+  accent-color: var(--gs-accent, #1a73e8);
+  cursor: pointer;
+}
+.agy-wuhun-trigger {
+  margin-top: 2px;
+  border: 1px solid rgba(207, 38, 71, 0.34);
+  background: linear-gradient(135deg, rgba(207, 38, 71, 0.12), rgba(147, 51, 234, 0.12));
+  color: #cf2647;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+html[data-agy-dark="1"] .agy-wuhun-trigger {
+  color: #fda4af;
+  border-color: rgba(251, 113, 133, 0.36);
+}
+.agy-wuhun-trigger:hover {
+  filter: brightness(1.08);
 }
 .agy-tm-item {
   border: none;
@@ -1874,6 +2550,29 @@ let auraEl = null;
 let bodyEl = null;
 let shadowEl = null;
 let fxEl = null;
+let sprintBarEl = null;
+let sprintCometEl = null;
+let sprintRippleEl = null;
+let lastSprintComposerEl = null;
+let lastSprintFacing = 1;
+let busyStepsBaseline = 0;
+let lastWuhunAutoAt = 0;
+let wuhunState = {
+  active: false,
+  shattered: false,
+  cracks: [],
+  shards: [],
+  impactX: 0,
+  impactY: 0,
+  healProgress: 0,
+  healing: false,
+  rafId: 0,
+  mouseX: 0,
+  mouseY: 0,
+  timers: [],
+  clonesUntil: 0,
+  clonesTimer: 0
+};
 let poseLayers = {};
 let activePoseKey = 'idle';
 let pillEl = null;
@@ -1983,9 +2682,14 @@ function estimateTokensFromChars(sample, deltaChars) {
 
 function sampleDomStreamingSpeed() {
   if (document.hidden || !isBusy()) return;
+  let last = null;
   const blocks = collectConversationResponseBlocks();
-  if (!blocks.length) return;
-  const last = blocks[blocks.length - 1];
+  if (blocks.length) {
+    last = blocks[blocks.length - 1];
+  } else {
+    const main = document.querySelector('main');
+    if (main) last = main;
+  }
   if (!last || !last.isConnected) return;
   const text = last.textContent || '';
   const len = text.length;
@@ -2097,6 +2801,10 @@ function refreshMusePillRate() {
     const rateTxt = '⚡ ' + rate + ' t/s';
     if (pillRateEl.textContent !== rateTxt) pillRateEl.textContent = rateTxt;
     pillRateEl.classList.add('has-rate');
+  } else if (working) {
+    const warmTxt = '⚡ 冲刺中';
+    if (pillRateEl.textContent !== warmTxt) pillRateEl.textContent = warmTxt;
+    pillRateEl.classList.add('has-rate');
   } else {
     pillRateEl.textContent = '';
     pillRateEl.classList.remove('has-rate');
@@ -2110,11 +2818,55 @@ function refreshMusePillRate() {
   }
 }
 
+function hasVisibleStopButtonInComposer(composer) {
+  if (!composer) return false;
+  if (composer.querySelector('button[data-testid="input-stop-button"], button[data-testid*="stop-button"], button[data-testid*="cancel-button"]')) {
+    return true;
+  }
+  const btns = composer.querySelectorAll('button, [role="button"]');
+  for (let i = 0; i < btns.length; i++) {
+    const b = btns[i];
+    if (isOwnControlElement(b)) continue;
+    const meta = (
+      (b.getAttribute('aria-label') || '') + ' ' +
+      (b.getAttribute('title') || '') + ' ' +
+      (b.getAttribute('data-tooltip-id') || '') + ' ' +
+      (b.getAttribute('data-testid') || '')
+    );
+    if (/\b(stop|cancel|abort|interrupt)\b|停止|取消|中断/i.test(meta)) {
+      const r = b.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) return true;
+    }
+    // Detect Antigravity's crimson/red square stop icon inside the rightmost action button
+    const rect = b.querySelector('svg rect');
+    if (rect && !b.querySelector('svg line, svg polyline')) {
+      const cls = String(b.className || '') + ' ' + String(rect.getAttribute('class') || '') + ' ' + String(rect.getAttribute('fill') || '');
+      const hasRedHint = /red|rose|crimson|destructive|danger|#(?:ef4444|dc2626|e11d48|f43f5e|ea4335)/i.test(cls);
+      const rw = parseFloat(rect.getAttribute('width') || '0');
+      const rh = parseFloat(rect.getAttribute('height') || '0');
+      const isSquare = rw > 0 && rh > 0 && Math.abs(rw - rh) <= 2.5;
+      if (hasRedHint || (isSquare && i >= btns.length - 2)) {
+        const r = b.getBoundingClientRect();
+        if (r.width >= 20 && r.height >= 20) {
+          if (hasRedHint) return true;
+          try {
+            const fill = window.getComputedStyle(rect).fill || window.getComputedStyle(b).color || '';
+            const m = fill.match(/rgb\(\s*(\d+),\s*(\d+),\s*(\d+)/i);
+            if (m && Number(m[1]) >= 170 && Number(m[2]) <= 115 && Number(m[3]) <= 125) return true;
+          } catch (_) {}
+        }
+      }
+    }
+  }
+  return false;
+}
+
 function isBusy() {
-  if (document.querySelector('button[data-testid="input-stop-button"]')) return true;
-  if (document.querySelector('[data-testid="running-items-card"]')) return true;
+  if (document.querySelector('button[data-testid="input-stop-button"], [data-testid="running-items-card"]')) return true;
   const composer = document.querySelector('.surface-composer');
-  if (composer && composer.querySelector('button[aria-label*="停止"], button[aria-label*="Stop"]')) return true;
+  if (hasVisibleStopButtonInComposer(composer)) return true;
+  if (window.__agyTelemetryRunning && (Date.now() - (window.__agyTelemetryRunningAt || 0)) < 12000) return true;
+  if (liveSpeed.domUpdatedAt > 0 && (Date.now() - liveSpeed.domUpdatedAt) < 3200) return true;
   return false;
 }
 
@@ -2172,7 +2924,7 @@ function startAnimTimerIfVisible() {
   animTimer = 0;
   if (document.hidden) return;
   if (currentMode === 'laptop' || currentMode === 'write') {
-    const interval = currentMode === 'laptop' ? 320 : 440;
+    const interval = currentMode === 'laptop' ? 135 : 165;
     animTimer = window.setInterval(() => {
       if (document.hidden) return;
       animToggle = !animToggle;
@@ -2234,10 +2986,10 @@ function setMuseMode(nextMode, statusLabel, opts) {
     donePillTimer = 0;
     startDomSpeedSampler();
     if (!museMotion.nextWorkScootAt) {
-      museMotion.nextWorkScootAt = performance.now() + 2600 + Math.random() * 2400;
+      museMotion.nextWorkScootAt = performance.now() + 260;
     }
     if (pillEl && pillTextEl) {
-      const label = statusLabel || (nextMode === 'laptop' ? '正在敲电脑处理…' : '正在伏案构思…');
+      const label = statusLabel || (nextMode === 'laptop' ? '疯狂敲代码中…' : '全速思考撰稿…');
       if (pillTextEl.textContent !== label) pillTextEl.textContent = label;
     }
     refreshMusePillRate();
@@ -2369,6 +3121,72 @@ function stopMuseMotionLoop() {
   museMotion.lastTs = 0;
 }
 
+function ensureComposerSprintBar() {
+  if (!sprintBarEl) {
+    sprintBarEl = document.getElementById('agy-composer-sprint-bar');
+  }
+  if (!sprintBarEl) {
+    sprintBarEl = document.createElement('div');
+    sprintBarEl.id = 'agy-composer-sprint-bar';
+    sprintBarEl.className = 'notranslate';
+    sprintBarEl.setAttribute('aria-hidden', 'true');
+    sprintBarEl.innerHTML =
+      '<div id="agy-sprint-rail"></div>' +
+      '<div id="agy-sprint-comet"></div>' +
+      '<div id="agy-sprint-ripple"></div>';
+    document.body.appendChild(sprintBarEl);
+  }
+  sprintCometEl = document.getElementById('agy-sprint-comet');
+  sprintRippleEl = document.getElementById('agy-sprint-ripple');
+  return sprintBarEl;
+}
+
+function fireSprintEdgeRipple(relX) {
+  ensureComposerSprintBar();
+  if (!sprintRippleEl) return;
+  sprintRippleEl.style.setProperty('--rx', Math.round(relX) + 'px');
+  sprintRippleEl.classList.remove('pop');
+  window.requestAnimationFrame(() => {
+    if (sprintRippleEl) sprintRippleEl.classList.add('pop');
+  });
+}
+
+function syncComposerSprintVisuals(isSprinting, isWorking, facing) {
+  if (spriteEl) {
+    spriteEl.classList.toggle('sprinting', Boolean(isSprinting));
+    spriteEl.classList.toggle('facing-left', facing < 0);
+  }
+  const bar = ensureComposerSprintBar();
+  const active = Boolean((isSprinting || isWorking) && museGeom.visible && !stageEl?.classList.contains('collapsed'));
+  bar.classList.toggle('active', active);
+  if (active) {
+    const w = Math.max(120, Math.round(museGeom.composerWidth));
+    if (bar.dataset.w !== String(w)) {
+      bar.style.width = w + 'px';
+      bar.dataset.w = String(w);
+    }
+    const bx = Math.round(museGeom.composerLeft);
+    const by = Math.round(museGeom.composerTop - 4);
+    bar.style.transform = 'translate3d(' + bx + 'px,' + by + 'px,0)';
+    if (sprintCometEl) {
+      const relX = Math.max(14, Math.min(w - 14, (museMotion.x + museGeom.stageW * 0.5) - museGeom.composerLeft));
+      sprintCometEl.style.transform = 'translate3d(' + relX.toFixed(1) + 'px,0,0) scaleX(' + (facing >= 0 ? 1 : -1) + ')';
+      if (isSprinting && facing !== lastSprintFacing) {
+        lastSprintFacing = facing;
+        fireSprintEdgeRipple(relX);
+      }
+    }
+  }
+  if (lastSprintComposerEl && lastSprintComposerEl.isConnected) {
+    lastSprintComposerEl.classList.toggle('agy-composer-sprinting', active);
+  }
+  const clones = document.getElementById('hakimi-clones-layer');
+  if (clones && clones.classList.contains('active') && museGeom.visible) {
+    clones.style.transform = 'translate3d(' + Math.round(museGeom.composerLeft + 14) + 'px,' + Math.round(museGeom.composerTop - 30) + 'px,0)';
+  }
+}
+
+  // ---- Upgraded stepMuseMotion working + idle sprint choreography ----
 function stepMuseMotion(ts) {
   museMotion.rafId = 0;
   if (!shouldRunMuseMotion()) return;
@@ -2383,6 +3201,8 @@ function stepMuseMotion(ts) {
   let sy = 1;
   let shadowScale = 1;
   let displayFacing = museMotion.facing;
+  let isSprintingNow = false;
+  const isWorkingMode = currentMode === 'laptop' || currentMode === 'write';
 
   // 1. Victory dance (720° double-spin leap + celebratory dance) or parkour spin/dance
   if (museMotion.action === 'victory') {
@@ -2391,7 +3211,6 @@ function stepMuseMotion(ts) {
       museMotion.action = 'stand';
       if (spriteEl) spriteEl.classList.remove('mode-spin');
     } else if (elapsed < 980) {
-      // Phase 1: high celebratory leap + 720° double spin!
       const p = elapsed / 980;
       const eased = 1 - Math.pow(1 - p, 3);
       bodyY = -Math.sin(p * Math.PI) * 24;
@@ -2401,7 +3220,6 @@ function stepMuseMotion(ts) {
       sy = pop;
       shadowScale = Math.max(0.50, 1 - Math.sin(p * Math.PI) * 0.40);
     } else {
-      // Phase 2: rhythmic victory dance with double hops & joyful sway
       if (spriteEl) spriteEl.classList.remove('mode-spin');
       const d = (elapsed - 980) / 1000;
       const hop = Math.abs(Math.sin(d * 8.8));
@@ -2415,23 +3233,24 @@ function stepMuseMotion(ts) {
   } else if (museMotion.action === 'spin') {
     const elapsed = ts - museMotion.actionStartMs;
     if (elapsed >= museMotion.actionDurationMs) {
-      const resumeWalk = museMotion.spinResumeWalk && (currentMode === 'idle' || currentMode === 'write' || currentMode === 'laptop');
+      const resumeWalk = museMotion.spinResumeWalk && (currentMode === 'idle' || isWorkingMode);
       museMotion.spinGlideVx = 0;
       museMotion.spinResumeWalk = false;
       museMotion.action = resumeWalk ? 'walk' : 'stand';
       if (spriteEl) spriteEl.classList.remove('mode-spin');
     } else {
+      isSprintingNow = Boolean(museMotion.spinGlideVx);
       const p = elapsed / museMotion.actionDurationMs;
       const eased = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
       if (museMotion.spinGlideVx) {
         museMotion.x += museMotion.spinGlideVx * dt;
       }
-      bodyY = -Math.sin(p * Math.PI) * 20;
+      bodyY = -Math.sin(p * Math.PI) * 22;
       rotDeg = eased * 360 * museMotion.facing;
-      const pop = 1 + Math.sin(p * Math.PI) * 0.10;
+      const pop = 1 + Math.sin(p * Math.PI) * 0.11;
       sx = pop;
       sy = pop;
-      shadowScale = Math.max(0.56, 1 - Math.sin(p * Math.PI) * 0.36);
+      shadowScale = Math.max(0.54, 1 - Math.sin(p * Math.PI) * 0.38);
     }
   } else if (museMotion.action === 'dance') {
     const elapsed = ts - museMotion.actionStartMs;
@@ -2447,54 +3266,68 @@ function stepMuseMotion(ts) {
       sy = 1 - (1 - beat) * 0.04;
       shadowScale = 1 - beat * 0.20;
     }
-  } else if (currentMode === 'laptop' || currentMode === 'write') {
-    // Working mode: lively coding/writing animation + periodic energetic border scoots!
+  } else if (isWorkingMode) {
+    // WORKING TURBO OVERDRIVE: High-speed full-border sprinting + rapid crazy-typing bursts + mid-sprint 360° flips!
     if (museMotion.action === 'walk') {
       const dx = museMotion.targetX - museMotion.x;
       const dist = Math.abs(dx);
-      if (dist <= 1.5) {
+      if (dist <= 2.0) {
         museMotion.x = museMotion.targetX;
         museMotion.action = 'stand';
-        museMotion.nextWorkScootAt = ts + 4800 + Math.random() * 3800;
+        museMotion.nextWorkScootAt = ts + 850 + Math.random() * 850;
       } else {
+        isSprintingNow = true;
         museMotion.facing = dx >= 0 ? 1 : -1;
         displayFacing = museMotion.facing;
-        const speed = Math.min(155, Math.max(92, dist * 1.85));
-        const step = Math.min(dist, speed * dt);
-        museMotion.x += Math.sign(dx) * step;
-        const hop = Math.abs(Math.sin(t * 14.2));
-        bodyY = -hop * 6.0 - 0.8;
-        rotDeg = museMotion.facing * 5.0 + Math.sin(t * 14.2) * 3.8;
-        sx = 1 + (1 - hop) * 0.036;
-        sy = 1 - (1 - hop) * 0.032;
-        shadowScale = 1 - hop * 0.16;
+        if (!museMotion.nextRunSpinAt) museMotion.nextRunSpinAt = ts + 2600 + Math.random() * 1800;
+        if (dist > 110 && ts >= museMotion.nextRunSpinAt) {
+          museMotion.action = 'spin';
+          museMotion.actionStartMs = ts;
+          museMotion.actionDurationMs = 660;
+          museMotion.spinGlideVx = museMotion.facing * 185;
+          museMotion.spinResumeWalk = true;
+          museMotion.nextRunSpinAt = ts + 5400 + Math.random() * 3200;
+          if (spriteEl) spriteEl.classList.add('mode-spin');
+          fireHakimiSparkles();
+          fireSprintEdgeRipple((museMotion.x + museGeom.stageW * 0.5) - museGeom.composerLeft);
+        } else {
+          const speed = Math.min(310, Math.max(185, dist * 2.55));
+          const step = Math.min(dist, speed * dt);
+          museMotion.x += Math.sign(dx) * step;
+          const hop = Math.abs(Math.sin(t * 22.0));
+          bodyY = -hop * 9.5 - 1.2;
+          rotDeg = museMotion.facing * 11.0 + Math.sin(t * 22.0) * 5.2;
+          sx = 1 + (1 - hop) * 0.065;
+          sy = 1 - (1 - hop) * 0.055;
+          shadowScale = 1 - hop * 0.28;
+        }
       }
     } else {
+      // Intense crazy-keyboard / writing pit-stop burst (0.85–1.7s) before next full-border dash!
       if (currentMode === 'laptop') {
-        const beat = Math.sin(t * 15.2);
-        const groove = Math.sin(t * 6.8);
-        bodyY = -Math.abs(beat) * 3.2 - 1.0;
-        rotDeg = groove * 4.0;
-        sx = 1 + beat * 0.024;
-        sy = 1 - beat * 0.024;
-        shadowScale = 1 - Math.abs(beat) * 0.08;
+        const beat = Math.sin(t * 24.0);
+        const groove = Math.sin(t * 9.5);
+        bodyY = -Math.abs(beat) * 5.0 - 1.4;
+        rotDeg = groove * 6.2;
+        sx = 1 + beat * 0.042;
+        sy = 1 - beat * 0.042;
+        shadowScale = 1 - Math.abs(beat) * 0.14;
       } else {
-        const stroke = Math.sin(t * 7.8);
-        bodyY = -1.6 + stroke * 2.1;
-        rotDeg = Math.sin(t * 5.6) * 4.2;
-        sx = 1 + stroke * 0.020;
-        sy = 1 - stroke * 0.020;
-        shadowScale = 0.98;
+        const stroke = Math.sin(t * 14.5);
+        bodyY = -2.0 + stroke * 3.2;
+        rotDeg = Math.sin(t * 8.5) * 5.8;
+        sx = 1 + stroke * 0.032;
+        sy = 1 - stroke * 0.032;
+        shadowScale = 0.96;
       }
-      if (!museMotion.nextWorkScootAt) museMotion.nextWorkScootAt = ts + 3200 + Math.random() * 2600;
-      if (ts >= museMotion.nextWorkScootAt && (museGeom.maxX - museGeom.minX) >= 64) {
-        museMotion.targetX = pickNextBorderWalkTarget(true);
+      if (!museMotion.nextWorkScootAt) museMotion.nextWorkScootAt = ts + 320;
+      if (ts >= museMotion.nextWorkScootAt && (museGeom.maxX - museGeom.minX) >= 48) {
+        museMotion.targetX = pickNextBorderWalkTarget(false);
         museMotion.facing = museMotion.targetX >= museMotion.x ? 1 : -1;
         museMotion.action = 'walk';
       }
     }
   } else if (currentMode === 'sleepy') {
-    // Slow cozy breathing
     const zzz = Math.sin(t * 1.15);
     bodyY = zzz * 1.2;
     rotDeg = -2.2 + zzz * 0.9;
@@ -2508,50 +3341,49 @@ function stepMuseMotion(ts) {
       if (dist <= 1.5) {
         museMotion.x = museMotion.targetX;
         museMotion.action = 'stand';
-        museMotion.nextWalkAt = ts + 1600 + Math.random() * 1900;
+        museMotion.nextWalkAt = ts + 1400 + Math.random() * 1700;
       } else {
+        isSprintingNow = true;
         museMotion.facing = dx >= 0 ? 1 : -1;
         displayFacing = museMotion.facing;
-        // Mid-run 360° parkour spin jump!
-        if (!museMotion.nextRunSpinAt) museMotion.nextRunSpinAt = ts + 3800 + Math.random() * 2400;
+        if (!museMotion.nextRunSpinAt) museMotion.nextRunSpinAt = ts + 3200 + Math.random() * 2200;
         if (dist > 96 && ts >= museMotion.nextRunSpinAt) {
           museMotion.action = 'spin';
           museMotion.actionStartMs = ts;
-          museMotion.actionDurationMs = 740;
-          museMotion.spinGlideVx = museMotion.facing * 128;
+          museMotion.actionDurationMs = 720;
+          museMotion.spinGlideVx = museMotion.facing * 145;
           museMotion.spinResumeWalk = true;
-          museMotion.nextRunSpinAt = ts + 7800 + Math.random() * 4800;
+          museMotion.nextRunSpinAt = ts + 6800 + Math.random() * 4200;
           if (spriteEl) spriteEl.classList.add('mode-spin');
           fireHakimiSparkles();
         } else {
-          const speed = Math.min(205, Math.max(115, dist * 2.15));
+          const speed = Math.min(220, Math.max(125, dist * 2.2));
           const step = Math.min(dist, speed * dt);
           museMotion.x += Math.sign(dx) * step;
-          const hop = Math.abs(Math.sin(t * 15.5));
-          bodyY = -hop * 7.8;
-          rotDeg = museMotion.facing * 6.5 + Math.sin(t * 15.5) * 4.5;
-          sx = 1 + (1 - hop) * 0.045;
-          sy = 1 - (1 - hop) * 0.04;
-          shadowScale = 1 - hop * 0.22;
+          const hop = Math.abs(Math.sin(t * 16.5));
+          bodyY = -hop * 8.2;
+          rotDeg = museMotion.facing * 7.2 + Math.sin(t * 16.5) * 4.5;
+          sx = 1 + (1 - hop) * 0.048;
+          sy = 1 - (1 - hop) * 0.042;
+          shadowScale = 1 - hop * 0.24;
         }
       }
     } else {
-      // Standing idle with lively breathing
       const br = Math.sin(t * 2.6);
       bodyY = -1.2 + br * 2.0;
       rotDeg = Math.sin(t * 1.45) * 1.8;
-      if (!museMotion.nextWalkAt) museMotion.nextWalkAt = ts + 1100 + Math.random() * 1100;
-      if (!museMotion.nextTrickAt) museMotion.nextTrickAt = ts + 9500 + Math.random() * 5500;
+      if (!museMotion.nextWalkAt) museMotion.nextWalkAt = ts + 950 + Math.random() * 950;
+      if (!museMotion.nextTrickAt) museMotion.nextTrickAt = ts + 9000 + Math.random() * 5000;
 
       if (ts >= museMotion.nextTrickAt) {
         const doSpin = Math.random() < 0.55;
         museMotion.action = doSpin ? 'spin' : 'dance';
         museMotion.actionStartMs = ts;
-        museMotion.actionDurationMs = doSpin ? 780 : 1950;
+        museMotion.actionDurationMs = doSpin ? 760 : 1950;
         museMotion.spinGlideVx = 0;
         museMotion.spinResumeWalk = false;
-        museMotion.nextTrickAt = ts + 11500 + Math.random() * 6000;
-        museMotion.nextWalkAt = ts + museMotion.actionDurationMs + 1400;
+        museMotion.nextTrickAt = ts + 11000 + Math.random() * 5500;
+        museMotion.nextWalkAt = ts + museMotion.actionDurationMs + 1200;
         if (doSpin) {
           if (spriteEl) spriteEl.classList.add('mode-spin');
           fireHakimiSparkles();
@@ -2577,6 +3409,7 @@ function stepMuseMotion(ts) {
   // Clamp within cached composer border & push single GPU transforms (ZERO DOM reads!)
   museMotion.x = Math.max(museGeom.minX, Math.min(museGeom.maxX, museMotion.x));
   applyStageTransform(museMotion.x, museGeom.baseY);
+  syncComposerSprintVisuals(isSprintingNow, isWorkingMode, displayFacing);
 
   bodyEl.style.transform =
     'translate3d(0,' + bodyY.toFixed(2) + 'px,0) ' +
@@ -2614,11 +3447,13 @@ function scheduleLayoutMuseStage() {
 function layoutMuseStageNow() {
   if (!stageEl) return;
   const composer = document.querySelector('.surface-composer');
+  lastSprintComposerEl = composer || null;
   if (!composer) {
     if (museGeom.visible) {
       museGeom.visible = false;
       stageEl.style.display = 'none';
       stopMuseMotionLoop();
+      syncComposerSprintVisuals(false, false, 1);
     }
     return;
   }
@@ -2720,6 +3555,396 @@ function syncHakimiStateThrottled(immediate = false) {
   syncHakimiStateNow();
 }
 
+// ==================== 法天象地 · 武魂真身 · 物理碎屏互动系统 ====================
+
+function generateGlassFractureModel(cx, cy, w, h) {
+  const maxR = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy)) * 0.96;
+  const rays = [];
+  const rayCount = 15;
+  for (let i = 0; i < rayCount; i++) {
+    const baseAngle = (i / rayCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.24;
+    const len = maxR * (0.42 + Math.random() * 0.54);
+    const pts = [{ x: cx, y: cy }];
+    let curX = cx;
+    let curY = cy;
+    let ang = baseAngle;
+    const steps = 8 + Math.floor(Math.random() * 6);
+    const stepLen = len / steps;
+    const branches = [];
+    for (let s = 1; s <= steps; s++) {
+      ang += (Math.random() - 0.5) * 0.24;
+      curX += Math.cos(ang) * stepLen * (0.85 + Math.random() * 0.32);
+      curY += Math.sin(ang) * stepLen * (0.85 + Math.random() * 0.32);
+      pts.push({ x: curX, y: curY });
+      if (s >= 2 && s <= steps - 2 && Math.random() < 0.42) {
+        const bAng = ang + (Math.random() < 0.5 ? -1 : 1) * (0.34 + Math.random() * 0.45);
+        const bLen = stepLen * (1.2 + Math.random() * 2.2);
+        const bMidX = curX + Math.cos(bAng) * bLen * 0.5;
+        const bMidY = curY + Math.sin(bAng) * bLen * 0.5;
+        const bEndX = bMidX + Math.cos(bAng + (Math.random() - 0.5) * 0.28) * bLen * 0.55;
+        const bEndY = bMidY + Math.sin(bAng + (Math.random() - 0.5) * 0.28) * bLen * 0.55;
+        branches.push([{ x: curX, y: curY }, { x: bMidX, y: bMidY }, { x: bEndX, y: bEndY }]);
+      }
+    }
+    rays.push({ angle: baseAngle, pts, branches, width: 1.0 + Math.random() * 1.4 });
+  }
+
+  // Concentric spiderweb rings linking neighboring radial rays
+  const rings = [];
+  const ringRadii = [34, 72, 128, 205, 310];
+  for (let rIdx = 0; rIdx < ringRadii.length; rIdx++) {
+    const targetR = ringRadii[rIdx] + (Math.random() - 0.5) * 14;
+    const segs = [];
+    for (let i = 0; i < rays.length; i++) {
+      if (rIdx >= 2 && Math.random() < 0.26) continue;
+      const a = rays[i];
+      const b = rays[(i + 1) % rays.length];
+      const pickPt = (ray) => {
+        for (let k = 1; k < ray.pts.length; k++) {
+          const d = Math.hypot(ray.pts[k].x - cx, ray.pts[k].y - cy);
+          if (d >= targetR) {
+            const p0 = ray.pts[k - 1];
+            const p1 = ray.pts[k];
+            const d0 = Math.hypot(p0.x - cx, p0.y - cy);
+            const t = d > d0 ? Math.max(0, Math.min(1, (targetR - d0) / (d - d0))) : 0;
+            return { x: p0.x + (p1.x - p0.x) * t, y: p0.y + (p1.y - p0.y) * t };
+          }
+        }
+        return null;
+      };
+      const pa = pickPt(a);
+      const pb = pickPt(b);
+      if (pa && pb) segs.push([pa, pb]);
+    }
+    rings.push({ r: targetR, segs });
+  }
+
+  // Flying micro glass shards
+  const shards = [];
+  for (let i = 0; i < 38; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = 2.8 + Math.random() * 9.5;
+    shards.push({
+      x: cx + (Math.random() - 0.5) * 26,
+      y: cy + (Math.random() - 0.5) * 26,
+      vx: Math.cos(ang) * spd,
+      vy: Math.sin(ang) * spd - 1.6,
+      size: 4 + Math.random() * 11,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 0.22,
+      alpha: 0.92
+    });
+  }
+  return { rays, rings, shards };
+}
+
+function drawShatterFrame() {
+  const canvas = document.getElementById('hakimi-shatter-canvas');
+  if (!canvas || !wuhunState.shattered) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const heal = wuhunState.healing ? wuhunState.healProgress : 0;
+  const alphaMul = Math.max(0, 1 - heal);
+  if (alphaMul <= 0.01) {
+    canvas.classList.remove('active');
+    wuhunState.shattered = false;
+    wuhunState.healing = false;
+    wuhunState.rafId = 0;
+    return;
+  }
+
+  const cx = wuhunState.impactX;
+  const cy = wuhunState.impactY;
+  const dark = isDarkMode();
+
+  // Impact core radial glass stress glow + subtle prism refraction shifting with pointer
+  const glareShiftX = (wuhunState.mouseX - cx) * 0.06;
+  const glareShiftY = (wuhunState.mouseY - cy) * 0.06;
+  const impactGrad = ctx.createRadialGradient(cx + glareShiftX, cy + glareShiftY, 2, cx, cy, 185);
+  impactGrad.addColorStop(0, 'rgba(255, 255, 255, ' + (0.62 * alphaMul).toFixed(3) + ')');
+  impactGrad.addColorStop(0.18, 'rgba(251, 113, 133, ' + (0.28 * alphaMul).toFixed(3) + ')');
+  impactGrad.addColorStop(0.55, 'rgba(56, 189, 248, ' + (0.10 * alphaMul).toFixed(3) + ')');
+  impactGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = impactGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 185, 0, Math.PI * 2);
+  ctx.fill();
+
+  const drawPolyline = (pts, strokeStyle, lw) => {
+    if (!pts || pts.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = lw;
+    ctx.stroke();
+  };
+
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Dark fracture shadow edge + crisp specular white glass reflection edge
+  const shadowCol = dark
+    ? 'rgba(0, 0, 0, ' + (0.68 * alphaMul).toFixed(3) + ')'
+    : 'rgba(15, 23, 42, ' + (0.34 * alphaMul).toFixed(3) + ')';
+  const prismCol = wuhunState.healing
+    ? 'rgba(250, 204, 21, ' + (0.95 * alphaMul).toFixed(3) + ')'
+    : (dark
+      ? 'rgba(241, 245, 249, ' + (0.86 * alphaMul).toFixed(3) + ')'
+      : 'rgba(255, 255, 255, ' + (0.94 * alphaMul).toFixed(3) + ')');
+
+  const model = wuhunState.cracks;
+  if (model && model.rays) {
+    for (let i = 0; i < model.rays.length; i++) {
+      const ray = model.rays[i];
+      ctx.save();
+      ctx.translate(1.2, 1.4);
+      drawPolyline(ray.pts, shadowCol, ray.width + 0.9);
+      ctx.restore();
+      drawPolyline(ray.pts, prismCol, ray.width);
+      for (let b = 0; b < ray.branches.length; b++) {
+        drawPolyline(ray.branches[b], shadowCol, 1.3);
+        drawPolyline(ray.branches[b], prismCol, 0.85);
+      }
+    }
+    for (let r = 0; r < model.rings.length; r++) {
+      const ring = model.rings[r];
+      for (let s = 0; s < ring.segs.length; s++) {
+        drawPolyline(ring.segs[s], shadowCol, 1.4);
+        drawPolyline(ring.segs[s], prismCol, 0.9);
+      }
+    }
+  }
+
+  // Shimmering flying shards (only animated while active)
+  let hasMovingShards = false;
+  for (let i = 0; i < wuhunState.shards.length; i++) {
+    const sh = wuhunState.shards[i];
+    if (sh.alpha <= 0.02) continue;
+    hasMovingShards = true;
+    sh.x += sh.vx;
+    sh.y += sh.vy;
+    sh.vy += 0.24;
+    sh.vx *= 0.985;
+    sh.rot += sh.vrot;
+    sh.alpha *= 0.965;
+    ctx.save();
+    ctx.translate(sh.x, sh.y);
+    ctx.rotate(sh.rot);
+    ctx.beginPath();
+    ctx.moveTo(0, -sh.size * 0.65);
+    ctx.lineTo(sh.size * 0.55, sh.size * 0.45);
+    ctx.lineTo(-sh.size * 0.45, sh.size * 0.35);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + (sh.alpha * 0.72 * alphaMul).toFixed(3) + ')';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(186, 230, 253, ' + (sh.alpha * 0.85 * alphaMul).toFixed(3) + ')';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Golden healing stardust wave when comforted!
+  if (wuhunState.healing) {
+    wuhunState.healProgress += 0.045;
+    const waveR = wuhunState.healProgress * Math.max(w, h) * 0.85;
+    ctx.beginPath();
+    ctx.arc(cx, cy, waveR, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(250, 204, 21, ' + (0.78 * alphaMul).toFixed(3) + ')';
+    ctx.lineWidth = 6 * alphaMul;
+    ctx.stroke();
+    wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
+  } else if (hasMovingShards) {
+    wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
+  } else {
+    wuhunState.rafId = 0;
+  }
+}
+
+function clearWuhunTimers() {
+  for (let i = 0; i < wuhunState.timers.length; i++) {
+    window.clearTimeout(wuhunState.timers[i]);
+  }
+  wuhunState.timers = [];
+}
+
+function healShatterScreen(mode) {
+  clearWuhunTimers();
+  wuhunState.active = false;
+  document.body.classList.remove('agy-wuhun-shake');
+  const overlay = document.getElementById('hakimi-wuhun-overlay');
+  if (overlay) {
+    overlay.classList.remove('open', 'phase-avatar', 'phase-punch');
+  }
+  const card = document.getElementById('hakimi-comfort-card');
+  if (card) card.classList.remove('open');
+
+  if (wuhunState.shattered) {
+    wuhunState.healing = true;
+    wuhunState.healProgress = 0;
+    if (!wuhunState.rafId) {
+      wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
+    }
+  }
+
+  if (mode === 'praise') {
+    triggerHakimiCelebration('victory', '嘿嘿～被夸得充满电啦！屏幕修好，本哈基米满血全开冲刺！⚡✨');
+  } else if (mode === 'subagents') {
+    triggerHakimiCelebration('victory', '好耶！哈基米召唤 3 个并行子 Agent 一起冲刺干活啦！🚀✨');
+    spawnSubagentCloneSprint();
+  } else {
+    say('屏幕修好啦～下次别把这么多活一口气堆给我哟 (｡•́︿•̀｡)', 2800);
+  }
+}
+
+function spawnSubagentCloneSprint() {
+  let layer = document.getElementById('hakimi-clones-layer');
+  if (!layer) {
+    layer = document.createElement('div');
+    layer.id = 'hakimi-clones-layer';
+    layer.className = 'notranslate';
+    layer.innerHTML =
+      '<span class="hakimi-clone-pill">⚡ 子Agent·拆解</span>' +
+      '<span class="hakimi-clone-pill">✦ 子Agent·并行开发</span>' +
+      '<span class="hakimi-clone-pill">✓ 子Agent·自动验收</span>';
+    document.body.appendChild(layer);
+  }
+  layer.classList.add('active');
+  if (museGeom.visible) {
+    layer.style.transform = 'translate3d(' + Math.round(museGeom.composerLeft + 14) + 'px,' + Math.round(museGeom.composerTop - 30) + 'px,0)';
+  }
+  wuhunState.clonesUntil = Date.now() + 26000;
+  window.clearTimeout(wuhunState.clonesTimer);
+  wuhunState.clonesTimer = window.setTimeout(() => {
+    layer.classList.remove('active');
+  }, 26000);
+}
+
+function triggerHakimiWuhunRage(manual = false) {
+  if (wuhunState.active && !manual) return;
+  clearWuhunTimers();
+  wuhunState.active = true;
+  lastWuhunAutoAt = Date.now();
+
+  let overlay = document.getElementById('hakimi-wuhun-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'hakimi-wuhun-overlay';
+    overlay.className = 'notranslate';
+    const poseSrc = (poseLayers.done && poseLayers.done.src) || (poseLayers.idle && poseLayers.idle.src) || '';
+    overlay.innerHTML =
+      '<div class="wuhun-backdrop"></div>' +
+      '<div class="wuhun-ring r3"></div>' +
+      '<div class="wuhun-ring r2"></div>' +
+      '<div class="wuhun-ring r1"></div>' +
+      '<div class="wuhun-banner">✦ 法天象地 · 不吃压力！！ ✦</div>' +
+      '<div class="wuhun-avatar"><div class="wuhun-avatar-aura"></div><img src="' + poseSrc + '" alt="哈基米武魂真身"/></div>';
+    document.body.appendChild(overlay);
+  }
+
+  let canvas = document.getElementById('hakimi-shatter-canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'hakimi-shatter-canvas';
+    canvas.className = 'notranslate';
+    document.body.appendChild(canvas);
+    window.addEventListener('pointermove', (e) => {
+      if (!wuhunState.shattered || wuhunState.healing) return;
+      wuhunState.mouseX = e.clientX;
+      wuhunState.mouseY = e.clientY;
+      if (!wuhunState.rafId) {
+        wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
+      }
+    }, { passive: true });
+  }
+
+  let card = document.getElementById('hakimi-comfort-card');
+  if (!card) {
+    card = document.createElement('div');
+    card.id = 'hakimi-comfort-card';
+    card.className = 'notranslate';
+    card.innerHTML =
+      '<div class="hcc-head">' +
+        '<span class="hcc-title">💥 哈基米开启「法天象地」一拳把屏幕锤裂啦！</span>' +
+      '</div>' +
+      '<div class="hcc-desc">「这么多繁琐任务全堆过来，本哈基米不吃压力！！」—— 快夸夸它安抚一下，或者召唤多个子 Agent 帮它一起并行冲刺吧～</div>' +
+      '<div class="hcc-actions">' +
+        '<button type="button" class="hcc-btn primary" data-act="praise"><span>✨ 摸摸头夸夸：哈基米你可以的！</span><small>金光修屏 + 满血冲刺</small></button>' +
+        '<button type="button" class="hcc-btn subagent" data-act="subagents"><span>🚀 夸夸它 + 开多个子 Agent 并行分担！</span><small>召唤分身 + 填入并行提示</small></button>' +
+        '<button type="button" class="hcc-btn" data-act="quiet"><span>🩹 先默默修好屏幕</span><small>Esc 也可随时关闭</small></button>' +
+      '</div>';
+    card.addEventListener('click', (e) => {
+      const btn = e.target instanceof Element ? e.target.closest('button[data-act]') : null;
+      if (!btn) return;
+      e.stopPropagation();
+      const act = btn.getAttribute('data-act');
+      if (act === 'subagents') {
+        healShatterScreen('subagents');
+        const composer = document.querySelector('.surface-composer');
+        const input = composer?.querySelector('[contenteditable="true"][role="textbox"], [contenteditable="true"], textarea');
+        if (input && !readComposerValue(input).trim()) {
+          writeComposerValue(input, '哈基米你可以的！请拆分成多个独立子任务，调用多个并行子 Agent 同时推进完成～');
+        }
+      } else {
+        healShatterScreen(act);
+      }
+    });
+    document.body.appendChild(card);
+  }
+
+  // Phase 1: Hakimi complains loudly
+  say('呜哇！这么多繁琐任务堆过来要累死猫啦！不吃压力！！💢', 2400);
+  museMotion.hopStartMs = performance.now();
+
+  // Phase 2: 武魂真身 / 法天象地 rises with spinning spirit rings
+  wuhunState.timers.push(window.setTimeout(() => {
+    overlay.classList.remove('phase-punch');
+    overlay.classList.add('open', 'phase-avatar');
+    say('✦ 法天象地 · 武魂真身降临！！不吃压力！！ ✦', 2000);
+  }, 1150));
+
+  // Phase 3: Lunge punch at screen -> realistic glass shatter + screen shake!
+  wuhunState.timers.push(window.setTimeout(() => {
+    overlay.classList.remove('phase-avatar');
+    overlay.classList.add('phase-punch');
+    const ix = Math.round(window.innerWidth * 0.50);
+    const iy = Math.round(window.innerHeight * 0.44);
+    wuhunState.impactX = ix;
+    wuhunState.impactY = iy;
+    wuhunState.mouseX = ix;
+    wuhunState.mouseY = iy;
+    wuhunState.cracks = generateGlassFractureModel(ix, iy, window.innerWidth, window.innerHeight);
+    wuhunState.shards = wuhunState.cracks.shards;
+    wuhunState.shattered = true;
+    wuhunState.healing = false;
+    wuhunState.healProgress = 0;
+    canvas.classList.add('active');
+    document.body.classList.remove('agy-wuhun-shake');
+    void document.body.offsetWidth;
+    document.body.classList.add('agy-wuhun-shake');
+    if (wuhunState.rafId) window.cancelAnimationFrame(wuhunState.rafId);
+    wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
+    fireHakimiSparkles();
+  }, 2450));
+
+  // Phase 4: Fade avatar slightly & pop Developer Comfort Interactive Card
+  wuhunState.timers.push(window.setTimeout(() => {
+    document.body.classList.remove('agy-wuhun-shake');
+    overlay.classList.remove('open', 'phase-avatar', 'phase-punch');
+    card.classList.add('open');
+  }, 3050));
+}
+
 function syncHakimiStateNow() {
   lastBusyCheckTs = performance.now();
   if (!stageEl) return;
@@ -2727,14 +3952,25 @@ function syncHakimiStateNow() {
   if (busy) {
     if (!wasBusy) {
       busyStartedAt = Date.now();
+      busyStepsBaseline = Number(window.__agyLastTelemetry?.metrics?.steps || 0);
       liveSpeed.domEma = 0;
       liveSpeed.domUpdatedAt = 0;
+      museMotion.nextWorkScootAt = performance.now() + 260;
       window.clearTimeout(doneModeResetTimer);
       doneModeResetTimer = 0;
     }
     wasBusy = true;
     const act = detectWorkActivity();
     setMuseMode(act.mode, act.label);
+
+    // Organic heavy-workload trigger for 「法天象地 · 武魂真身」 (6 min cooldown so never intrusive)
+    const busyElapsed = Date.now() - (busyStartedAt || Date.now());
+    const curSteps = Number(window.__agyLastTelemetry?.metrics?.steps || 0);
+    const stepBurst = curSteps - busyStepsBaseline;
+    const cooldownOk = (Date.now() - lastWuhunAutoAt) > 360000;
+    if (cooldownOk && !wuhunState.active && !wuhunState.shattered && !stageEl.classList.contains('collapsed') && (busyElapsed >= 36000 || stepBurst >= 7)) {
+      triggerHakimiWuhunRage(false);
+    }
   } else if (wasBusy) {
     wasBusy = false;
     busyStartedAt = 0;
@@ -2761,7 +3997,7 @@ function mountMuseHakimi() {
   museMotion.reducedMotion = isReducedMotionPreferred();
 
   const existing = document.getElementById('hakimi-muse-stage');
-  if (existing && document.getElementById('hakimi-muse-sprite') && existing.querySelector('#hakimi-muse-aura') && existing.querySelector('.hakimi-glyph') && existing.querySelector('.hakimi-body') && existing.querySelector('.muse-pill-rate')) {
+  if (existing && document.getElementById('hakimi-muse-sprite') && existing.querySelector('#hakimi-muse-aura') && existing.querySelector('#hakimi-speed-lines') && existing.querySelector('.hakimi-glyph') && existing.querySelector('.hakimi-body') && existing.querySelector('.muse-pill-rate')) {
     stageEl = existing;
     spriteEl = document.getElementById('hakimi-muse-sprite');
     auraEl = document.getElementById('hakimi-muse-aura');
@@ -2799,12 +4035,18 @@ function mountMuseHakimi() {
 
   spriteEl = document.createElement('div');
   spriteEl.id = 'hakimi-muse-sprite';
-  spriteEl.title = '左键对话报速 · 双击 360° 转圈跳舞 · Shift+双击打盹 · 右键折叠';
+  spriteEl.title = '左键对话报速 · 双击 360° 转圈跳舞 · Alt+双击 法天象地碎屏 · Shift+双击打盹 · 右键折叠';
 
   auraEl = document.createElement('div');
   auraEl.id = 'hakimi-muse-aura';
   auraEl.setAttribute('aria-hidden', 'true');
   spriteEl.appendChild(auraEl);
+
+  const speedLines = document.createElement('div');
+  speedLines.id = 'hakimi-speed-lines';
+  speedLines.setAttribute('aria-hidden', 'true');
+  speedLines.innerHTML = '<span class="hakimi-wind w1"></span><span class="hakimi-wind w2"></span><span class="hakimi-wind w3"></span>';
+  spriteEl.appendChild(speedLines);
 
   shadowEl = document.createElement('div');
   shadowEl.id = 'hakimi-muse-shadow';
@@ -2871,6 +4113,10 @@ function mountMuseHakimi() {
 
   spriteEl.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (wuhunState.shattered) {
+      healShatterScreen('praise');
+      return;
+    }
     museMotion.hopStartMs = performance.now();
     const rate = getLiveTokenSpeed(!isBusy());
     if (currentMode === 'sleepy') {
@@ -2892,6 +4138,10 @@ function mountMuseHakimi() {
   spriteEl.addEventListener('dblclick', (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (e.altKey) {
+      triggerHakimiWuhunRage(true);
+      return;
+    }
     if (e.shiftKey) {
       if (isBusy()) return;
       const next = currentMode === 'sleepy' ? 'idle' : 'sleepy';
@@ -3135,6 +4385,12 @@ if (!window.__AGY_GLOBAL_LISTENERS__) {
   document.addEventListener('click', dismissPulseOutside, true);
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
+      if (wuhunState.active || wuhunState.shattered) {
+        healShatterScreen('quiet');
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
       if (closeInlineAskPopover()) {
         event.preventDefault();
         event.stopPropagation();
@@ -3300,21 +4556,57 @@ function renderCodexPopoverContent(payload) {
 function updateTelemetryUI(payload) {
   if (!payload) return;
   window.__agyLastTelemetry = payload;
+  if (typeof payload.isRunning === 'boolean') {
+    window.__agyTelemetryRunning = payload.isRunning;
+    window.__agyTelemetryRunningAt = Date.now();
+  }
   const m = payload.metrics;
 
   const btn = document.getElementById('agy-codex-ctx-btn');
-  if (btn && m) {
-    const pct = Math.max(0, Math.min(100, Number(m.contextPct || 0)));
-    const circ = 33.93;
-    const offset = circ * (1 - pct / 100);
-    const fg = btn.querySelector('.codex-ring-fg');
-    const lbl = btn.querySelector('.codex-ctx-pct');
-    if (fg) fg.setAttribute('stroke-dashoffset', offset.toFixed(2));
-    const label = Math.round(pct) + '%';
-    if (lbl && lbl.textContent !== label) lbl.textContent = label;
+  if (btn) {
+    if (m) {
+      const pct = Math.max(0, Math.min(100, Number(m.contextPct || 0)));
+      const ctxItem = btn.querySelector('.agy-ctx-item');
+      const ctxVal = btn.querySelector('.agy-ctx-val');
+      const label = Math.round(pct) + '%';
+      if (ctxVal && ctxVal.textContent !== label) ctxVal.textContent = label;
+      const level = pct >= 82 ? 'danger' : (pct >= 60 ? 'warn' : 'normal');
+      if (ctxItem && ctxItem.getAttribute('data-level') !== level) ctxItem.setAttribute('data-level', level);
+      if (btn.getAttribute('data-level') !== level) btn.setAttribute('data-level', level);
+    }
 
-    const level = pct >= 82 ? 'danger' : (pct >= 60 ? 'warn' : 'normal');
-    if (btn.getAttribute('data-level') !== level) btn.setAttribute('data-level', level);
+    const activePool = payload.quota && payload.quota.activePool;
+    const q5hItem = btn.querySelector('.agy-q5h-item');
+    const q5hVal = btn.querySelector('.agy-q5h-val');
+    if (q5hItem && q5hVal) {
+      const rem5h = activePool && activePool.window5h && activePool.window5h.remainingPct;
+      if (Number.isFinite(rem5h)) {
+        const pct5h = Math.max(0, Math.min(100, Math.round(rem5h)));
+        const txt5h = pct5h + '%';
+        if (q5hVal.textContent !== txt5h) q5hVal.textContent = txt5h;
+        q5hItem.classList.remove('is-hidden');
+        const lv5h = pct5h <= 10 ? 'danger' : (pct5h <= 25 ? 'warn' : 'normal');
+        if (q5hItem.getAttribute('data-level') !== lv5h) q5hItem.setAttribute('data-level', lv5h);
+      } else {
+        q5hItem.classList.add('is-hidden');
+      }
+    }
+
+    const qwkItem = btn.querySelector('.agy-qwk-item');
+    const qwkVal = btn.querySelector('.agy-qwk-val');
+    if (qwkItem && qwkVal) {
+      const remWk = activePool && activePool.windowWeekly && activePool.windowWeekly.remainingPct;
+      if (Number.isFinite(remWk)) {
+        const pctWk = Math.max(0, Math.min(100, Math.round(remWk)));
+        const txtWk = pctWk + '%';
+        if (qwkVal.textContent !== txtWk) qwkVal.textContent = txtWk;
+        qwkItem.classList.remove('is-hidden');
+        const lvWk = pctWk <= 10 ? 'danger' : (pctWk <= 25 ? 'warn' : 'normal');
+        if (qwkItem.getAttribute('data-level') !== lvWk) qwkItem.setAttribute('data-level', lvWk);
+      } else {
+        qwkItem.classList.add('is-hidden');
+      }
+    }
   }
 
   const pop = document.getElementById('agy-codex-ctx-popover');
@@ -3324,7 +4616,7 @@ function updateTelemetryUI(payload) {
   }
 
   onTelemetrySpeedUpdate(payload);
-  if (wasBusy) syncHakimiStateThrottled(false);
+  syncHakimiStateThrottled(false);
   syncInlineAskHeaderMeta();
 }
 
@@ -5175,25 +6467,86 @@ function openThemeMenu(anchorBtn) {
     menu = document.createElement('div');
     menu.id = 'agy-theme-menu';
     menu.className = 'notranslate';
-    menu.innerHTML = VALID_THEMES.map((k) => {
+
+    const themeHtml = VALID_THEMES.map((k) => {
       const m = THEME_META[k];
       return '<button type="button" class="agy-tm-item" data-theme="' + k + '">' +
         '<span class="agy-tm-left"><span class="agy-tm-dot" style="background:' + m.dot + '"></span><span>' + m.label + '</span></span>' +
         '<span class="agy-tm-check">✓</span></button>';
     }).join('');
+
+    const presetKeys = ['cyber-sakura', 'starlight-aurora', 'crimson-eclipse', 'cloud-atelier'];
+    const wpCardsHtml = presetKeys.map((k) => {
+      const wm = WALLPAPER_META[k];
+      const bg = (AGY_WALLPAPERS && AGY_WALLPAPERS[k]) ? ('background-image:url(\'' + AGY_WALLPAPERS[k] + '\')') : ('background:' + wm.accent);
+      return '<button type="button" class="agy-wp-card" data-wp="' + k + '" style="' + bg + '">' +
+        '<span class="agy-wp-card-lbl">' + wm.label + '</span></button>';
+    }).join('');
+
+    const alphaVal = readWallpaperAlpha();
+    menu.innerHTML =
+      '<div class="agy-tm-sec">工作台主题</div>' +
+      themeHtml +
+      '<div class="agy-tm-sep"></div>' +
+      '<div class="agy-tm-sec">炫酷壁纸 · 毛玻璃画布</div>' +
+      '<div class="agy-wp-grid">' + wpCardsHtml + '</div>' +
+      '<div class="agy-wp-row">' +
+        '<button type="button" class="agy-wp-pill" data-wp="none">纯净无图</button>' +
+        '<button type="button" class="agy-wp-pill" data-wp-upload="1">+ 本地壁纸</button>' +
+      '</div>' +
+      '<div class="agy-wp-alpha-row">' +
+        '<span>通透度</span>' +
+        '<input type="range" id="agy-wp-alpha-slider" min="35" max="94" value="' + alphaVal + '"/>' +
+        '<span id="agy-wp-alpha-val">' + alphaVal + '%</span>' +
+      '</div>' +
+      '<div class="agy-tm-sep"></div>' +
+      '<button type="button" class="agy-wuhun-trigger" data-wuhun-demo="1">' +
+        '<span>⚡ 哈基米 · 法天象地碎屏</span><span>试玩</span>' +
+      '</button>';
+
     menu.addEventListener('click', (e) => {
-      const item = e.target instanceof Element ? e.target.closest('.agy-tm-item') : null;
-      if (!item) return;
-      e.stopPropagation();
-      const next = item.dataset.theme;
-      applyThemeMode(next);
-      closeThemeMenu();
-      if (!isBusy()) {
-        setMuseMode('done', '', { silentDone: true });
-        say((THEME_META[next] && THEME_META[next].desc) || next, 1500);
-        window.setTimeout(() => { if (!isBusy() && currentMode === 'done') setMuseMode('idle'); }, 1400);
+      const t = e.target instanceof Element ? e.target : null;
+      if (!t) return;
+      const themeItem = t.closest('.agy-tm-item');
+      if (themeItem) {
+        e.stopPropagation();
+        const next = themeItem.dataset.theme;
+        applyThemeMode(next);
+        if (!isBusy()) {
+          setMuseMode('done', '', { silentDone: true });
+          say((THEME_META[next] && THEME_META[next].desc) || next, 1500);
+          window.setTimeout(() => { if (!isBusy() && currentMode === 'done') setMuseMode('idle'); }, 1400);
+        }
+        return;
+      }
+      const wpBtn = t.closest('[data-wp]');
+      if (wpBtn) {
+        e.stopPropagation();
+        const wp = wpBtn.dataset.wp;
+        applyWallpaperMode(wp);
+        say('壁纸已切换：' + ((WALLPAPER_META[wp] && WALLPAPER_META[wp].label) || wp) + ' ✨', 1800);
+        return;
+      }
+      if (t.closest('[data-wp-upload="1"]')) {
+        e.stopPropagation();
+        closeThemeMenu();
+        openCustomWallpaperPicker();
+        return;
+      }
+      if (t.closest('[data-wuhun-demo="1"]')) {
+        e.stopPropagation();
+        closeThemeMenu();
+        triggerHakimiWuhunRage(true);
       }
     });
+
+    const alphaSlider = menu.querySelector('#agy-wp-alpha-slider');
+    if (alphaSlider) {
+      alphaSlider.addEventListener('input', (e) => {
+        e.stopPropagation();
+        applyWallpaperAlpha(alphaSlider.value);
+      });
+    }
     document.body.appendChild(menu);
   }
   const wasOpen = menu.classList.contains('open');
@@ -5202,12 +6555,608 @@ function openThemeMenu(anchorBtn) {
     return;
   }
   updateThemeButtonUI(readThemeMode());
+  const curWp = readWallpaperMode();
+  menu.querySelectorAll('.agy-wp-card, .agy-wp-pill').forEach((el) => {
+    el.classList.toggle('active', el.dataset.wp === curWp);
+  });
   const r = anchorBtn.getBoundingClientRect();
   menu.classList.add('open');
-  const w = menu.offsetWidth || 158;
+  const w = menu.offsetWidth || 248;
   const left = Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w));
   menu.style.left = Math.round(left) + 'px';
   menu.style.top = Math.round(r.bottom + 6) + 'px';
+}
+
+// ==================== Part 4.7: Liquid-Glass Model Popover & REAL Thinking Effort Slider ====================
+
+const MODEL_TONE_RULES = [
+  [/\bneon\b/i, 'neon'],
+  [/\bcarbon\b/i, 'carbon'],
+  [/\bargon\b/i, 'argon'],
+  [/\bhydrogen\b/i, 'hydrogen'],
+  [/\bflash\b/i, 'flash'],
+  [/\bopus\b/i, 'opus'],
+  [/\b(sonnet|haiku|claude)\b/i, 'sonnet'],
+  [/\b(gpt|o[134])\b/i, 'gpt'],
+  [/\bgemini\b/i, 'neon'],
+];
+
+const EFFORT_SPECS = [
+  { rx: /^(?:off|none|关闭)$/i, rank: 0, label: 'Off', short: 'Off' },
+  { rx: /^(?:minimal|min|极低)$/i, rank: 1, label: 'Minimal', short: 'Min' },
+  { rx: /^(?:low|低)$/i, rank: 2, label: 'Low', short: 'Low' },
+  { rx: /^(?:medium|med|中)$/i, rank: 3, label: 'Medium', short: 'Med' },
+  { rx: /^(?:high|高)$/i, rank: 4, label: 'High', short: 'High' },
+  { rx: /^(?:extra\s*high|x[\s-]*high|ultra|极高|超高)$/i, rank: 5, label: 'Extra High', short: 'XHigh' },
+  { rx: /^(?:max|maximum|最大)$/i, rank: 6, label: 'Max', short: 'Max' }
+];
+
+const EFFORT_WORD_RX = /^(?:Extra\s+High|X[\s-]*High|High|Medium|Low|Minimal|Max|Off|Thinking|极高|超高|高|中|低|极低)$/i;
+const EFFORT_INLINE_RX = /(?:\(\s*)?(Extra\s+High|X[\s-]*High|Minimal|Medium|High|Low|Max|Off)(?:\s*\))?/i;
+const MODEL_NAME_STRICT_RX = /\b(?:Gemini|Claude|GPT-OSS|GPT|Opus|Sonnet|Haiku|Neon|Carbon|Argon|Hydrogen|Flash)\b/i;
+const THINKING_LABEL_RX = /思考强度|思考深度|Thinking\s*(?:effort|level|strength|budget)|Reasoning\s*effort/i;
+const ORCHESTRATOR_RX = /\bOrchestrator\b|编排器|调度器|调度模型/i;
+
+function parseEffortSpec(text) {
+  const clean = String(text || '').replace(/[✓✔•·▾▼▸►()（）]/g, ' ').replace(/\s+/g, ' ').trim();
+  for (let i = 0; i < EFFORT_SPECS.length; i++) {
+    if (EFFORT_SPECS[i].rx.test(clean)) return EFFORT_SPECS[i];
+  }
+  return null;
+}
+
+function extractInlineEffortSpec(text) {
+  const m = String(text || '').match(EFFORT_INLINE_RX);
+  return m ? parseEffortSpec(m[1]) : null;
+}
+
+function stripEffortAndBadges(text) {
+  return String(text || '')
+    .replace(/\b(?:New|Leaving\s+Soon|Notice|Preview|Beta|Default|Current)\b/gi, ' ')
+    .replace(EFFORT_INLINE_RX, ' ')
+    .replace(/[✓✔•·()（）]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function isElementSelectedOrChecked(el) {
+  if (!el) return false;
+  if (
+    el.getAttribute('aria-checked') === 'true' ||
+    el.getAttribute('aria-selected') === 'true' ||
+    el.getAttribute('aria-pressed') === 'true' ||
+    el.getAttribute('aria-current') === 'true' ||
+    el.getAttribute('data-state') === 'checked' ||
+    el.getAttribute('data-state') === 'active' ||
+    el.getAttribute('data-state') === 'on' ||
+    el.getAttribute('data-selected') === 'true'
+  ) return true;
+  if (el.querySelector('[aria-checked="true"], [data-state="checked"], svg[class*="check"], path[d*="M20 6"], path[d*="m5 12"]')) {
+    return true;
+  }
+  const cls = String(el.className || '');
+  if (/\b(?:bg-primary|bg-accent|bg-secondary|font-semibold|text-primary)\b/.test(cls)) return true;
+  return false;
+}
+
+function dispatchRealReactClick(el) {
+  if (!el || !el.isConnected) return false;
+  try {
+    const r = el.getBoundingClientRect();
+    const cx = Math.round(r.left + r.width / 2);
+    const cy = Math.round(r.top + r.height / 2);
+    const opts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, button: 0, buttons: 1 };
+    el.dispatchEvent(new PointerEvent('pointerdown', { ...opts, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
+    el.dispatchEvent(new MouseEvent('mousedown', opts));
+    el.dispatchEvent(new PointerEvent('pointerup', { ...opts, buttons: 0, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
+    el.dispatchEvent(new MouseEvent('mouseup', { ...opts, buttons: 0 }));
+    el.click();
+    return true;
+  } catch (_) {
+    try { el.click(); return true; } catch (__) { return false; }
+  }
+}
+
+function classifyModelTone(text) {
+  if (!text) return '';
+  for (let i = 0; i < MODEL_TONE_RULES.length; i++) {
+    if (MODEL_TONE_RULES[i][0].test(text)) return MODEL_TONE_RULES[i][1];
+  }
+  return '';
+}
+
+function findComposerModelButton(composer) {
+  if (!composer) return null;
+  const permRx = /\b(Turbo|Auto|Strict|Review|Ask|Sandbox|Always\s*proceed|Request\s*review)\b|极速|自动|严格|审核|沙箱|权限/i;
+  const buttons = composer.querySelectorAll('button, [role="button"]');
+  let fallback = null;
+  for (let i = 0; i < buttons.length; i++) {
+    const b = buttons[i];
+    if (b.id === 'agy-codex-ctx-btn' || isOwnControlElement(b)) continue;
+    const tid = (b.getAttribute('data-testid') || '').toLowerCase();
+    const aria = (b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('title') || '');
+    const txt = (b.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!txt || txt.length > 64 || permRx.test(txt)) continue;
+    if (tid.includes('model') || /model|模型/i.test(aria)) return b;
+    if (!fallback && MODEL_NAME_STRICT_RX.test(txt)) fallback = b;
+  }
+  return fallback;
+}
+
+function decorateComposerModelTrigger(composer) {
+  const btn = findComposerModelButton(composer);
+  if (!btn) return null;
+  const txt = (btn.textContent || '').replace(/\s+/g, ' ').trim();
+  const tone = classifyModelTone(txt);
+  if (!btn.classList.contains('agy-composer-model-btn')) {
+    btn.classList.add('agy-composer-model-btn');
+  }
+  if (tone && btn.getAttribute('data-agy-model-tone') !== tone) {
+    btn.setAttribute('data-agy-model-tone', tone);
+  }
+
+  let taggedChild = false;
+  const spans = btn.querySelectorAll('span');
+  for (let i = 0; i < spans.length; i++) {
+    const sp = spans[i];
+    if (sp.children.length > 0) continue;
+    const st = (sp.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!st || ORCHESTRATOR_RX.test(st)) continue;
+    if (MODEL_NAME_STRICT_RX.test(st) || EFFORT_WORD_RX.test(st)) {
+      if (sp.getAttribute('data-agy-model-label') !== '1') {
+        sp.setAttribute('data-agy-model-label', '1');
+      }
+      taggedChild = true;
+    }
+  }
+  if (!taggedChild && !ORCHESTRATOR_RX.test(txt)) {
+    if (btn.getAttribute('data-agy-whole-tint') !== '1') {
+      btn.setAttribute('data-agy-whole-tint', '1');
+    }
+  } else if (btn.hasAttribute('data-agy-whole-tint')) {
+    btn.removeAttribute('data-agy-whole-tint');
+  }
+  return btn;
+}
+
+function syncNativeRangeProgress(input) {
+  if (!input) return;
+  const min = Number(input.min === '' ? 0 : input.min);
+  const max = Number(input.max === '' ? 100 : input.max);
+  const val = Number(input.value === '' ? min : input.value);
+  const span = max - min;
+  const pct = span > 0 ? Math.max(0, Math.min(100, ((val - min) / span) * 100)) : 50;
+  input.style.setProperty('--agy-slider-pct', pct.toFixed(1) + '%');
+}
+
+function discoverRealEffortBinding(pop, matchedRows) {
+  // Path 2: Native discrete effort buttons / radios / tabs / pills inside the popover (or an open effort submenu)
+  const searchRoots = [pop];
+  const openSubmenus = document.querySelectorAll('[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content]');
+  for (let i = 0; i < openSubmenus.length; i++) {
+    const sm = openSubmenus[i];
+    if (sm !== pop && !isOwnControlElement(sm)) searchRoots.push(sm);
+  }
+
+  for (let r = 0; r < searchRoots.length; r++) {
+    const root = searchRoots[r];
+    const controls = root.querySelectorAll('button, [role="radio"], [role="tab"], [role="menuitemradio"], [role="menuitem"], [role="option"]');
+    const groups = new Map();
+    for (let i = 0; i < controls.length; i++) {
+      const el = controls[i];
+      if (el.closest('#agy-real-effort-box') || isOwnControlElement(el)) continue;
+      const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!txt || txt.length > 22 || MODEL_NAME_STRICT_RX.test(txt)) continue;
+      const spec = parseEffortSpec(txt);
+      if (!spec) continue;
+      const host = el.closest('[role="radiogroup"], [role="tablist"], [role="group"]') || el.parentElement;
+      if (!host) continue;
+      if (!groups.has(host)) groups.set(host, []);
+      groups.get(host).push({
+        el,
+        rank: spec.rank,
+        label: spec.label,
+        short: spec.short,
+        disabled: Boolean(el.disabled || el.getAttribute('aria-disabled') === 'true'),
+        active: isElementSelectedOrChecked(el)
+      });
+    }
+    for (const [, list] of groups) {
+      const byRank = new Map();
+      for (let i = 0; i < list.length; i++) {
+        if (!byRank.has(list[i].rank)) byRank.set(list[i].rank, list[i]);
+      }
+      if (byRank.size >= 2) {
+        const options = Array.from(byRank.values()).sort((a, b) => a.rank - b.rank);
+        return { mode: 'native-buttons', options };
+      }
+    }
+  }
+
+  // Path 3: Flat model-effort variant rows inside the popover (e.g. Gemini 4 Neon Low/Medium/High/Extra High)
+  if (matchedRows && matchedRows.length >= 2) {
+    const composerBtn = findComposerModelButton(document.querySelector('.surface-composer'));
+    const composerTxt = (composerBtn && composerBtn.textContent || '').replace(/\s+/g, ' ').trim();
+    const composerFamily = stripEffortAndBadges(composerTxt);
+    const composerEffort = extractInlineEffortSpec(composerTxt);
+
+    const families = new Map();
+    let activeFamily = '';
+    for (let i = 0; i < matchedRows.length; i++) {
+      const row = matchedRows[i].el;
+      const txt = (row.textContent || '').replace(/\s+/g, ' ').trim();
+      const spec = extractInlineEffortSpec(txt);
+      if (!spec) continue;
+      const fam = stripEffortAndBadges(txt);
+      if (!fam) continue;
+      const active = isElementSelectedOrChecked(row) || (composerFamily && fam === composerFamily && composerEffort && spec.rank === composerEffort.rank);
+      if (active) activeFamily = fam;
+      if (!families.has(fam)) families.set(fam, new Map());
+      if (!families.get(fam).has(spec.rank)) {
+        families.get(fam).set(spec.rank, {
+          el: row,
+          rank: spec.rank,
+          label: spec.label,
+          short: spec.short,
+          disabled: Boolean(row.disabled || row.getAttribute('aria-disabled') === 'true'),
+          active
+        });
+      }
+    }
+    const targetFam = (activeFamily && families.get(activeFamily)?.size >= 2)
+      ? activeFamily
+      : (composerFamily && families.get(composerFamily)?.size >= 2 ? composerFamily : '');
+    if (targetFam) {
+      const options = Array.from(families.get(targetFam).values()).sort((a, b) => a.rank - b.rank);
+      return { mode: 'model-variants', options };
+    }
+  }
+
+  // Path 4: Native Thinking Effort dropdown trigger inside the popover (e.g. "思考强度 [High ▾]")
+  const leafLabels = pop.querySelectorAll('span, div, label, p');
+  for (let i = 0; i < leafLabels.length; i++) {
+    const node = leafLabels[i];
+    if (node.children.length > 0 || node.closest('#agy-real-effort-box')) continue;
+    const nt = (node.textContent || '').trim();
+    if (!THINKING_LABEL_RX.test(nt)) continue;
+    const container = node.parentElement && node.parentElement.parentElement && pop.contains(node.parentElement.parentElement)
+      ? node.parentElement.parentElement
+      : node.parentElement;
+    if (!container) continue;
+    const trig = container.querySelector('button[aria-haspopup], [role="combobox"], button');
+    if (trig && !trig.closest('#agy-real-effort-box')) {
+      const curSpec = extractInlineEffortSpec(trig.textContent || '') || parseEffortSpec(trig.textContent || '');
+      if (curSpec) {
+        const standard = [
+          { rank: 2, label: 'Low', short: 'Low' },
+          { rank: 3, label: 'Medium', short: 'Med' },
+          { rank: 4, label: 'High', short: 'High' },
+          { rank: 5, label: 'Extra High', short: 'XHigh' }
+        ];
+        if (!standard.some((s) => s.rank === curSpec.rank)) {
+          standard.push({ rank: curSpec.rank, label: curSpec.label, short: curSpec.short });
+          standard.sort((a, b) => a.rank - b.rank);
+        }
+        return {
+          mode: 'native-dropdown',
+          triggerEl: trig,
+          options: standard.map((s) => ({ ...s, disabled: false, active: s.rank === curSpec.rank }))
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function selectRealEffortOption(binding, idx, onSynced) {
+  if (!binding || !binding.options || !binding.options[idx]) return;
+  const opt = binding.options[idx];
+  if (opt.disabled) return;
+
+  if ((binding.mode === 'native-buttons' || binding.mode === 'model-variants') && opt.el) {
+    dispatchRealReactClick(opt.el);
+    window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 90);
+    return;
+  }
+
+  if (binding.mode === 'native-dropdown' && binding.triggerEl) {
+    dispatchRealReactClick(binding.triggerEl);
+    let tries = 0;
+    const attemptPick = () => {
+      tries += 1;
+      const menus = document.querySelectorAll('[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content]');
+      for (let m = 0; m < menus.length; m++) {
+        if (isOwnControlElement(menus[m])) continue;
+        const items = menus[m].querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], button');
+        for (let k = 0; k < items.length; k++) {
+          const spec = parseEffortSpec(items[k].textContent || '') || extractInlineEffortSpec(items[k].textContent || '');
+          if (spec && spec.rank === opt.rank) {
+            dispatchRealReactClick(items[k]);
+            window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 100);
+            return;
+          }
+        }
+      }
+      if (tries < 6) window.setTimeout(attemptPick, 45);
+      else if (typeof onSynced === 'function') onSynced();
+    };
+    window.setTimeout(attemptPick, 45);
+  }
+}
+
+function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
+  const existing = pop.querySelector('#agy-real-effort-box');
+  if (hasNativeSlider) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  const binding = discoverRealEffortBinding(pop, matchedRows);
+  if (!binding || !binding.options || binding.options.length < 2) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  const options = binding.options;
+  let activeIdx = options.findIndex((o) => o.active);
+  if (activeIdx < 0) {
+    const composerBtn = findComposerModelButton(document.querySelector('.surface-composer'));
+    const compSpec = extractInlineEffortSpec((composerBtn && composerBtn.textContent) || '');
+    if (compSpec) activeIdx = options.findIndex((o) => o.rank === compSpec.rank);
+  }
+  if (activeIdx < 0) activeIdx = Math.max(0, options.length - 1);
+
+  const sig = binding.mode + ':' + options.map((o) => o.rank + (o.disabled ? 'x' : '')).join(',');
+  let box = existing;
+  if (!box || box.dataset.agySig !== sig) {
+    if (box) box.remove();
+    box = document.createElement('div');
+    box.id = 'agy-real-effort-box';
+    box.className = 'notranslate';
+    box.dataset.agySig = sig;
+    box.innerHTML =
+      '<div class="agy-re-head">' +
+        '<span class="agy-re-title"><span class="agy-re-live-dot"></span><span>思考强度</span></span>' +
+        '<span class="agy-thinking-level agy-re-val"></span>' +
+      '</div>' +
+      '<div class="agy-re-track" role="slider" tabindex="0" aria-label="思考强度" aria-valuemin="0" aria-valuemax="' + (options.length - 1) + '">' +
+        '<div class="agy-re-fill"></div>' +
+        '<div class="agy-re-thumb"></div>' +
+      '</div>' +
+      '<div class="agy-re-ticks">' +
+        options.map((o, i) => '<button type="button" class="agy-re-tick" data-idx="' + i + '"' + (o.disabled ? ' disabled' : '') + '>' + escHtml(o.short) + '</button>').join('') +
+      '</div>';
+    pop.appendChild(box);
+  }
+
+  box.__agyBinding = binding;
+  const track = box.querySelector('.agy-re-track');
+  const fill = box.querySelector('.agy-re-fill');
+  const thumb = box.querySelector('.agy-re-thumb');
+  const valEl = box.querySelector('.agy-re-val');
+  const ticks = box.querySelectorAll('.agy-re-tick');
+
+  const renderIdx = (idx) => {
+    const curBinding = box.__agyBinding || binding;
+    const opts = curBinding.options;
+    const safeIdx = Math.max(0, Math.min(opts.length - 1, idx));
+    const ratio = opts.length > 1 ? (safeIdx / (opts.length - 1)) : 1;
+    const pct = (ratio * 100).toFixed(1);
+    const thumbLeft = (11 + ratio * (track.clientWidth ? (track.clientWidth - 22) : 200));
+    if (fill) fill.style.width = 'calc(24px + (100% - 24px) * ' + ratio.toFixed(4) + ')';
+    if (thumb) thumb.style.left = track.clientWidth ? (thumbLeft.toFixed(1) + 'px') : ('calc(12px + (100% - 24px) * ' + ratio.toFixed(4) + ')');
+    if (valEl) valEl.textContent = opts[safeIdx].label;
+    track.setAttribute('aria-valuenow', String(safeIdx));
+    track.setAttribute('aria-valuetext', opts[safeIdx].label);
+    track.dataset.curIdx = String(safeIdx);
+    for (let i = 0; i < ticks.length; i++) {
+      ticks[i].classList.toggle('active', i === safeIdx);
+    }
+    track.style.setProperty('--agy-slider-pct', pct + '%');
+  };
+
+  if (!track.classList.contains('dragging')) {
+    renderIdx(activeIdx);
+  }
+
+  if (!box.dataset.agyBound) {
+    box.dataset.agyBound = '1';
+    const commitIdx = (nextIdx) => {
+      const curBinding = box.__agyBinding;
+      if (!curBinding || !curBinding.options[nextIdx] || curBinding.options[nextIdx].disabled) return;
+      const prevIdx = Number(track.dataset.curIdx || 0);
+      renderIdx(nextIdx);
+      if (nextIdx !== prevIdx) {
+        selectRealEffortOption(curBinding, nextIdx, () => {
+          decorateModelPopovers();
+          const comp = document.querySelector('.surface-composer');
+          if (comp) decorateComposerModelTrigger(comp);
+        });
+      }
+    };
+
+    const idxFromClientX = (clientX) => {
+      const curBinding = box.__agyBinding;
+      const n = curBinding ? curBinding.options.length : 1;
+      if (n <= 1) return 0;
+      const r = track.getBoundingClientRect();
+      if (r.width <= 0) return 0;
+      const norm = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      return Math.round(norm * (n - 1));
+    };
+
+    track.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      track.classList.add('dragging');
+      try { track.setPointerCapture(e.pointerId); } catch (_) {}
+      renderIdx(idxFromClientX(e.clientX));
+    });
+    track.addEventListener('pointermove', (e) => {
+      if (!track.classList.contains('dragging')) return;
+      e.stopPropagation();
+      renderIdx(idxFromClientX(e.clientX));
+    });
+    const finishDrag = (e) => {
+      if (!track.classList.contains('dragging')) return;
+      e.stopPropagation();
+      track.classList.remove('dragging');
+      try { track.releasePointerCapture(e.pointerId); } catch (_) {}
+      const targetIdx = idxFromClientX(e.clientX);
+      const curBinding = box.__agyBinding;
+      if (curBinding && curBinding.options[targetIdx] && !curBinding.options[targetIdx].disabled) {
+        renderIdx(targetIdx);
+        selectRealEffortOption(curBinding, targetIdx, () => {
+          decorateModelPopovers();
+          const comp = document.querySelector('.surface-composer');
+          if (comp) decorateComposerModelTrigger(comp);
+        });
+      }
+    };
+    track.addEventListener('pointerup', finishDrag);
+    track.addEventListener('pointercancel', finishDrag);
+    track.addEventListener('keydown', (e) => {
+      const cur = Number(track.dataset.curIdx || 0);
+      const maxIdx = (box.__agyBinding?.options.length || 1) - 1;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        commitIdx(Math.min(maxIdx, cur + 1));
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        commitIdx(Math.max(0, cur - 1));
+      }
+    });
+    box.addEventListener('click', (e) => {
+      const tb = e.target instanceof Element ? e.target.closest('.agy-re-tick') : null;
+      if (!tb) return;
+      e.stopPropagation();
+      commitIdx(Number(tb.dataset.idx || 0));
+    });
+  }
+}
+
+function decorateSingleModelPopover(pop) {
+  if (!pop || pop.nodeType !== 1 || isOwnControlElement(pop)) return;
+  if (pop.classList.contains('settings-modal-container')) return;
+
+  const fullText = (pop.textContent || '').slice(0, 2600);
+  if (!MODEL_NAME_STRICT_RX.test(fullText)) return;
+
+  const rowCandidates = pop.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], button, div[tabindex="0"]');
+  const matchedRows = [];
+  let orchestratorBtn = null;
+
+  for (let i = 0; i < rowCandidates.length; i++) {
+    const el = rowCandidates[i];
+    if (el === pop || el.getAttribute('role') === 'slider' || el.closest('#agy-real-effort-box')) continue;
+    const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!txt || txt.length > 96) continue;
+    if (ORCHESTRATOR_RX.test(txt) && txt.length <= 28 && !MODEL_NAME_STRICT_RX.test(txt)) {
+      orchestratorBtn = el;
+      continue;
+    }
+    const tone = classifyModelTone(txt);
+    if (tone) {
+      if (el.querySelector('[role="menuitem"], [role="menuitemradio"], [role="option"]')) continue;
+      matchedRows.push({ el, tone });
+    }
+  }
+
+  const hasControlHint = Boolean(orchestratorBtn) || THINKING_LABEL_RX.test(fullText) || /主\s*Agent|Main\s*Agent/i.test(fullText);
+  if (matchedRows.length < 2 && !(matchedRows.length >= 1 && hasControlHint)) return;
+
+  if (!pop.classList.contains('agy-model-popover')) {
+    pop.classList.add('agy-model-popover');
+  }
+
+  for (let i = 0; i < matchedRows.length; i++) {
+    const { el, tone } = matchedRows[i];
+    if (!el.classList.contains('agy-model-item')) el.classList.add('agy-model-item');
+    if (el.getAttribute('data-agy-model-tone') !== tone) {
+      el.setAttribute('data-agy-model-tone', tone);
+    }
+    const leafSpans = el.querySelectorAll('span, small');
+    for (let j = 0; j < leafSpans.length; j++) {
+      const sp = leafSpans[j];
+      if (sp.children.length > 0) continue;
+      const st = (sp.textContent || '').trim();
+      if (EFFORT_WORD_RX.test(st)) {
+        if (sp.getAttribute('data-agy-effort') !== '1') sp.setAttribute('data-agy-effort', '1');
+      }
+    }
+  }
+
+  if (orchestratorBtn && !orchestratorBtn.classList.contains('agy-orchestrator-pill')) {
+    orchestratorBtn.classList.add('agy-orchestrator-pill');
+  }
+
+  const allLeafNodes = pop.querySelectorAll('span, div, label, p');
+  for (let i = 0; i < allLeafNodes.length; i++) {
+    const node = allLeafNodes[i];
+    if (node.children.length > 0 || node.closest('#agy-real-effort-box')) continue;
+    const nt = (node.textContent || '').trim();
+    if (!THINKING_LABEL_RX.test(nt)) continue;
+    let row = node.parentElement;
+    if (row && row.parentElement && row.parentElement !== pop && (row.parentElement.textContent || '').trim().length <= 60) {
+      row = row.parentElement;
+    }
+    if (!row) continue;
+    const siblings = row.querySelectorAll('span, div, strong, b');
+    for (let j = 0; j < siblings.length; j++) {
+      const sib = siblings[j];
+      if (sib === node || sib.children.length > 0) continue;
+      if (EFFORT_WORD_RX.test((sib.textContent || '').trim())) {
+        if (!sib.classList.contains('agy-thinking-level')) sib.classList.add('agy-thinking-level');
+      }
+    }
+  }
+
+  // Path 1: Native range OR Radix/ARIA slider inside the popover
+  const nativeRanges = pop.querySelectorAll('input[type="range"]');
+  for (let i = 0; i < nativeRanges.length; i++) {
+    const inp = nativeRanges[i];
+    if (inp.closest('#agy-real-effort-box')) continue;
+    if (!inp.classList.contains('agy-thinking-range-input')) inp.classList.add('agy-thinking-range-input');
+    syncNativeRangeProgress(inp);
+    if (!inp.dataset.agyRangeBound) {
+      inp.dataset.agyRangeBound = '1';
+      inp.addEventListener('input', () => syncNativeRangeProgress(inp));
+      inp.addEventListener('change', () => syncNativeRangeProgress(inp));
+    }
+  }
+
+  const ariaSliders = Array.from(pop.querySelectorAll('[role="slider"]')).filter((s) => !s.closest('#agy-real-effort-box'));
+  for (let i = 0; i < ariaSliders.length; i++) {
+    const thumb = ariaSliders[i];
+    if (!thumb.classList.contains('agy-thinking-thumb')) thumb.classList.add('agy-thinking-thumb');
+    const root = thumb.closest('[data-orientation="horizontal"], [data-radix-slider-root]') || thumb.parentElement?.parentElement;
+    if (!root || !pop.contains(root)) continue;
+    if (!root.classList.contains('agy-thinking-slider')) root.classList.add('agy-thinking-slider');
+    const track = root.querySelector('[data-radix-slider-track]') || Array.from(root.children).find((c) => c !== thumb && !c.contains(thumb));
+    if (track) {
+      if (!track.classList.contains('agy-thinking-track')) track.classList.add('agy-thinking-track');
+      const range = track.querySelector('[data-radix-slider-range]') || track.firstElementChild;
+      if (range && !range.classList.contains('agy-thinking-range')) {
+        range.classList.add('agy-thinking-range');
+      }
+    }
+  }
+
+  // Paths 2–4: Mount REAL-bound liquid-glass slider when native UI uses discrete effort buttons/variants/dropdown
+  const hasNativeSlider = nativeRanges.length > 0 || ariaSliders.length > 0;
+  mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider);
+}
+
+function decorateModelPopovers() {
+  const candidates = document.querySelectorAll(
+    '[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content], ' +
+    '[data-radix-popper-content-wrapper] > div, [data-floating-ui-portal] > div, ' +
+    'div[class*="popover-content"], div[class*="dropdown-content"]'
+  );
+  for (let i = 0; i < candidates.length; i++) {
+    decorateSingleModelPopover(candidates[i]);
+  }
 }
 
 function findThemeButtonHost() {
@@ -5247,27 +7196,72 @@ function mountCodexRingAndTopTheme() {
   }
   if (st.textContent !== CUSTOM_UI_CSS) st.textContent = CUSTOM_UI_CSS;
 
-  // 1. Mount Codex Context Ring immediately left of Permissions button inside .surface-composer
+  // 1. Mount Bottom-Bar Tri-Metric Telemetry Strip right next to Model Trigger (fallback: left of Permissions button)
   const composer = document.querySelector('.surface-composer');
   if (composer) {
     bindComposerResizeObserver(composer);
-    const anchor = findPermissionButtonInComposer(composer);
-    if (anchor && anchor.parentElement) {
+    const modelBtn = decorateComposerModelTrigger(composer);
+    let mountHost = null;
+    let mountRef = null;
+
+    if (modelBtn && modelBtn.parentElement) {
+      let hostEl = modelBtn;
+      while (
+        hostEl.parentElement &&
+        hostEl.parentElement !== composer &&
+        hostEl.parentElement.children.length === 1
+      ) {
+        hostEl = hostEl.parentElement;
+      }
+      if (hostEl.parentElement) {
+        mountHost = hostEl.parentElement;
+        mountRef = hostEl.nextElementSibling;
+      }
+    }
+
+    if (!mountHost) {
+      const permAnchor = findPermissionButtonInComposer(composer);
+      if (permAnchor && permAnchor.parentElement) {
+        mountHost = permAnchor.parentElement;
+        mountRef = permAnchor;
+      }
+    }
+
+    if (mountHost) {
       let ctxBtn = document.getElementById('agy-codex-ctx-btn');
       if (!ctxBtn) {
         ctxBtn = document.createElement('button');
         ctxBtn.id = 'agy-codex-ctx-btn';
         ctxBtn.type = 'button';
         ctxBtn.className = 'notranslate';
-        ctxBtn.setAttribute('aria-label', '查看上下文窗口与模型额度');
+        ctxBtn.setAttribute('aria-label', '查看上下文占用与 5 小时/每周模型配额');
         ctxBtn.setAttribute('aria-controls', 'agy-pulse-drawer');
         ctxBtn.setAttribute('aria-expanded', String(document.getElementById('agy-pulse-drawer')?.classList.contains('open') === true));
         ctxBtn.innerHTML =
-          '<svg class="codex-ring-svg" viewBox="0 0 16 16" fill="none">' +
-            '<circle class="codex-ring-bg" cx="8" cy="8" r="5.4" stroke-width="2.1"/>' +
-            '<circle class="codex-ring-fg" cx="8" cy="8" r="5.4" stroke-width="2.1" stroke-dasharray="33.93" stroke-dashoffset="33.93" stroke-linecap="round"/>' +
-          '</svg>' +
-          '<span class="codex-ctx-pct">--%</span>';
+          '<span class="agy-tm-metric agy-ctx-item" data-level="normal" title="上下文窗口占用">' +
+            '<svg class="agy-tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+              '<ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/>' +
+              '<path d="M4.5 5.5v13c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-13"/>' +
+              '<path d="M4.5 12c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8"/>' +
+            '</svg>' +
+            '<span class="agy-tm-val agy-ctx-val">0%</span>' +
+          '</span>' +
+          '<span class="agy-tm-metric agy-q5h-item is-hidden" data-level="normal" title="5 小时配额余量">' +
+            '<svg class="agy-tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+              '<circle cx="12" cy="12" r="8.5"/>' +
+              '<polyline points="12 7.5 12 12 15.2 13.8"/>' +
+            '</svg>' +
+            '<span class="agy-tm-val agy-q5h-val">--%</span>' +
+          '</span>' +
+          '<span class="agy-tm-metric agy-qwk-item is-hidden" data-level="normal" title="每周配额余量">' +
+            '<svg class="agy-tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+              '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/>' +
+              '<line x1="8" y1="3" x2="8" y2="6.5"/>' +
+              '<line x1="16" y1="3" x2="16" y2="6.5"/>' +
+              '<line x1="3.5" y1="10" x2="20.5" y2="10"/>' +
+            '</svg>' +
+            '<span class="agy-tm-val agy-qwk-val">--%</span>' +
+          '</span>';
 
         ctxBtn.addEventListener('mouseenter', () => {
           if (document.getElementById('agy-pulse-drawer')?.classList.contains('open')) return;
@@ -5304,12 +7298,13 @@ function mountCodexRingAndTopTheme() {
         });
       }
 
-      if (ctxBtn.parentElement !== anchor.parentElement || ctxBtn.nextElementSibling !== anchor) {
-        anchor.parentElement.insertBefore(ctxBtn, anchor);
+      if (ctxBtn !== mountRef && (ctxBtn.parentElement !== mountHost || ctxBtn.nextElementSibling !== mountRef)) {
+        mountHost.insertBefore(ctxBtn, mountRef || null);
       }
       if (window.__agyLastTelemetry) updateTelemetryUI(window.__agyLastTelemetry);
     }
   }
+  decorateModelPopovers();
 
   // 2. Mount Topbar Theme Switcher Pill (Windows title-menu-bar & macOS pane-titlebar-toolbar)
   const themeHost = findThemeButtonHost();
@@ -5389,9 +7384,20 @@ function ensureObserver() {
     } else if (composerChanged) {
       bindComposerResizeObserver(composer);
     }
+    if (composer) decorateComposerModelTrigger(composer);
+    decorateModelPopovers();
     if (window.__agyUpdateState && window.__agyUpdateState.available && !document.getElementById('agy-kit-update-wrap')) {
       syncSidebarUpdatePill();
     }
+  }
+
+  // Lightweight visibility-gated heartbeat so Hakimi busy/sprint transitions NEVER stall
+  if (!window.__AGY_HAKIMI_HEARTBEAT__) {
+    window.__AGY_HAKIMI_HEARTBEAT__ = window.setInterval(() => {
+      if (document.hidden) return;
+      syncHakimiStateNow();
+      decorateModelPopovers();
+    }, 850);
   }
 
   const observer = new MutationObserver((mutations) => {
@@ -5449,6 +7455,12 @@ window.__AGY_THEME__ = {
   set: (m) => applyThemeMode(m),
   get: () => readThemeMode(),
   list: () => VALID_THEMES.slice(),
+  setWallpaper: (w) => applyWallpaperMode(w),
+  getWallpaper: () => readWallpaperMode(),
+  listWallpapers: () => VALID_WALLPAPERS.slice(),
+  setWallpaperAlpha: (a) => applyWallpaperAlpha(a),
+  pickWallpaper: () => openCustomWallpaperPicker(),
+  wuhun: () => triggerHakimiWuhunRage(true),
   openPulse: () => togglePulseSidePanel(),
   closeInlineAsk: () => closeInlineAskPopover(),
 };
@@ -5456,6 +7468,7 @@ window.__AGY_THEME__ = {
 window.__AGY_I18N__ = {
   refresh() {
     syncDarkAttribute();
+    applyWallpaperMode(readWallpaperMode());
     scan(document.body);
     ensureObserver();
     mountCodexRingAndTopTheme();
@@ -5468,10 +7481,11 @@ window.__AGY_I18N__ = {
 
 syncDarkAttribute();
 applyThemeMode(readThemeMode());
+applyWallpaperMode(readWallpaperMode());
 scan(document.body);
 ensureObserver();
 mountCodexRingAndTopTheme();
 mountMuseHakimi();
 mountInlineAskEngine();
 
-return 'AGY_MUSE_PULSE_V2_120FPS_OK';
+return 'AGY_MUSE_PULSE_V3_120FPS_OK';

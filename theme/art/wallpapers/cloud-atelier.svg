@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0.2" y2="1">
+    <stop offset="0%" stop-color="#60a5fa"/>
+    <stop offset="36%" stop-color="#93c5fd"/>
+    <stop offset="72%" stop-color="#dbeafe"/>
+    <stop offset="100%" stop-color="#fef3c7"/>
+  </linearGradient>
+  <radialGradient id="sun" cx="84%" cy="14%" r="44%">
+    <stop offset="0%" stop-color="#fffbeb" stop-opacity="0.96"/>
+    <stop offset="28%" stop-color="#fef08a" stop-opacity="0.46"/>
+    <stop offset="65%" stop-color="#fed7aa" stop-opacity="0.16"/>
+    <stop offset="100%" stop-color="#93c5fd" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="cloudLit" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
+    <stop offset="58%" stop-color="#f8fafc" stop-opacity="0.92"/>
+    <stop offset="100%" stop-color="#cbd5e1" stop-opacity="0.78"/>
+  </linearGradient>
+  <linearGradient id="cloudWarm" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#fffbeb" stop-opacity="0.98"/>
+    <stop offset="60%" stop-color="#fef2f2" stop-opacity="0.90"/>
+    <stop offset="100%" stop-color="#bfdbfe" stop-opacity="0.72"/>
+  </linearGradient>
+  <filter id="cBlur" x="-15%" y="-15%" width="130%" height="130%"><feGaussianBlur stdDeviation="16"/></filter>
+  <filter id="rayBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="24"/></filter>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<rect width="1600" height="900" fill="url(#sun)"/>
+<g opacity="0.26" filter="url(#rayBlur)">
+  <polygon points="1360,80 760,900 940,900" fill="#fffbeb"/>
+  <polygon points="1360,80 1060,900 1240,900" fill="#fef3c7"/>
+  <polygon points="1360,80 420,900 560,900" fill="#ffffff"/>
+</g>
+<g filter="url(#cBlur)" opacity="0.58">
+  <ellipse cx="120" cy="140" rx="220" ry="62" fill="#ffffff"/>
+  <ellipse cx="1470" cy="210" rx="210" ry="56" fill="#fffbeb"/>
+</g>
+<g filter="url(#cBlur)">
+  <ellipse cx="110" cy="830" rx="280" ry="150" fill="url(#cloudLit)"/>
+  <ellipse cx="320" cy="860" rx="260" ry="135" fill="url(#cloudLit)"/>
+  <ellipse cx="220" cy="760" rx="185" ry="118" fill="url(#cloudLit)"/>
+  <ellipse cx="520" cy="895" rx="250" ry="110" fill="url(#cloudWarm)"/>
+  <ellipse cx="1140" cy="885" rx="270" ry="125" fill="url(#cloudWarm)"/>
+  <ellipse cx="1390" cy="810" rx="290" ry="165" fill="url(#cloudWarm)"/>
+  <ellipse cx="1520" cy="730" rx="220" ry="150" fill="url(#cloudWarm)"/>
+  <ellipse cx="1260" cy="765" rx="175" ry="110" fill="#ffffff" opacity="0.92"/>
+</g>
+<g opacity="0.72">
+  <ellipse cx="140" cy="240" rx="9" ry="4.5" transform="rotate(-24 140 240)" fill="#fbcfe8"/>
+  <ellipse cx="215" cy="310" rx="7" ry="3.5" transform="rotate(18 215 310)" fill="#fce7f3"/>
+  <ellipse cx="1420" cy="320" rx="8" ry="4" transform="rotate(-32 1420 320)" fill="#fbcfe8"/>
+  <ellipse cx="1495" cy="430" rx="10" ry="5" transform="rotate(22 1495 430)" fill="#fde68a"/>
+  <ellipse cx="88" cy="540" rx="8" ry="4" transform="rotate(35 88 540)" fill="#fbcfe8"/>
+</g>
+</svg>

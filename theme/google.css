@@ -466,30 +466,30 @@ html[data-agy-theme="google"] div[class*="dropdown-content"] {
   pointer-events: auto !important;
 }
 
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="dialog"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="menu"],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="menu"]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="tooltip"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="listbox"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-menu-content],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-select-content],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [role="listbox"]:not(.agy-model-popover),
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-menu-content]:not(.agy-model-popover),
+html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-select-content]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[data-side][role="tooltip"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="popover-content"],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="tooltip"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="dropdown-content"],
+html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html:not([data-agy-theme]):not([data-agy-dark="1"]) .settings-modal-container,
 html:not([data-agy-theme]):not([data-agy-dark="1"]) div[class*="modal-container"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="dialog"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="menu"],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="dialog"]:not(.agy-model-popover),
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="menu"]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="tooltip"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="listbox"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-menu-content],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-select-content],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [role="listbox"]:not(.agy-model-popover),
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-menu-content]:not(.agy-model-popover),
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-select-content]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) [data-radix-tooltip-content],
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[data-side][role="tooltip"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="popover-content"],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="popover-content"]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="tooltip"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="dropdown-content"],
+html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="dropdown-content"]:not(.agy-model-popover),
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) .settings-modal-container,
 html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="modal-container"] {
   --background: #ffffff !important;
@@ -504,18 +504,18 @@ html[data-agy-theme="google"]:not([data-agy-dark="1"]) div[class*="modal-contain
   -webkit-backdrop-filter: none !important;
 }
 
-html:not([data-agy-theme])[data-agy-dark="1"] [role="menu"],
-html:not([data-agy-theme])[data-agy-dark="1"] [role="listbox"],
-html:not([data-agy-theme])[data-agy-dark="1"] [data-radix-menu-content],
-html:not([data-agy-theme])[data-agy-dark="1"] [data-radix-select-content],
-html:not([data-agy-theme])[data-agy-dark="1"] div[class*="dropdown-content"],
-html:not([data-agy-theme])[data-agy-dark="1"] div[class*="popover-content"],
-html[data-agy-theme="google"][data-agy-dark="1"] [role="menu"],
-html[data-agy-theme="google"][data-agy-dark="1"] [role="listbox"],
-html[data-agy-theme="google"][data-agy-dark="1"] [data-radix-menu-content],
-html[data-agy-theme="google"][data-agy-dark="1"] [data-radix-select-content],
-html[data-agy-theme="google"][data-agy-dark="1"] div[class*="dropdown-content"],
-html[data-agy-theme="google"][data-agy-dark="1"] div[class*="popover-content"] {
+html:not([data-agy-theme])[data-agy-dark="1"] [role="menu"]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] [role="listbox"]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] [data-radix-menu-content]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] [data-radix-select-content]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] div[class*="dropdown-content"]:not(.agy-model-popover),
+html:not([data-agy-theme])[data-agy-dark="1"] div[class*="popover-content"]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] [role="menu"]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] [role="listbox"]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] [data-radix-menu-content]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] [data-radix-select-content]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] div[class*="dropdown-content"]:not(.agy-model-popover),
+html[data-agy-theme="google"][data-agy-dark="1"] div[class*="popover-content"]:not(.agy-model-popover) {
   background-color: #161d26 !important;
   color: var(--gs-ink) !important;
   opacity: 1 !important;

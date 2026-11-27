@@ -222,6 +222,7 @@ async function handleRequest(req, res) {
         const ap = payload.quota?.activePool;
         const sig = JSON.stringify([
           payload.activeConversationId,
+          Boolean(payload.isRunning),
           payload.metrics?.steps,
           payload.metrics?.turns,
           payload.metrics?.cumulativeTokens,

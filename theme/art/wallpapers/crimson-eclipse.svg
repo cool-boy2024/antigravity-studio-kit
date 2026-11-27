@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#0a0c14"/>
+    <stop offset="48%" stop-color="#11101c"/>
+    <stop offset="100%" stop-color="#1d0d16"/>
+  </linearGradient>
+  <radialGradient id="glowTR" cx="84%" cy="22%" r="48%">
+    <stop offset="0%" stop-color="#e11d48" stop-opacity="0.48"/>
+    <stop offset="42%" stop-color="#9f1239" stop-opacity="0.22"/>
+    <stop offset="100%" stop-color="#0a0c14" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glowBL" cx="16%" cy="82%" r="46%">
+    <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.34"/>
+    <stop offset="38%" stop-color="#be123c" stop-opacity="0.22"/>
+    <stop offset="100%" stop-color="#0a0c14" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="glowMid" cx="50%" cy="46%" r="52%">
+    <stop offset="0%" stop-color="#6366f1" stop-opacity="0.14"/>
+    <stop offset="100%" stop-color="#0a0c14" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="silk1" x1="0%" y1="0%" x2="100%" y2="30%">
+    <stop offset="0%" stop-color="#f43f5e" stop-opacity="0"/>
+    <stop offset="28%" stop-color="#fb7185" stop-opacity="0.52"/>
+    <stop offset="65%" stop-color="#f59e0b" stop-opacity="0.34"/>
+    <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="silk2" x1="0%" y1="100%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#be123c" stop-opacity="0"/>
+    <stop offset="35%" stop-color="#e11d48" stop-opacity="0.45"/>
+    <stop offset="72%" stop-color="#a855f7" stop-opacity="0.32"/>
+    <stop offset="100%" stop-color="#38bdf8" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="ringG" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#fda4af" stop-opacity="0.95"/>
+    <stop offset="50%" stop-color="#e11d48" stop-opacity="0.72"/>
+    <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.88"/>
+  </linearGradient>
+  <filter id="blurLg" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="28"/></filter>
+  <filter id="blurMd" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="10"/></filter>
+  <filter id="blurSm" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3"/></filter>
+</defs>
+<rect width="1600" height="900" fill="url(#bg)"/>
+<rect width="1600" height="900" fill="url(#glowTR)"/>
+<rect width="1600" height="900" fill="url(#glowBL)"/>
+<rect width="1600" height="900" fill="url(#glowMid)"/>
+<path d="M-80 260 C320 60, 620 420, 1080 180 C1320 60, 1480 160, 1680 90 L1680 260 C1420 320, 1260 200, 1020 320 C620 520, 280 200, -80 380 Z" fill="url(#silk1)" filter="url(#blurLg)"/>
+<path d="M-100 760 C260 560, 680 860, 1140 620 C1380 500, 1520 590, 1700 500 L1700 680 C1480 750, 1320 660, 1080 760 C660 940, 260 700, -100 860 Z" fill="url(#silk2)" filter="url(#blurLg)"/>
+<ellipse cx="1340" cy="210" rx="280" ry="260" fill="none" stroke="url(#ringG)" stroke-width="22" opacity="0.28" filter="url(#blurLg)"/>
+<ellipse cx="1340" cy="210" rx="280" ry="260" fill="none" stroke="url(#ringG)" stroke-width="3.5" opacity="0.88" filter="url(#blurSm)"/>
+<ellipse cx="1340" cy="210" rx="210" ry="195" fill="none" stroke="#fda4af" stroke-width="1.4" opacity="0.42"/>
+<ellipse cx="220" cy="730" rx="250" ry="230" fill="none" stroke="url(#ringG)" stroke-width="18" opacity="0.24" filter="url(#blurLg)"/>
+<ellipse cx="220" cy="730" rx="250" ry="230" fill="none" stroke="url(#ringG)" stroke-width="2.8" opacity="0.78" filter="url(#blurSm)"/>
+<g opacity="0.75">
+  <circle cx="140" cy="140" r="2.2" fill="#ffe4e6"/><circle cx="290" cy="90" r="1.5" fill="#fda4af"/>
+  <circle cx="480" cy="180" r="1.4" fill="#e2e8f0"/><circle cx="720" cy="88" r="1.8" fill="#fef3c7"/>
+  <circle cx="980" cy="120" r="1.5" fill="#fda4af"/><circle cx="1160" cy="70" r="2.2" fill="#ffe4e6"/>
+  <circle cx="1480" cy="430" r="2.0" fill="#fef3c7"/><circle cx="1380" cy="740" r="2.4" fill="#fda4af"/>
+  <circle cx="1120" cy="810" r="1.6" fill="#e2e8f0"/><circle cx="640" cy="820" r="1.5" fill="#fde68a"/>
+  <circle cx="180" cy="460" r="1.8" fill="#fda4af"/><circle cx="1510" cy="120" r="2.5" fill="#fff1f2"/>
+</g>
+<g filter="url(#blurMd)" opacity="0.32">
+  <circle cx="1460" cy="310" r="36" fill="#fb7185"/><circle cx="1220" cy="95" r="28" fill="#f59e0b"/>
+  <circle cx="140" cy="610" r="42" fill="#e11d48"/><circle cx="340" cy="820" r="32" fill="#a855f7"/>
+</g>
+</svg>

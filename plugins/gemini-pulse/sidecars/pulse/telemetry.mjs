@@ -900,6 +900,10 @@ export async function buildFullTelemetryPayload({ convId = "auto", forceQuota = 
 
   const fullMetrics = target ? parseConversationTranscript(target.logPath, quota.modelCaps, settings.capMode) : null;
   const activePool = activeQuotaPool(quota.pools, [fullMetrics?.activeModelLabel, fullMetrics?.activeModel].filter(Boolean).join(" "));
+  const nowMs = Date.now();
+  const recentlyModified = Boolean(target && (nowMs - target.mtimeMs) < 6000);
+  const pendingTurn = Boolean(fullMetrics && (fullMetrics.lastEventType === "USER_INPUT" || fullMetrics.lastEventType === "TOOL_RESULT" || fullMetrics.lastEventType === "OBSERVATION"));
+  const isRunning = Boolean(recentlyModified || (pendingTurn && fullMetrics && (nowMs - (fullMetrics.lastEventAtMs || 0)) < 120000));
 
   if (compact) {
     let metrics = null;
@@ -910,6 +914,7 @@ export async function buildFullTelemetryPayload({ convId = "auto", forceQuota = 
     return {
       activeConversationId: target ? target.id : null,
       activeTitle: (target && target.title) || fullMetrics?.titlePreview || "",
+      isRunning,
       settings,
       quota: {
         activePool,
@@ -932,6 +937,7 @@ export async function buildFullTelemetryPayload({ convId = "auto", forceQuota = 
   return {
     activeConversationId: target ? target.id : null,
     activeTitle: (target && target.title) || fullMetrics?.titlePreview || "",
+    isRunning,
     mode: convId && convId !== "auto" ? "pinned" : "auto",
     conversations: conversations.map((c) => ({
       id: c.id,
