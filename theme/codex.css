@@ -527,11 +527,8 @@ html[data-agy-theme="codex"] .agy-ia-send:hover:not(:disabled) {
       酒红液态高光 Orchestrator 胶囊与真实思考强度滑块（跨主题联动，零 :has()）
    ============================================================ */
 
-/* 9.1 弹窗磨砂玻璃容器（亮色 / 暗色自适应，仅作用于 .agy-model-popover） */
-html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover,
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover,
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover,
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover {
+/* 9.1 弹窗磨砂玻璃容器（亮色 / 暗色自适应，全主题生效） */
+html:not([data-agy-dark="1"]) .agy-model-popover {
   --popover: rgba(252, 253, 255, 0.84) !important;
   --background: rgba(252, 253, 255, 0.84) !important;
   background: linear-gradient(155deg, rgba(255, 255, 255, 0.88) 0%, rgba(244, 246, 251, 0.80) 100%) !important;
@@ -553,10 +550,7 @@ html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover {
   border-color: rgba(235, 224, 208, 0.85) !important;
 }
 
-html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover,
-html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover,
-html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover,
-html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover {
+html[data-agy-dark="1"] .agy-model-popover {
   --popover: rgba(28, 29, 36, 0.86) !important;
   --background: rgba(28, 29, 36, 0.86) !important;
   background: linear-gradient(155deg, rgba(34, 35, 44, 0.88) 0%, rgba(22, 23, 30, 0.82) 100%) !important;
@@ -572,63 +566,15 @@ html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover {
   opacity: 1 !important;
 }
 
-/* 9.2 模型专属语义色令牌（亮/暗高对比） */
-html:not([data-agy-theme]) [data-agy-model-tone="neon"],
-html[data-agy-theme="google"] [data-agy-model-tone="neon"],
-html[data-agy-theme="claude"] [data-agy-model-tone="neon"],
-html[data-agy-theme="codex"] [data-agy-model-tone="neon"] {
-  --agy-m-color: #cf2647;
-  --agy-m-glow: rgba(207, 38, 71, 0.34);
-}
-html:not([data-agy-theme]) [data-agy-model-tone="carbon"],
-html[data-agy-theme="google"] [data-agy-model-tone="carbon"],
-html[data-agy-theme="claude"] [data-agy-model-tone="carbon"],
-html[data-agy-theme="codex"] [data-agy-model-tone="carbon"] {
-  --agy-m-color: #b46d1e;
-  --agy-m-glow: rgba(180, 109, 30, 0.32);
-}
-html:not([data-agy-theme]) [data-agy-model-tone="argon"],
-html[data-agy-theme="google"] [data-agy-model-tone="argon"],
-html[data-agy-theme="claude"] [data-agy-model-tone="argon"],
-html[data-agy-theme="codex"] [data-agy-model-tone="argon"] {
-  --agy-m-color: #4f46e5;
-  --agy-m-glow: rgba(79, 70, 229, 0.32);
-}
-html:not([data-agy-theme]) [data-agy-model-tone="hydrogen"],
-html[data-agy-theme="google"] [data-agy-model-tone="hydrogen"],
-html[data-agy-theme="claude"] [data-agy-model-tone="hydrogen"],
-html[data-agy-theme="codex"] [data-agy-model-tone="hydrogen"] {
-  --agy-m-color: #0e8aa3;
-  --agy-m-glow: rgba(14, 138, 163, 0.32);
-}
-html:not([data-agy-theme]) [data-agy-model-tone="flash"],
-html[data-agy-theme="google"] [data-agy-model-tone="flash"],
-html[data-agy-theme="claude"] [data-agy-model-tone="flash"],
-html[data-agy-theme="codex"] [data-agy-model-tone="flash"] {
-  --agy-m-color: #d49400;
-  --agy-m-glow: rgba(212, 148, 0, 0.32);
-}
-html:not([data-agy-theme]) [data-agy-model-tone="opus"],
-html[data-agy-theme="google"] [data-agy-model-tone="opus"],
-html[data-agy-theme="claude"] [data-agy-model-tone="opus"],
-html[data-agy-theme="codex"] [data-agy-model-tone="opus"] {
-  --agy-m-color: #cc4435;
-  --agy-m-glow: rgba(204, 68, 53, 0.32);
-}
-html:not([data-agy-theme]) [data-agy-model-tone="sonnet"],
-html[data-agy-theme="google"] [data-agy-model-tone="sonnet"],
-html[data-agy-theme="claude"] [data-agy-model-tone="sonnet"],
-html[data-agy-theme="codex"] [data-agy-model-tone="sonnet"] {
-  --agy-m-color: #c75b45;
-  --agy-m-glow: rgba(199, 91, 69, 0.30);
-}
-html:not([data-agy-theme]) [data-agy-model-tone="gpt"],
-html[data-agy-theme="google"] [data-agy-model-tone="gpt"],
-html[data-agy-theme="claude"] [data-agy-model-tone="gpt"],
-html[data-agy-theme="codex"] [data-agy-model-tone="gpt"] {
-  --agy-m-color: #6366f1;
-  --agy-m-glow: rgba(99, 102, 241, 0.30);
-}
+/* 9.2 模型专属语义色令牌（亮/暗高对比，全主题生效） */
+[data-agy-model-tone="neon"] { --agy-m-color: #cf2647; --agy-m-glow: rgba(207, 38, 71, 0.34); }
+[data-agy-model-tone="carbon"] { --agy-m-color: #b46d1e; --agy-m-glow: rgba(180, 109, 30, 0.32); }
+[data-agy-model-tone="argon"] { --agy-m-color: #4f46e5; --agy-m-glow: rgba(79, 70, 229, 0.32); }
+[data-agy-model-tone="hydrogen"] { --agy-m-color: #0e8aa3; --agy-m-glow: rgba(14, 138, 163, 0.32); }
+[data-agy-model-tone="flash"] { --agy-m-color: #d49400; --agy-m-glow: rgba(212, 148, 0, 0.32); }
+[data-agy-model-tone="opus"] { --agy-m-color: #cc4435; --agy-m-glow: rgba(204, 68, 53, 0.32); }
+[data-agy-model-tone="sonnet"] { --agy-m-color: #c75b45; --agy-m-glow: rgba(199, 91, 69, 0.30); }
+[data-agy-model-tone="gpt"] { --agy-m-color: #6366f1; --agy-m-glow: rgba(99, 102, 241, 0.30); }
 
 html[data-agy-dark="1"] [data-agy-model-tone="neon"] { --agy-m-color: #fb7185; --agy-m-glow: rgba(251, 113, 133, 0.40); }
 html[data-agy-dark="1"] [data-agy-model-tone="carbon"] { --agy-m-color: #f59e0b; --agy-m-glow: rgba(245, 158, 11, 0.38); }
@@ -640,20 +586,14 @@ html[data-agy-dark="1"] [data-agy-model-tone="sonnet"] { --agy-m-color: #fb923c;
 html[data-agy-dark="1"] [data-agy-model-tone="gpt"] { --agy-m-color: #a5b4fc; --agy-m-glow: rgba(165, 180, 252, 0.36); }
 
 /* 9.3 模型行：左侧专属彩色圆点 + 档位色字 + 柔和玻璃选中态 */
-html:not([data-agy-theme]) .agy-model-popover .agy-model-item,
-html[data-agy-theme="google"] .agy-model-popover .agy-model-item,
-html[data-agy-theme="claude"] .agy-model-popover .agy-model-item,
-html[data-agy-theme="codex"] .agy-model-popover .agy-model-item {
+.agy-model-popover .agy-model-item {
   position: relative !important;
   padding-left: 24px !important;
   border-radius: 9px !important;
   transition: background-color 0.11s ease !important;
 }
 
-html:not([data-agy-theme]) .agy-model-popover .agy-model-item::before,
-html[data-agy-theme="google"] .agy-model-popover .agy-model-item::before,
-html[data-agy-theme="claude"] .agy-model-popover .agy-model-item::before,
-html[data-agy-theme="codex"] .agy-model-popover .agy-model-item::before {
+.agy-model-popover .agy-model-item::before {
   content: "" !important;
   position: absolute !important;
   left: 10px !important;
@@ -671,57 +611,27 @@ html[data-agy-dark="1"] .agy-model-popover .agy-model-item::before {
   box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.35), 0 0 7px var(--agy-m-glow, rgba(138, 180, 248, 0.36)) !important;
 }
 
-html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
-html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
-html:not([data-agy-theme]):not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"],
-html[data-agy-theme="google"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"],
-html[data-agy-theme="claude"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"],
-html[data-agy-theme="codex"]:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"] {
+html:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item:hover,
+html:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-highlighted],
+html:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[aria-checked="true"],
+html:not([data-agy-dark="1"]) .agy-model-popover .agy-model-item[data-state="checked"] {
   background: rgba(15, 23, 42, 0.055) !important;
 }
 
-html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
-html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
-html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
-html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
-html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
-html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
-html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
-html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
-html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
-html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
-html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
-html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
-html:not([data-agy-theme])[data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"],
-html[data-agy-theme="google"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"],
-html[data-agy-theme="claude"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"],
-html[data-agy-theme="codex"][data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"] {
+html[data-agy-dark="1"] .agy-model-popover .agy-model-item:hover,
+html[data-agy-dark="1"] .agy-model-popover .agy-model-item[data-highlighted],
+html[data-agy-dark="1"] .agy-model-popover .agy-model-item[aria-checked="true"],
+html[data-agy-dark="1"] .agy-model-popover .agy-model-item[data-state="checked"] {
   background: rgba(255, 255, 255, 0.085) !important;
 }
 
-html:not([data-agy-theme]) .agy-model-popover .agy-model-item [data-agy-effort="1"],
-html[data-agy-theme="google"] .agy-model-popover .agy-model-item [data-agy-effort="1"],
-html[data-agy-theme="claude"] .agy-model-popover .agy-model-item [data-agy-effort="1"],
-html[data-agy-theme="codex"] .agy-model-popover .agy-model-item [data-agy-effort="1"] {
+.agy-model-popover .agy-model-item [data-agy-effort="1"] {
   color: var(--agy-m-color, var(--gs-accent, #1a73e8)) !important;
   font-weight: 600 !important;
 }
 
 /* 9.4 酒红液态高光 Orchestrator / 调度模型胶囊按钮 */
-html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill,
-html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill,
-html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill,
-html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill {
+.agy-model-popover .agy-orchestrator-pill {
   position: relative !important;
   border-radius: 999px !important;
   min-height: 34px !important;
@@ -741,17 +651,11 @@ html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill {
   overflow: hidden !important;
   transition: filter 0.12s ease, transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
 }
-html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill::before,
-html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill::before,
-html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill::before,
-html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill::before {
+.agy-model-popover .agy-orchestrator-pill::before {
   display: none !important;
 }
 
-html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill::after,
-html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill::after,
-html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill::after,
-html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill::after {
+.agy-model-popover .agy-orchestrator-pill::after {
   content: "" !important;
   position: absolute !important;
   left: 8px !important;
@@ -763,29 +667,17 @@ html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill::after {
   pointer-events: none !important;
 }
 
-html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill *,
-html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill *,
-html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill *,
-html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill * {
+.agy-model-popover .agy-orchestrator-pill * {
   color: #fff6f7 !important;
 }
 
-html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill:hover,
-html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill:hover,
-html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill:hover,
-html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill:hover {
+.agy-model-popover .agy-orchestrator-pill:hover {
   filter: brightness(1.09) !important;
   transform: translate3d(0, -0.5px, 0) !important;
 }
 
-html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
-html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
-html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
-html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
-html:not([data-agy-theme]) .agy-model-popover .agy-orchestrator-pill[data-state="unchecked"],
-html[data-agy-theme="google"] .agy-model-popover .agy-orchestrator-pill[data-state="unchecked"],
-html[data-agy-theme="claude"] .agy-model-popover .agy-orchestrator-pill[data-state="unchecked"],
-html[data-agy-theme="codex"] .agy-model-popover .agy-orchestrator-pill[data-state="unchecked"] {
+.agy-model-popover .agy-orchestrator-pill[aria-pressed="false"],
+.agy-model-popover .agy-orchestrator-pill[data-state="unchecked"] {
   opacity: 0.72 !important;
   filter: saturate(0.70) !important;
 }
@@ -1098,19 +990,6 @@ html[data-agy-dark="1"] .agy-re-tick.active {
 .agy-re-tick:disabled {
   opacity: 0.35;
   cursor: not-allowed;
-}
-.agy-re-status {
-  font-size: 10px;
-  color: var(--gs-ink-3, #64748b);
-  min-height: 13px;
-  line-height: 1.3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-}
-html[data-agy-dark="1"] .agy-re-status {
-  color: #94a3b8;
 }
 
 /* 9.6 底部输入栏当前模型触发器：模型名跟随专属语义色高亮 */

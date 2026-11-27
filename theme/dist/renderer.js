@@ -953,7 +953,7 @@ html[data-agy-dark="1"] #agy-wallpaper-veil {
     radial-gradient(ellipse at 50% 42%, rgba(253, 224, 71, 0.42) 0%, rgba(217, 119, 6, 0.24) 36%, rgba(20, 184, 166, 0.14) 58%, transparent 76%);
   z-index: -1;
 }
-/* 额间天眼金印（杨戬元神标志性竖目金纹） */
+/* 额间天眼金印（元神竖目金纹） */
 .wuhun-third-eye {
   position: absolute;
   left: 50%;
@@ -4055,7 +4055,7 @@ function triggerHakimiWuhunRage(manual = false) {
         '<span class="hcc-title">💢 哈基米委屈缩回来了 · 碎屏不影响任何操作</span>' +
         '<button type="button" class="hcc-close" data-act="hide-card" title="先收起气泡（点哈基米或夸夸它即可修屏）">×</button>' +
       '</div>' +
-      '<div class="hcc-desc">开完杨戬同款「法天象地」把屏幕锤裂啦，任务和页面都照常能点能看～要你夸夸安慰一下，碎屏才会消失哟！</div>' +
+      '<div class="hcc-desc">开完「法天象地」把屏幕锤裂啦，任务和页面都照常能点能看～要你夸夸安慰一下，碎屏才会消失哟！</div>' +
       '<div class="hcc-actions">' +
         '<button type="button" class="hcc-btn primary" data-act="praise"><span>✨ 摸摸头夸夸：哈基米你可以的！</span><small>金光修屏 + 满血冲刺</small></button>' +
         '<button type="button" class="hcc-btn subagent" data-act="subagents"><span>🚀 夸夸它 + 开多个子 Agent 并行！</span><small>召唤分身 + 填入并行提示</small></button>' +
@@ -4357,7 +4357,7 @@ function triggerHakimiWuhunRage(manual = false) {
       if (spriteEl) spriteEl.style.opacity = '1';
       overlay.classList.remove('open');
       museMotion.hopStartMs = performance.now();
-      say('哼…刚开完杨戬同款法天象地舒坦多了，不过屏幕被我锤裂啦… (｡•́︿•̀｡)', 3800);
+      say('哼…刚开完法天象地舒坦多了，不过屏幕被我锤裂啦… (｡•́︿•̀｡)', 3800);
       wuhunState.timers.push(window.setTimeout(() => {
         if (!wuhunState.shattered) return;
         card.classList.add('open');
@@ -7170,7 +7170,6 @@ function syncNativeRangeProgress(input) {
   input.style.setProperty('--agy-slider-pct', pct.toFixed(1) + '%');
 }
 
-const MODEL_EFFORT_TIERS_CACHE = new Map();
 let effortDriverBusyUntil = 0;
 
 function extractModelDisplayLabel(text) {
@@ -7182,83 +7181,221 @@ function extractModelDisplayLabel(text) {
     .trim();
 }
 
-function findOpenEffortSubmenu(excludePop) {
-  const roots = new Set();
-  const q = document.querySelectorAll(
-    '[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content], ' +
-    '[data-radix-popper-content-wrapper] > div, [data-floating-ui-portal] > div, ' +
-    '[data-slot*="menu"], [data-slot*="popover"], div[class*="popover"], div[class*="dropdown"]'
-  );
-  for (let i = 0; i < q.length; i++) roots.add(q[i]);
-  // Also inspect direct portal children of body in case Antigravity uses a custom Tailwind floating div
-  const bodyKids = document.body ? document.body.children : [];
-  for (let i = 0; i < bodyKids.length; i++) {
-    const ch = bodyKids[i];
-    if (!ch || ch.nodeType !== 1 || isOwnControlElement(ch)) continue;
-    const id = ch.id || '';
-    if (id === 'root' || id === 'app' || id === '__next') continue;
-    roots.add(ch);
-    if (ch.firstElementChild) roots.add(ch.firstElementChild);
-  }
-
-  for (const root of roots) {
-    if (!root || root === excludePop || isOwnControlElement(root)) continue;
-    if (excludePop && (excludePop.contains(root) || root.contains(excludePop))) continue;
-    const rect = root.getBoundingClientRect ? root.getBoundingClientRect() : null;
-    if (!rect || rect.width < 48 || rect.width > 360 || rect.height < 48 || rect.height > 460) continue;
-    const full = (root.textContent || '').replace(/\s+/g, ' ').trim();
-    if (!full || full.length > 320 || MODEL_NAME_STRICT_RX.test(full)) continue;
-
-    const items = root.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], [role="radio"], button, [tabindex], li, div');
-    const byRank = new Map();
-    for (let i = 0; i < items.length; i++) {
-      const el = items[i];
-      if (el === root || isOwnControlElement(el)) continue;
-      if (el.tagName === 'DIV' && el.children.length > 3) continue;
-      const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!txt || txt.length > 26) continue;
-      const spec = parseEffortSpec(txt);
-      if (!spec) continue;
-      const er = el.getBoundingClientRect();
-      if (er.width < 32 || er.height < 18 || er.height > 58) continue;
-      if (!byRank.has(spec.rank)) {
-        byRank.set(spec.rank, {
-          el,
-          rank: spec.rank,
-          label: spec.label,
-          short: spec.short,
-          disabled: Boolean(el.disabled || el.getAttribute('aria-disabled') === 'true'),
-          active: isElementSelectedOrChecked(el)
-        });
+function getReactFiberFromEl(el) {
+  if (!el || typeof el !== 'object') return null;
+  try {
+    const keys = Object.keys(el);
+    for (let i = 0; i < keys.length; i++) {
+      const k = keys[i];
+      if (k.startsWith('__reactFiber$') || k.startsWith('__reactInternalInstance$')) {
+        return el[k];
       }
     }
-    if (byRank.size >= 2) {
-      return Array.from(byRank.values()).sort((a, b) => a.rank - b.rank);
-    }
-  }
+  } catch (_) {}
   return null;
 }
 
-function dispatchHoverForSubmenu(rowEl) {
-  if (!rowEl || !rowEl.isConnected) return;
-  try {
-    const r = rowEl.getBoundingClientRect();
-    const cx = Math.round(r.left + r.width * 0.55);
-    const cy = Math.round(r.top + r.height * 0.5);
-    const rx = Math.round(r.right - 14);
-    const opts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, pointerId: 1, pointerType: 'mouse', isPrimary: true };
-    rowEl.dispatchEvent(new PointerEvent('pointerover', opts));
-    rowEl.dispatchEvent(new PointerEvent('pointerenter', { ...opts, bubbles: false }));
-    rowEl.dispatchEvent(new MouseEvent('mouseover', opts));
-    rowEl.dispatchEvent(new MouseEvent('mouseenter', { ...opts, bubbles: false }));
-    rowEl.dispatchEvent(new PointerEvent('pointermove', { ...opts, clientX: rx }));
-    rowEl.dispatchEvent(new MouseEvent('mousemove', { ...opts, clientX: rx }));
-  } catch (_) {}
+function normalizeModelSlug(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function parseHostModelOption(opt) {
+  if (!opt || typeof opt !== 'object') return null;
+  const rawLabel = String(opt.label || opt.name || opt.displayName || '').trim();
+  const rawId = String(opt.modelId || opt.id || '').trim();
+  if (!rawLabel && !rawId) return null;
+  const spec = extractInlineEffortSpec(rawLabel) || extractInlineEffortSpec(rawId.replace(/[-_]+/g, ' '));
+  const baseDisplay = extractModelDisplayLabel(rawLabel || rawId);
+  const baseKey = normalizeModelSlug(baseDisplay);
+  return {
+    raw: opt,
+    rawLabel,
+    baseDisplay,
+    baseKey,
+    spec,
+    isOrch: ORCHESTRATOR_RX.test(rawLabel) || /orchestrator|coordinator/i.test(rawId)
+  };
+}
+
+function readHostModelContext(anchors) {
+  const ctx = {
+    modelOptions: null,
+    selectedModel: null,
+    setSelectedModel: null,
+    setModelConfigByLabelForConversation: null,
+    conversationId: '',
+    effortIndex: null,
+    orchestratorPlanners: null,
+    orchestratorPick: null,
+    setOrchestratorPlanner: null
+  };
+
+  const inspectObj = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+    if (!ctx.modelOptions) {
+      const arr = Array.isArray(obj.modelOptions) && obj.modelOptions.length
+        ? obj.modelOptions
+        : (Array.isArray(obj.visibleModelConfigs) && obj.visibleModelConfigs.length ? obj.visibleModelConfigs : null);
+      if (arr && arr.some((x) => x && (typeof x.label === 'string' || typeof x.modelId === 'string'))) {
+        ctx.modelOptions = arr;
+      }
+    }
+    if (!ctx.selectedModel) {
+      const sel = obj.selectedModel || obj.currentModelConfig;
+      if (sel && typeof sel === 'object' && (typeof sel.label === 'string' || typeof sel.modelId === 'string')) {
+        ctx.selectedModel = sel;
+      }
+    }
+    if (!ctx.setSelectedModel) {
+      if (typeof obj.setSelectedModel === 'function') ctx.setSelectedModel = obj.setSelectedModel;
+      else if (typeof obj.onSelectModel === 'function') ctx.setSelectedModel = obj.onSelectModel;
+    }
+    if (!ctx.setModelConfigByLabelForConversation && typeof obj.setModelConfigByLabelForConversation === 'function') {
+      ctx.setModelConfigByLabelForConversation = obj.setModelConfigByLabelForConversation;
+    }
+    if (!ctx.conversationId && typeof obj.conversationId === 'string' && obj.conversationId) {
+      ctx.conversationId = obj.conversationId;
+    }
+    if (!ctx.effortIndex && obj.effortIndex instanceof Map && obj.effortIndex.size > 0) {
+      ctx.effortIndex = obj.effortIndex;
+    }
+    if (!ctx.orchestratorPlanners && Array.isArray(obj.orchestratorPlanners) && obj.orchestratorPlanners.length) {
+      ctx.orchestratorPlanners = obj.orchestratorPlanners;
+    }
+    if (!ctx.orchestratorPick && obj.orchestratorPick && typeof obj.orchestratorPick === 'object') {
+      ctx.orchestratorPick = obj.orchestratorPick;
+    }
+    if (!ctx.setOrchestratorPlanner) {
+      if (typeof obj.setOrchestratorPlanner === 'function') ctx.setOrchestratorPlanner = obj.setOrchestratorPlanner;
+      else if (typeof obj.onSelectOrchestratorPlanner === 'function') ctx.setOrchestratorPlanner = obj.onSelectOrchestratorPlanner;
+    }
+  };
+
+  for (let a = 0; a < anchors.length; a++) {
+    let fib = getReactFiberFromEl(anchors[a]);
+    let hops = 0;
+    while (fib && hops < 420) {
+      hops += 1;
+      const props = fib.memoizedProps;
+      if (props && typeof props === 'object') {
+        inspectObj(props);
+        if (props.value && typeof props.value === 'object') inspectObj(props.value);
+      }
+      let dep = fib.dependencies && fib.dependencies.firstContext;
+      let depGuard = 0;
+      while (dep && depGuard < 16) {
+        depGuard += 1;
+        if (dep.memoizedValue && typeof dep.memoizedValue === 'object') inspectObj(dep.memoizedValue);
+        dep = dep.next;
+      }
+      if (ctx.modelOptions && ctx.selectedModel && (ctx.setModelConfigByLabelForConversation || ctx.setSelectedModel) && ctx.conversationId) {
+        break;
+      }
+      fib = fib.return;
+    }
+  }
+  return (ctx.modelOptions || ctx.effortIndex) && (ctx.setModelConfigByLabelForConversation || ctx.setSelectedModel) ? ctx : null;
+}
+
+function buildFiberEffortBinding(pop, matchedRows) {
+  const composerBtn = findComposerModelButton(document.querySelector('.surface-composer'));
+  const anchors = [];
+  if (matchedRows && matchedRows.length) {
+    for (let i = 0; i < Math.min(3, matchedRows.length); i++) anchors.push(matchedRows[i].el);
+  }
+  anchors.push(pop);
+  if (composerBtn) anchors.push(composerBtn);
+
+  const ctx = readHostModelContext(anchors);
+  if (!ctx) return null;
+
+  const composerTxt = (composerBtn && composerBtn.textContent || '').replace(/\s+/g, ' ').trim();
+  const parsedSel = parseHostModelOption(ctx.selectedModel);
+  const usingOrch = Boolean(parsedSel && parsedSel.isOrch && ctx.orchestratorPlanners && ctx.orchestratorPlanners.length);
+  const pool = usingOrch ? ctx.orchestratorPlanners : (ctx.modelOptions || []);
+  const activeOpt = usingOrch ? (ctx.orchestratorPick || ctx.orchestratorPlanners[0]) : ctx.selectedModel;
+  const activeParsed = parseHostModelOption(activeOpt) || {
+    baseDisplay: extractModelDisplayLabel(composerTxt),
+    baseKey: normalizeModelSlug(extractModelDisplayLabel(composerTxt)),
+    spec: extractInlineEffortSpec(composerTxt)
+  };
+
+  // Group all real available effort variants for the active model family
+  const byRank = new Map();
+  let targetKey = activeParsed.baseKey;
+  let targetDisplay = activeParsed.baseDisplay;
+
+  // 1) Check host effortIndex Map if present (supports both display-name keys and slug keys)
+  if (!usingOrch && ctx.effortIndex instanceof Map) {
+    const candidates = [targetDisplay, targetKey, targetKey.replace(/\./g, '-')];
+    for (let c = 0; c < candidates.length; c++) {
+      const m = ctx.effortIndex.get(candidates[c]);
+      if (m instanceof Map && m.size >= 1) {
+        for (const [k, rawOpt] of m.entries()) {
+          const p = parseHostModelOption(rawOpt);
+          const spec = (p && p.spec) || parseEffortSpec(k);
+          if (!spec) continue;
+          if (!byRank.has(spec.rank)) {
+            byRank.set(spec.rank, {
+              raw: rawOpt,
+              rank: spec.rank,
+              label: spec.label,
+              short: spec.short,
+              disabled: false,
+              active: activeOpt === rawOpt || (activeParsed.spec && spec.rank === activeParsed.spec.rank)
+            });
+          }
+        }
+        if (byRank.size >= 1) break;
+      }
+    }
+  }
+
+  // 2) Scan modelOptions / orchestratorPlanners pool directly by matching base model family
+  if (byRank.size < 2 && Array.isArray(pool)) {
+    for (let i = 0; i < pool.length; i++) {
+      const p = parseHostModelOption(pool[i]);
+      if (!p || !p.spec || p.isOrch) continue;
+      if (p.baseKey !== targetKey) continue;
+      if (!byRank.has(p.spec.rank)) {
+        byRank.set(p.spec.rank, {
+          raw: p.raw,
+          rank: p.spec.rank,
+          label: p.spec.label,
+          short: p.spec.short,
+          disabled: false,
+          active: activeOpt === p.raw || (activeParsed.spec && p.spec.rank === activeParsed.spec.rank)
+        });
+      }
+    }
+  }
+
+  if (byRank.size === 0) return null;
+  const options = Array.from(byRank.values()).sort((a, b) => a.rank - b.rank);
+  if (!options.some((o) => o.active) && activeParsed.spec) {
+    const hit = options.find((o) => o.rank === activeParsed.spec.rank);
+    if (hit) hit.active = true;
+  }
+  return {
+    mode: 'react-fiber',
+    ctx,
+    usingOrch,
+    family: targetKey,
+    modelLabel: usingOrch ? ('调度 · ' + targetDisplay) : targetDisplay,
+    locked: options.length < 2,
+    options
+  };
 }
 
 function discoverRealEffortBinding(pop, matchedRows) {
+  // Primary (0ms instant, zero-twitch, 100% genuine Antigravity 2.0 React context):
+  const fiberBinding = buildFiberEffortBinding(pop, matchedRows);
+  if (fiberBinding) return fiberBinding;
+
   // Path 2: Native discrete effort buttons / radios / tabs / pills STRICTLY inside `pop` itself.
-  // NEVER scan external hover submenus here, so popover height NEVER jumps on hover!
   const controls = pop.querySelectorAll('button, [role="radio"], [role="tab"], [role="menuitemradio"], [role="menuitem"], [role="option"]');
   const groups = new Map();
   for (let i = 0; i < controls.length; i++) {
@@ -7287,11 +7424,11 @@ function discoverRealEffortBinding(pop, matchedRows) {
     }
     if (byRank.size >= 2) {
       const options = Array.from(byRank.values()).sort((a, b) => a.rank - b.rank);
-      return { mode: 'native-buttons', modelLabel: '', options };
+      return { mode: 'native-buttons', modelLabel: '', locked: false, options };
     }
   }
 
-  // Path 3: Flat model-effort variant rows inside the popover (e.g. Gemini 4 Neon Low/Medium/High/Extra High)
+  // Path 3: Flat model-effort variant rows inside the popover
   const composerBtn = findComposerModelButton(document.querySelector('.surface-composer'));
   const composerTxt = (composerBtn && composerBtn.textContent || '').replace(/\s+/g, ' ').trim();
   const composerFamily = stripEffortAndBadges(composerTxt);
@@ -7326,189 +7463,39 @@ function discoverRealEffortBinding(pop, matchedRows) {
       : (composerFamily && families.get(composerFamily)?.size >= 2 ? composerFamily : '');
     if (targetFam) {
       const options = Array.from(families.get(targetFam).values()).sort((a, b) => a.rank - b.rank);
-      return { mode: 'model-variants', modelLabel: extractModelDisplayLabel(composerTxt || targetFam), options };
-    }
-  }
-
-  // Path 4: Native Thinking Effort dropdown trigger inside the popover (e.g. "思考强度 [High ▾]")
-  const leafLabels = pop.querySelectorAll('span, div, label, p');
-  for (let i = 0; i < leafLabels.length; i++) {
-    const node = leafLabels[i];
-    if (node.children.length > 0 || node.closest('#agy-real-effort-box')) continue;
-    const nt = (node.textContent || '').trim();
-    if (!THINKING_LABEL_RX.test(nt)) continue;
-    const container = node.parentElement && node.parentElement.parentElement && pop.contains(node.parentElement.parentElement)
-      ? node.parentElement.parentElement
-      : node.parentElement;
-    if (!container) continue;
-    const trig = container.querySelector('button[aria-haspopup], [role="combobox"], button');
-    if (trig && !trig.closest('#agy-real-effort-box')) {
-      const curSpec = extractInlineEffortSpec(trig.textContent || '') || parseEffortSpec(trig.textContent || '');
-      if (curSpec) {
-        const standard = [
-          { rank: 2, label: 'Low', short: 'Low' },
-          { rank: 3, label: 'Medium', short: 'Med' },
-          { rank: 4, label: 'High', short: 'High' },
-          { rank: 5, label: 'Extra High', short: 'XHigh' }
-        ];
-        if (!standard.some((s) => s.rank === curSpec.rank)) {
-          standard.push({ rank: curSpec.rank, label: curSpec.label, short: curSpec.short });
-          standard.sort((a, b) => a.rank - b.rank);
-        }
-        return {
-          mode: 'native-dropdown',
-          modelLabel: extractModelDisplayLabel(composerTxt),
-          triggerEl: trig,
-          options: standard.map((s) => ({ ...s, disabled: false, active: s.rank === curSpec.rank }))
-        };
-      }
-    }
-  }
-
-  // Path 5 (Antigravity 2.0 native submenu-driven model picker!):
-  // Each model row (e.g. `Gemini 4 Neon Extra High ✓`, `Gemini 4 Carbon Medium >`) owns a real native
-  // effort submenu. Anchor our slider ONCE to the active model row (zero hover resizing!) and drive
-  // Antigravity's real native submenu effort option on drag-release / tick-click!
-  if (matchedRows && matchedRows.length >= 1) {
-    let activeRow = null;
-    for (let i = 0; i < matchedRows.length; i++) {
-      const row = matchedRows[i].el;
-      if (isElementSelectedOrChecked(row)) {
-        activeRow = row;
-        break;
-      }
-    }
-    if (!activeRow && composerFamily) {
-      for (let i = 0; i < matchedRows.length; i++) {
-        const row = matchedRows[i].el;
-        const rf = stripEffortAndBadges(row.textContent || '');
-        if (rf && (rf === composerFamily || rf.includes(composerFamily) || composerFamily.includes(rf))) {
-          activeRow = row;
-          break;
-        }
-      }
-    }
-    if (!activeRow) {
-      activeRow = matchedRows.find((r) => !/\bGPT-OSS\b/i.test(r.el.textContent || ''))?.el || matchedRows[0].el;
-    }
-    if (activeRow) {
-      const rowTxt = (activeRow.textContent || '').replace(/\s+/g, ' ').trim();
-      const rowFamily = stripEffortAndBadges(rowTxt) || composerFamily || 'gemini';
-      const curSpec = extractInlineEffortSpec(rowTxt) || composerEffort || { rank: 4, label: 'High', short: 'High' };
-      const cached = MODEL_EFFORT_TIERS_CACHE.get(rowFamily);
-      const baseTiers = (cached && cached.length >= 2)
-        ? cached.map((s) => ({ rank: s.rank, label: s.label, short: s.short }))
-        : [
-            { rank: 2, label: 'Low', short: 'Low' },
-            { rank: 3, label: 'Medium', short: 'Med' },
-            { rank: 4, label: 'High', short: 'High' },
-            { rank: 5, label: 'Extra High', short: 'XHigh' }
-          ];
-      if (!baseTiers.some((s) => s.rank === curSpec.rank)) {
-        baseTiers.push({ rank: curSpec.rank, label: curSpec.label, short: curSpec.short });
-        baseTiers.sort((a, b) => a.rank - b.rank);
-      }
-      return {
-        mode: 'submenu-row',
-        popEl: pop,
-        rowEl: activeRow,
-        family: rowFamily,
-        modelLabel: extractModelDisplayLabel(rowTxt || composerTxt),
-        options: baseTiers.map((s) => ({ ...s, disabled: false, active: s.rank === curSpec.rank }))
-      };
+      return { mode: 'model-variants', family: targetFam, modelLabel: extractModelDisplayLabel(composerTxt || targetFam), locked: false, options };
     }
   }
   return null;
 }
 
-function selectRealEffortOption(binding, idx, onSynced, onStatus) {
-  if (!binding || !binding.options || !binding.options[idx]) return;
+function selectRealEffortOption(binding, idx, onSynced) {
+  if (!binding || !binding.options || !binding.options[idx] || binding.locked) return;
   const opt = binding.options[idx];
   if (opt.disabled) return;
 
-  if ((binding.mode === 'native-buttons' || binding.mode === 'model-variants') && opt.el) {
-    dispatchRealReactClick(opt.el);
-    if (typeof onStatus === 'function') onStatus('已切换至 ' + opt.label);
-    window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 100);
-    return;
-  }
-
-  if (binding.mode === 'native-dropdown' && binding.triggerEl) {
-    effortDriverBusyUntil = Date.now() + 700;
-    dispatchRealReactClick(binding.triggerEl);
-    let tries = 0;
-    const attemptPick = () => {
-      tries += 1;
-      const items = findOpenEffortSubmenu(binding.popEl);
-      if (items && items.length >= 2) {
-        const match = items.find((it) => it.rank === opt.rank) || items.reduce((best, it) => Math.abs(it.rank - opt.rank) < Math.abs(best.rank - opt.rank) ? it : best, items[0]);
-        if (match && match.el) {
-          dispatchRealReactClick(match.el);
-          if (typeof onStatus === 'function') onStatus('已切换至 ' + match.label);
-          window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 110);
-          return;
+  if (binding.mode === 'react-fiber' && binding.ctx && opt.raw) {
+    effortDriverBusyUntil = Date.now() + 220;
+    const ctx = binding.ctx;
+    try {
+      if (binding.usingOrch && typeof ctx.setOrchestratorPlanner === 'function') {
+        ctx.setOrchestratorPlanner(opt.raw);
+      } else {
+        if (typeof ctx.setModelConfigByLabelForConversation === 'function' && opt.raw.label) {
+          ctx.setModelConfigByLabelForConversation(opt.raw.label, ctx.conversationId || undefined, true);
+        }
+        if (typeof ctx.setSelectedModel === 'function') {
+          ctx.setSelectedModel(opt.raw);
         }
       }
-      if (tries < 10) window.setTimeout(attemptPick, 45);
-      else if (typeof onSynced === 'function') onSynced();
-    };
-    window.setTimeout(attemptPick, 45);
+    } catch (_) {}
+    window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 70);
     return;
   }
 
-  if (binding.mode === 'submenu-row' && binding.rowEl) {
-    effortDriverBusyUntil = Date.now() + 900;
-    const row = binding.rowEl;
-    if (typeof onStatus === 'function') onStatus('正在同步 ' + opt.label + '…');
-    const tryPickSubmenu = () => {
-      const items = findOpenEffortSubmenu(binding.popEl);
-      if (!items || items.length < 2) return false;
-      if (binding.family) {
-        MODEL_EFFORT_TIERS_CACHE.set(binding.family, items.map((x) => ({ rank: x.rank, label: x.label, short: x.short })));
-      }
-      const exact = items.find((it) => it.rank === opt.rank);
-      const target = exact || items.reduce((best, it) => Math.abs(it.rank - opt.rank) < Math.abs(best.rank - opt.rank) ? it : best, items[0]);
-      if (target && target.el) {
-        dispatchRealReactClick(target.el);
-        const msg = exact
-          ? ('⚡ 已切至 ' + (binding.modelLabel ? binding.modelLabel + ' · ' : '') + target.label)
-          : ('该模型最高支持 ' + target.label + '，已自动对齐');
-        if (typeof onStatus === 'function') onStatus(msg);
-        say(msg, 2200);
-        window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 140);
-        return true;
-      }
-      return false;
-    };
-
-    if (tryPickSubmenu()) return;
-
-    // Step 1: Natural hover on the active model row to open Antigravity's native effort submenu
-    dispatchHoverForSubmenu(row);
-    let step = 0;
-    const poll = () => {
-      step += 1;
-      if (tryPickSubmenu()) return;
-      if (step === 3 && row.isConnected) {
-        // Step 2: Keyboard ArrowRight (Radix / Base-UI SubTrigger instant open)
-        try {
-          row.focus({ preventScroll: true });
-          row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', bubbles: true, cancelable: true }));
-        } catch (_) {}
-      } else if (step === 6 && row.isConnected) {
-        // Step 3: Re-trigger hover + click chevron if present
-        dispatchHoverForSubmenu(row);
-        const chev = row.querySelector('svg:last-of-type, [data-chevron], button');
-        if (chev && chev !== row) dispatchRealReactClick(chev);
-      }
-      if (step < 14) {
-        window.setTimeout(poll, 38);
-      } else {
-        if (typeof onStatus === 'function') onStatus('悬停模型右侧 > 可查看该模型支持档位');
-        if (typeof onSynced === 'function') onSynced();
-      }
-    };
-    window.setTimeout(poll, 40);
+  if ((binding.mode === 'native-buttons' || binding.mode === 'model-variants') && opt.el) {
+    dispatchRealReactClick(opt.el);
+    window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 80);
   }
 }
 
@@ -7874,7 +7861,7 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
   }
 
   const binding = discoverRealEffortBinding(pop, matchedRows);
-  if (!binding || !binding.options || binding.options.length < 2) {
+  if (!binding || !binding.options || binding.options.length < 1) {
     if (existing) {
       if (typeof existing.__agyStopFx === 'function') existing.__agyStopFx();
       existing.remove();
@@ -7891,69 +7878,81 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
   }
   if (activeIdx < 0) activeIdx = Math.max(0, options.length - 1);
 
-  const sig = binding.mode + ':' + (binding.family || '') + ':' + options.map((o) => o.rank + (o.disabled ? 'x' : '')).join(',');
+  const ticksSig = options.map((o) => o.rank + (o.disabled ? 'x' : '')).join(',');
   let box = existing;
-  if (!box || box.dataset.agySig !== sig) {
-    if (box) {
-      if (typeof box.__agyStopFx === 'function') box.__agyStopFx();
-      box.remove();
-    }
+  if (!box) {
     box = document.createElement('div');
     box.id = 'agy-real-effort-box';
     box.className = 'notranslate';
-    box.dataset.agySig = sig;
     box.innerHTML =
       '<div class="agy-re-head">' +
         '<span class="agy-re-title">' +
           '<span class="agy-re-live-dot"></span>' +
           '<span>思考深度</span>' +
-          (binding.modelLabel ? '<span class="agy-re-model-chip">' + escHtml(binding.modelLabel) + '</span>' : '') +
+          '<span class="agy-re-model-chip"></span>' +
         '</span>' +
         '<span class="agy-thinking-level agy-re-val"></span>' +
       '</div>' +
       '<div class="agy-re-stage">' +
-        '<div class="agy-re-track" role="slider" tabindex="0" aria-label="思考深度" aria-valuemin="0" aria-valuemax="' + (options.length - 1) + '">' +
+        '<div class="agy-re-track" role="slider" tabindex="-1" aria-label="思考深度" aria-valuemin="0" aria-valuemax="' + Math.max(0, options.length - 1) + '">' +
           '<div class="agy-re-fill"></div>' +
           '<div class="agy-re-thumb"></div>' +
         '</div>' +
         '<canvas class="agy-re-fx-canvas"></canvas>' +
       '</div>' +
-      '<div class="agy-re-ticks">' +
-        options.map((o, i) => '<button type="button" class="agy-re-tick" data-idx="' + i + '"' + (o.disabled ? ' disabled' : '') + '>' + escHtml(o.short) + '</button>').join('') +
-      '</div>' +
-      '<div class="agy-re-status"><span>✦ 大圣披风 · 逐花归海实控条</span><span class="agy-re-msg"></span></div>';
+      '<div class="agy-re-ticks"></div>';
 
-    // Insert cleanly right above "查看用量统计 / View usage stats" footer if present, else append
-    let footerAnchor = null;
+    // Always dock cleanly at the BOTTOM of the model list (right above "查看用量统计" if direct child, NEVER above "模型选择"!)
+    let insertParent = pop;
+    let insertBeforeEl = null;
     const footerNodes = pop.querySelectorAll('button, [role="menuitem"], a, div');
     for (let i = 0; i < footerNodes.length; i++) {
       const fn = footerNodes[i];
-      if (fn.parentElement !== pop && fn.parentElement?.parentElement !== pop) continue;
-      const ft = (fn.textContent || '').trim();
-      if (/^(?:查看用量统计|View\s+usage\s+stats)$/i.test(ft)) {
-        footerAnchor = fn.parentElement === pop ? fn : fn.parentElement;
-        break;
+      const ft = (fn.textContent || '').replace(/\s+/g, ' ').trim();
+      if (ft.length <= 28 && /^(?:查看用量统计|View\s+usage\s+stats)$/i.test(ft)) {
+        let rowNode = fn;
+        while (rowNode.parentElement && rowNode.parentElement !== pop && (rowNode.parentElement.textContent || '').trim().length <= 32) {
+          rowNode = rowNode.parentElement;
+        }
+        if (rowNode.parentElement && pop.contains(rowNode.parentElement)) {
+          insertParent = rowNode.parentElement;
+          // If preceded by a thin separator <hr> / border-t div, insert before the separator
+          const prev = rowNode.previousElementSibling;
+          if (prev && !(prev.textContent || '').trim() && prev.getBoundingClientRect().height <= 12) {
+            insertBeforeEl = prev;
+          } else {
+            insertBeforeEl = rowNode;
+          }
+          break;
+        }
       }
     }
-    if (footerAnchor && footerAnchor.parentElement === pop) {
-      pop.insertBefore(box, footerAnchor);
+    if (insertBeforeEl && insertBeforeEl.parentElement === insertParent) {
+      insertParent.insertBefore(box, insertBeforeEl);
     } else {
       pop.appendChild(box);
     }
   }
 
+  // Update header & ticks IN-PLACE (zero DOM destroy/recreate -> zero canvas flicker & zero popover bounce!)
   box.__agyBinding = binding;
+  const chipEl = box.querySelector('.agy-re-model-chip');
+  if (chipEl) chipEl.textContent = binding.modelLabel || '';
   const track = box.querySelector('.agy-re-track');
   const fill = box.querySelector('.agy-re-fill');
   const thumb = box.querySelector('.agy-re-thumb');
   const valEl = box.querySelector('.agy-re-val');
-  const msgEl = box.querySelector('.agy-re-msg');
   const fxCanvas = box.querySelector('.agy-re-fx-canvas');
-  const ticks = box.querySelectorAll('.agy-re-tick');
+  const ticksWrap = box.querySelector('.agy-re-ticks');
 
-  const setStatusMsg = (s) => {
-    if (msgEl) msgEl.textContent = s || '';
-  };
+  if (box.dataset.agyTicksSig !== ticksSig) {
+    box.dataset.agyTicksSig = ticksSig;
+    track.setAttribute('aria-valuemax', String(Math.max(0, options.length - 1)));
+    ticksWrap.innerHTML = options.map((o, i) =>
+      '<button type="button" class="agy-re-tick" data-idx="' + i + '"' + (o.disabled || binding.locked ? ' disabled' : '') + '>' + escHtml(o.short) + '</button>'
+    ).join('');
+  }
+  const ticks = ticksWrap.querySelectorAll('.agy-re-tick');
 
   const renderContinuous = (ratio, previewIdx) => {
     const curBinding = box.__agyBinding || binding;
@@ -7970,8 +7969,9 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
     track.setAttribute('aria-valuetext', opts[safeIdx].label);
     track.dataset.curIdx = String(safeIdx);
     track.dataset.curRatio = clampedRatio.toFixed(4);
-    for (let i = 0; i < ticks.length; i++) {
-      ticks[i].classList.toggle('active', i === safeIdx);
+    const curTicks = ticksWrap.querySelectorAll('.agy-re-tick');
+    for (let i = 0; i < curTicks.length; i++) {
+      curTicks[i].classList.toggle('active', i === safeIdx);
     }
     track.style.setProperty('--agy-slider-pct', pct + '%');
   };
@@ -7995,13 +7995,13 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
 
   if (!box.dataset.agyBound) {
     box.dataset.agyBound = '1';
-    const commitIdx = (nextIdx, force) => {
+    const commitIdx = (nextIdx, snapVisual, burstFx) => {
       const curBinding = box.__agyBinding;
-      if (!curBinding || !curBinding.options[nextIdx] || curBinding.options[nextIdx].disabled) return;
-      const prevIdx = Number(track.dataset.committedIdx ?? track.dataset.curIdx ?? 0);
-      renderIdx(nextIdx);
-      if (typeof box.__agyFxBurst === 'function') box.__agyFxBurst();
-      if (force || nextIdx !== prevIdx) {
+      if (!curBinding || curBinding.locked || !curBinding.options[nextIdx] || curBinding.options[nextIdx].disabled) return;
+      const prevCommitted = Number(track.dataset.committedIdx ?? -1);
+      if (snapVisual) renderIdx(nextIdx);
+      if (burstFx && typeof box.__agyFxBurst === 'function') box.__agyFxBurst();
+      if (nextIdx !== prevCommitted) {
         track.dataset.committedIdx = String(nextIdx);
         selectRealEffortOption(
           curBinding,
@@ -8009,63 +8009,71 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
           () => {
             const comp = document.querySelector('.surface-composer');
             if (comp) decorateComposerModelTrigger(comp);
-          },
-          setStatusMsg
+          }
         );
       }
     };
 
-    const ratioAndIdxFromClientX = (clientX) => {
+    const ratioAndDetentFromClientX = (clientX, curIdx) => {
       const curBinding = box.__agyBinding;
       const n = curBinding ? curBinding.options.length : 1;
       const r = track.getBoundingClientRect();
-      if (r.width <= 0 || n <= 1) return { ratio: 0, idx: 0 };
+      if (r.width <= 0 || n <= 1) return { ratio: 1, idx: 0 };
       const ratio = Math.max(0, Math.min(1, (clientX - r.left - 12) / Math.max(1, r.width - 24)));
-      const idx = Math.round(ratio * (n - 1));
+      const step = 1 / (n - 1);
+      const curCenter = curIdx * step;
+      const hysteresis = step * 0.34;
+      let idx = curIdx;
+      if (ratio > curCenter + hysteresis) {
+        idx = Math.min(n - 1, Math.round(ratio * (n - 1)));
+        if (idx === curIdx) idx = Math.min(n - 1, curIdx + 1);
+      } else if (ratio < curCenter - hysteresis) {
+        idx = Math.max(0, Math.round(ratio * (n - 1)));
+        if (idx === curIdx) idx = Math.max(0, curIdx - 1);
+      }
       return { ratio, idx };
     };
 
     track.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      track.dataset.committedIdx = track.dataset.curIdx || '0';
+      const curBinding = box.__agyBinding;
+      if (!curBinding || curBinding.locked) return;
+      const curIdx = Number(track.dataset.curIdx || 0);
+      track.dataset.committedIdx = String(curIdx);
       track.classList.add('dragging');
       try { track.setPointerCapture(e.pointerId); } catch (_) {}
-      const { ratio, idx } = ratioAndIdxFromClientX(e.clientX);
+      const n = curBinding.options.length;
+      const r = track.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - r.left - 12) / Math.max(1, r.width - 24)));
+      const idx = n > 1 ? Math.round(ratio * (n - 1)) : 0;
       renderContinuous(ratio, idx);
+      if (idx !== curIdx) commitIdx(idx, false, true);
     });
     track.addEventListener('pointermove', (e) => {
       if (!track.classList.contains('dragging')) return;
       e.stopPropagation();
-      const { ratio, idx } = ratioAndIdxFromClientX(e.clientX);
+      const curIdx = Number(track.dataset.committedIdx ?? track.dataset.curIdx ?? 0);
+      const { ratio, idx } = ratioAndDetentFromClientX(e.clientX, curIdx);
       renderContinuous(ratio, idx);
+      if (idx !== curIdx) commitIdx(idx, false, true);
     });
     const finishDrag = (e) => {
       if (!track.classList.contains('dragging')) return;
       e.stopPropagation();
       track.classList.remove('dragging');
       try { track.releasePointerCapture(e.pointerId); } catch (_) {}
-      const { idx } = ratioAndIdxFromClientX(e.clientX);
-      commitIdx(idx, true);
+      const curIdx = Number(track.dataset.curIdx || 0);
+      renderIdx(curIdx);
+      commitIdx(curIdx, true, true);
     };
     track.addEventListener('pointerup', finishDrag);
     track.addEventListener('pointercancel', finishDrag);
-    track.addEventListener('keydown', (e) => {
-      const cur = Number(track.dataset.curIdx || 0);
-      const maxIdx = (box.__agyBinding?.options.length || 1) - 1;
-      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        commitIdx(Math.min(maxIdx, cur + 1), false);
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        commitIdx(Math.max(0, cur - 1), false);
-      }
-    });
     box.addEventListener('click', (e) => {
       e.stopPropagation();
       const tb = e.target instanceof Element ? e.target.closest('.agy-re-tick') : null;
       if (!tb) return;
-      commitIdx(Number(tb.dataset.idx || 0), true);
+      commitIdx(Number(tb.dataset.idx || 0), true, true);
     });
   }
 }
@@ -8088,7 +8096,6 @@ function findModelRowsInPopover(pop) {
       if (el.querySelector('[role="menuitem"], [role="menuitemradio"], [role="option"]')) continue;
       const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
       if (r && (r.height < 18 || r.height > 68 || r.width < 110)) continue;
-      // Avoid collecting both a wrapper and its inner span/div
       let nested = false;
       for (const prev of seen) {
         if (prev.contains(el) || el.contains(prev)) { nested = true; break; }
@@ -8102,7 +8109,6 @@ function findModelRowsInPopover(pop) {
 
   tryCollect(pop.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], button, [tabindex], li'));
   if (matchedRows.length < 2) {
-    // Fallback for Antigravity 2.0 custom clickable <div> rows without ARIA menuitem roles
     const divs = pop.querySelectorAll('div');
     const leafRows = [];
     for (let i = 0; i < divs.length; i++) {
@@ -8134,40 +8140,60 @@ function decorateSingleModelPopover(pop) {
   const hasControlHint = Boolean(orchestratorBtn) || THINKING_LABEL_RX.test(fullText) || /主\s*Agent|Main\s*Agent|模型选择|查看用量统计|View\s+usage\s+stats/i.test(fullText);
   if (matchedRows.length < 2 && !(matchedRows.length >= 1 && hasControlHint)) return;
 
-  const isOffTheme = readThemeMode() === 'off';
-  const structuralSig = (isOffTheme ? 'off:' : 'on:') + matchedRows.length + ':' + (orchestratorBtn ? 1 : 0) + ':' + pop.querySelectorAll('input[type="range"], [role="slider"]').length;
-  if (pop.dataset.agyModelSig === structuralSig && pop.querySelector('#agy-real-effort-box')) {
+  // Lock popover min-width once so switching Extra High <-> Low never causes horizontal twitch!
+  if (!pop.dataset.agyLockW) {
+    const w = Math.ceil(pop.getBoundingClientRect().width);
+    if (w >= 240) {
+      pop.style.minWidth = w + 'px';
+      pop.dataset.agyLockW = '1';
+    }
+  }
+
+  const structuralSig = matchedRows.length + ':' + (orchestratorBtn ? 1 : 0) + ':' + pop.querySelectorAll('input[type="range"], [role="slider"]').length;
+  const alreadyMounted = Boolean(pop.querySelector('#agy-real-effort-box'));
+  if (pop.classList.contains('agy-model-popover') && pop.dataset.agyModelSig === structuralSig && alreadyMounted) {
     return;
   }
   pop.dataset.agyModelSig = structuralSig;
 
-  if (!isOffTheme) {
-    if (!pop.classList.contains('agy-model-popover')) {
-      pop.classList.add('agy-model-popover');
-    }
+  if (!pop.classList.contains('agy-model-popover')) {
+    pop.classList.add('agy-model-popover');
+  }
 
-    for (let i = 0; i < matchedRows.length; i++) {
-      const { el, tone, isOrch } = matchedRows[i];
-      if (!isOrch) {
-        if (!el.classList.contains('agy-model-item')) el.classList.add('agy-model-item');
-        if (el.getAttribute('data-agy-model-tone') !== tone) {
-          el.setAttribute('data-agy-model-tone', tone);
-        }
-      }
-      const leafSpans = el.querySelectorAll('span, small');
-      for (let j = 0; j < leafSpans.length; j++) {
-        const sp = leafSpans[j];
-        if (sp.children.length > 0) continue;
-        const st = (sp.textContent || '').trim();
-        if (EFFORT_WORD_RX.test(st)) {
-          if (sp.getAttribute('data-agy-effort') !== '1') sp.setAttribute('data-agy-effort', '1');
-        }
+  for (let i = 0; i < matchedRows.length; i++) {
+    const { el, tone, isOrch } = matchedRows[i];
+    if (!isOrch) {
+      if (!el.classList.contains('agy-model-item')) el.classList.add('agy-model-item');
+      if (el.getAttribute('data-agy-model-tone') !== tone) {
+        el.setAttribute('data-agy-model-tone', tone);
       }
     }
-
-    if (orchestratorBtn && !orchestratorBtn.classList.contains('agy-orchestrator-pill')) {
-      orchestratorBtn.classList.add('agy-orchestrator-pill');
+    const leafSpans = el.querySelectorAll('span, small');
+    for (let j = 0; j < leafSpans.length; j++) {
+      const sp = leafSpans[j];
+      if (sp.children.length > 0) continue;
+      const st = (sp.textContent || '').trim();
+      if (EFFORT_WORD_RX.test(st)) {
+        if (sp.getAttribute('data-agy-effort') !== '1') sp.setAttribute('data-agy-effort', '1');
+      }
     }
+  }
+
+  if (orchestratorBtn && !orchestratorBtn.classList.contains('agy-orchestrator-pill')) {
+    orchestratorBtn.classList.add('agy-orchestrator-pill');
+  }
+
+  if (!pop.dataset.agyRowSyncBound) {
+    pop.dataset.agyRowSyncBound = '1';
+    pop.addEventListener('click', (e) => {
+      if (e.target instanceof Element && e.target.closest('#agy-real-effort-box')) return;
+      window.setTimeout(() => {
+        if (!pop.isConnected) return;
+        const { matchedRows: freshRows } = findModelRowsInPopover(pop);
+        const hasNative = pop.querySelectorAll('input[type="range"], [role="slider"]:not(.agy-re-track)').length > 0;
+        mountRealThinkingEffortSlider(pop, freshRows, hasNative);
+      }, 80);
+    }, true);
   }
 
   const allLeafNodes = pop.querySelectorAll('span, div, label, p');
