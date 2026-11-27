@@ -305,7 +305,7 @@ const ambientState = {
   paletteKey: '',
   isLight: false,
   sprites: null, // { orbs: [], paws: [], sparkles: [] }
-  ribbons: [],
+  nebulae: [],
   orbs: [],
   motifs: [],
   nextMotifAt: 0,
@@ -413,27 +413,30 @@ function rebuildAmbientSprites(force) {
 }
 
 function initAmbientEntities() {
-  if (ambientState.ribbons.length === 0) {
-    ambientState.ribbons = [
-      { yFrac: 0.28, amp: 0.055, band: 0.14, period: 22, phase: 0.3, baseAlpha: 0.105, cA: 0, cB: 1 },
-      { yFrac: 0.56, amp: 0.068, band: 0.17, period: 31, phase: 2.1, baseAlpha: 0.125, cA: 1, cB: 2 },
-      { yFrac: 0.79, amp: 0.048, band: 0.13, period: 38, phase: 4.0, baseAlpha: 0.092, cA: 2, cB: 0 },
+  if (ambientState.nebulae.length === 0) {
+    ambientState.nebulae = [
+      // 1. Top-right moon aura (gentle lavender / violet)
+      { x: 0.82, y: 0.15, r: 0.45, baseAlpha: 0.085, freq: 0.065, phase: 0.0, cIdx: 0 },
+      // 2. Bottom-right companion warmth (near Hakimi avatar, reactive)
+      { x: 0.88, y: 0.88, r: 0.36, baseAlpha: 0.115, freq: 0.095, phase: 2.1, cIdx: 1 },
+      // 3. Bottom-left twilight horizon (soft cyan/sky blue)
+      { x: 0.14, y: 0.84, r: 0.40, baseAlpha: 0.070, freq: 0.060, phase: 4.2, cIdx: 2 },
     ];
   }
   if (ambientState.orbs.length === 0) {
-    const count = ambientState.lowPerf ? 12 : 22;
+    const count = ambientState.lowPerf ? 10 : 18;
     for (let i = 0; i < count; i++) {
       const tier = i % 3;
       ambientState.orbs.push({
         x: Math.random(),
         y: Math.random(),
         tier,
-        r: (tier === 0 ? 18 : (tier === 1 ? 30 : 46)) * (0.78 + Math.random() * 0.45),
-        speed: 0.008 + tier * 0.004 + Math.random() * 0.006,
-        swayAmp: 0.012 + Math.random() * 0.018,
-        swayFreq: 0.35 + Math.random() * 0.45,
+        r: (tier === 0 ? 16 : (tier === 1 ? 26 : 38)) * (0.8 + Math.random() * 0.4),
+        speed: 0.006 + tier * 0.003 + Math.random() * 0.005,
+        swayAmp: 0.010 + Math.random() * 0.014,
+        swayFreq: 0.18 + Math.random() * 0.22,
         phase: Math.random() * Math.PI * 2,
-        alpha: 0.075 + Math.random() * 0.13,
+        alpha: 0.06 + Math.random() * 0.10,
         colorIdx: i % 4,
       });
     }
@@ -477,19 +480,19 @@ function getTargetHakimiEnergy() {
 }
 
 function spawnAmbientMotif(nowSec, palLen) {
-  if (ambientState.motifs.length >= 12) return;
+  if (ambientState.motifs.length >= 10) return;
   ambientState.motifs.push({
-    kind: Math.random() < 0.46 ? 'paw' : 'sparkle',
-    x: 0.14 + Math.random() * 0.78,
-    y: 0.62 + Math.random() * 0.34,
-    size: 10 + Math.random() * 8,
-    speed: 0.018 + Math.random() * 0.016,
-    sway: (Math.random() - 0.5) * 0.025,
-    rot: (Math.random() - 0.5) * 0.5,
-    vrot: (Math.random() - 0.5) * 0.14,
+    kind: Math.random() < 0.45 ? 'paw' : 'sparkle',
+    x: 0.52 + Math.random() * 0.44, // gracefully rises near Hakimi side
+    y: 0.72 + Math.random() * 0.24,
+    size: 9 + Math.random() * 7,
+    speed: 0.014 + Math.random() * 0.012,
+    sway: (Math.random() - 0.5) * 0.018,
+    rot: (Math.random() - 0.5) * 0.4,
+    vrot: (Math.random() - 0.5) * 0.08,
     born: nowSec,
-    life: 5.0 + Math.random() * 2.0,
-    maxAlpha: 0.26 + Math.random() * 0.14,
+    life: 5.5 + Math.random() * 2.0,
+    maxAlpha: 0.22 + Math.random() * 0.10,
     colorIdx: Math.floor(Math.random() * Math.max(1, palLen)),
   });
 }
@@ -596,70 +599,58 @@ function drawAmbientFrame(nowMs, isStaticOnly) {
     }
   } catch (_) {}
 
-  // Layer 1: 3 aurora silk ribbons
-  const ribPx = ambientState.pointerX * 10 * ambientState.scale;
-  const ribPy = ambientState.pointerY * 10 * ambientState.scale;
-  for (let i = 0; i < ambientState.ribbons.length; i++) {
-    const rb = ambientState.ribbons[i];
-    const cy = rb.yFrac * H + ribPy;
-    const amp = rb.amp * H;
-    const band = rb.band * H * (0.9 + 0.22 * energy);
-    const omega = (Math.PI * 2) / rb.period;
-    const ph = nowSec * omega * speedScale + rb.phase;
-    const y0 = cy + Math.sin(ph) * amp;
-    const y1 = cy + Math.sin(ph + 1.45) * amp;
-    const y2 = cy + Math.cos(ph + 0.7) * amp;
-    const y3 = cy + Math.sin(ph + 2.6) * amp;
+  // Layer 1: Soft atmospheric breathing blooms & corner aura (ZERO harsh stripes, ZERO spasms)
+  for (let i = 0; i < ambientState.nebulae.length; i++) {
+    const nb = ambientState.nebulae[i];
+    if (!isStaticOnly) {
+      nb.phase += dt * (nb.freq * Math.PI * 2) * speedScale;
+    }
+    const pulse = 0.88 + 0.12 * Math.sin(nb.phase);
+    const breatheR = nb.r * Math.max(W, H) * (0.92 + 0.08 * Math.cos(nb.phase * 0.75));
+    const pxOff = ambientState.pointerX * (12 + i * 8) * ambientState.scale;
+    const pyOff = ambientState.pointerY * (12 + i * 8) * ambientState.scale;
+    const cx = nb.x * W + pxOff;
+    const cy = nb.y * H + pyOff;
 
-    const grad = ctx.createLinearGradient(-40 + ribPx, y0, W + 40 + ribPx, y3);
-    const colA = pal[rb.cA % pal.length];
-    const colB = modeTintHex && i === 1 ? modeTintHex : pal[rb.cB % pal.length];
-    const colC = modeTintHex && i !== 1 ? modeTintHex : pal[(rb.cA + 2) % pal.length];
-    const a = Math.min(0.16, rb.baseAlpha * alphaBoost) * lightMul;
-    grad.addColorStop(0, hexToRgba(colA, 0));
-    grad.addColorStop(0.24, hexToRgba(colA, a * 0.85));
-    grad.addColorStop(0.55, hexToRgba(colB, a));
-    grad.addColorStop(0.84, hexToRgba(colC, a * 0.72));
-    grad.addColorStop(1, hexToRgba(colC, 0));
+    let colHex = pal[nb.cIdx % pal.length];
+    if (i === 1 && modeTintHex) {
+      colHex = modeTintHex; // Responsive companion glow near Hakimi!
+    }
+    const a = Math.min(0.14, nb.baseAlpha * pulse * alphaBoost) * lightMul;
+
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(20, breatheR));
+    grad.addColorStop(0, hexToRgba(colHex, a * 1.0));
+    grad.addColorStop(0.38, hexToRgba(colHex, a * 0.60));
+    grad.addColorStop(0.72, hexToRgba(colHex, a * 0.18));
+    grad.addColorStop(1, hexToRgba(colHex, 0));
 
     ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.moveTo(-40 + ribPx, y0 - band * 0.5);
-    ctx.bezierCurveTo(
-      W * 0.33 + ribPx, y1 - band * 0.65,
-      W * 0.67 + ribPx, y2 - band * 0.42,
-      W + 40 + ribPx, y3 - band * 0.55
-    );
-    ctx.lineTo(W + 40 + ribPx, y3 + band * 0.55);
-    ctx.bezierCurveTo(
-      W * 0.67 + ribPx, y2 + band * 0.62,
-      W * 0.33 + ribPx, y1 + band * 0.45,
-      -40 + ribPx, y0 + band * 0.5
-    );
-    ctx.closePath();
+    ctx.arc(cx, cy, Math.max(20, breatheR), 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Layer 2: 18-24 pre-rendered bokeh orbs in 3 depth tiers
+  // Layer 2: 18-24 delicate dream stardust & bokeh orbs (accumulated phase: ZERO jitter)
   const orbSprites = ambientState.sprites.orbs;
-  const tierParallax = [14, 22, 30];
+  const tierParallax = [10, 18, 26];
   for (let i = 0; i < ambientState.orbs.length; i++) {
     const o = ambientState.orbs[i];
     if (!isStaticOnly) {
+      o.phase += dt * (o.swayFreq * Math.PI * 2) * (0.8 + 0.4 * energy);
       o.y -= o.speed * speedScale * dt;
-      if (o.y < -0.14) {
-        o.y = 1.12;
+      if (o.y < -0.12) {
+        o.y = 1.10;
         o.x = Math.random();
       }
     }
-    const sway = Math.sin(nowSec * o.swayFreq + o.phase) * o.swayAmp;
+    const sway = Math.sin(o.phase) * o.swayAmp;
     const pxOff = ambientState.pointerX * tierParallax[o.tier] * ambientState.scale;
     const pyOff = ambientState.pointerY * tierParallax[o.tier] * ambientState.scale;
     const ox = (o.x + sway) * W + pxOff;
     const oy = o.y * H + pyOff;
-    const rad = o.r * ambientState.scale * (0.95 + 0.1 * Math.sin(nowSec * 0.7 + o.phase));
-    const twinkle = 0.68 + 0.32 * Math.sin(nowSec * 0.9 + o.phase);
-    ctx.globalAlpha = Math.min(0.28, o.alpha * twinkle * alphaBoost) * lightMul;
+    const rad = o.r * ambientState.scale * (0.95 + 0.1 * Math.sin(o.phase * 0.7));
+    const twinkle = 0.72 + 0.28 * Math.sin(o.phase * 0.9);
+    ctx.globalAlpha = Math.min(0.22, o.alpha * twinkle * alphaBoost) * lightMul;
     const sp = orbSprites[o.colorIdx % orbSprites.length];
     ctx.drawImage(sp, ox - rad, oy - rad, rad * 2, rad * 2);
   }
