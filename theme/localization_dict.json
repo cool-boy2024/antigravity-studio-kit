@@ -1560,6 +1560,18 @@
     "思考强度"
   ],
   [
+    "Reasoning effort",
+    "思考强度"
+  ],
+  [
+    "Thinking level",
+    "思考强度"
+  ],
+  [
+    "Main Agent",
+    "主 Agent"
+  ],
+  [
     "Toggle Terminal",
     "打开/收起终端"
   ],

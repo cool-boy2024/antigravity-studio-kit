@@ -1,7 +1,7 @@
 # Antigravity Studio Kit（Antigravity 增强工作台套件）
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v1.2.0-2563eb.svg)](https://github.com/cool-boy2024/antigravity-studio-kit/releases)
+[![Release](https://img.shields.io/badge/Release-v1.3.0-2563eb.svg)](https://github.com/cool-boy2024/antigravity-studio-kit/releases)
 [![Platform: macOS & Windows](https://img.shields.io/badge/Platform-macOS%20%26%20Windows-0f766e.svg)](#手动命令行快速部署)
 [![Runtime Dependencies: Zero](https://img.shields.io/badge/Runtime%20Deps-Zero-16a34a.svg)](#仓库布局)
 [![AI Zero-Touch Install](https://img.shields.io/badge/AI%20Auto--Install-AGENTS.md%20%2B%20AI__INSTALL.md-7c3aed.svg)](AI_INSTALL.md)
