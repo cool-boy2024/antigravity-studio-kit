@@ -7170,10 +7170,95 @@ function syncNativeRangeProgress(input) {
   input.style.setProperty('--agy-slider-pct', pct.toFixed(1) + '%');
 }
 
+const MODEL_EFFORT_TIERS_CACHE = new Map();
+let effortDriverBusyUntil = 0;
+
+function extractModelDisplayLabel(text) {
+  return String(text || '')
+    .replace(/\b(?:New|Leaving\s+Soon|Notice|Preview|Beta|Default|Current)\b|新建|最新|提示|新/gi, ' ')
+    .replace(EFFORT_INLINE_RX, ' ')
+    .replace(/[✓✔•·()（）⚠ⓘ>›]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findOpenEffortSubmenu(excludePop) {
+  const roots = new Set();
+  const q = document.querySelectorAll(
+    '[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content], ' +
+    '[data-radix-popper-content-wrapper] > div, [data-floating-ui-portal] > div, ' +
+    '[data-slot*="menu"], [data-slot*="popover"], div[class*="popover"], div[class*="dropdown"]'
+  );
+  for (let i = 0; i < q.length; i++) roots.add(q[i]);
+  // Also inspect direct portal children of body in case Antigravity uses a custom Tailwind floating div
+  const bodyKids = document.body ? document.body.children : [];
+  for (let i = 0; i < bodyKids.length; i++) {
+    const ch = bodyKids[i];
+    if (!ch || ch.nodeType !== 1 || isOwnControlElement(ch)) continue;
+    const id = ch.id || '';
+    if (id === 'root' || id === 'app' || id === '__next') continue;
+    roots.add(ch);
+    if (ch.firstElementChild) roots.add(ch.firstElementChild);
+  }
+
+  for (const root of roots) {
+    if (!root || root === excludePop || isOwnControlElement(root)) continue;
+    if (excludePop && (excludePop.contains(root) || root.contains(excludePop))) continue;
+    const rect = root.getBoundingClientRect ? root.getBoundingClientRect() : null;
+    if (!rect || rect.width < 48 || rect.width > 360 || rect.height < 48 || rect.height > 460) continue;
+    const full = (root.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!full || full.length > 320 || MODEL_NAME_STRICT_RX.test(full)) continue;
+
+    const items = root.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], [role="radio"], button, [tabindex], li, div');
+    const byRank = new Map();
+    for (let i = 0; i < items.length; i++) {
+      const el = items[i];
+      if (el === root || isOwnControlElement(el)) continue;
+      if (el.tagName === 'DIV' && el.children.length > 3) continue;
+      const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!txt || txt.length > 26) continue;
+      const spec = parseEffortSpec(txt);
+      if (!spec) continue;
+      const er = el.getBoundingClientRect();
+      if (er.width < 32 || er.height < 18 || er.height > 58) continue;
+      if (!byRank.has(spec.rank)) {
+        byRank.set(spec.rank, {
+          el,
+          rank: spec.rank,
+          label: spec.label,
+          short: spec.short,
+          disabled: Boolean(el.disabled || el.getAttribute('aria-disabled') === 'true'),
+          active: isElementSelectedOrChecked(el)
+        });
+      }
+    }
+    if (byRank.size >= 2) {
+      return Array.from(byRank.values()).sort((a, b) => a.rank - b.rank);
+    }
+  }
+  return null;
+}
+
+function dispatchHoverForSubmenu(rowEl) {
+  if (!rowEl || !rowEl.isConnected) return;
+  try {
+    const r = rowEl.getBoundingClientRect();
+    const cx = Math.round(r.left + r.width * 0.55);
+    const cy = Math.round(r.top + r.height * 0.5);
+    const rx = Math.round(r.right - 14);
+    const opts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, pointerId: 1, pointerType: 'mouse', isPrimary: true };
+    rowEl.dispatchEvent(new PointerEvent('pointerover', opts));
+    rowEl.dispatchEvent(new PointerEvent('pointerenter', { ...opts, bubbles: false }));
+    rowEl.dispatchEvent(new MouseEvent('mouseover', opts));
+    rowEl.dispatchEvent(new MouseEvent('mouseenter', { ...opts, bubbles: false }));
+    rowEl.dispatchEvent(new PointerEvent('pointermove', { ...opts, clientX: rx }));
+    rowEl.dispatchEvent(new MouseEvent('mousemove', { ...opts, clientX: rx }));
+  } catch (_) {}
+}
+
 function discoverRealEffortBinding(pop, matchedRows) {
   // Path 2: Native discrete effort buttons / radios / tabs / pills STRICTLY inside `pop` itself.
-  // NEVER scan external hover submenus (e.g. `Gemini 4 Carbon >`), otherwise mounting/unmounting
-  // #agy-real-effort-box shifts popover height on hover and causes a 60Hz vertical twitch loop!
+  // NEVER scan external hover submenus here, so popover height NEVER jumps on hover!
   const controls = pop.querySelectorAll('button, [role="radio"], [role="tab"], [role="menuitemradio"], [role="menuitem"], [role="option"]');
   const groups = new Map();
   for (let i = 0; i < controls.length; i++) {
@@ -7202,17 +7287,17 @@ function discoverRealEffortBinding(pop, matchedRows) {
     }
     if (byRank.size >= 2) {
       const options = Array.from(byRank.values()).sort((a, b) => a.rank - b.rank);
-      return { mode: 'native-buttons', options };
+      return { mode: 'native-buttons', modelLabel: '', options };
     }
   }
 
   // Path 3: Flat model-effort variant rows inside the popover (e.g. Gemini 4 Neon Low/Medium/High/Extra High)
-  if (matchedRows && matchedRows.length >= 2) {
-    const composerBtn = findComposerModelButton(document.querySelector('.surface-composer'));
-    const composerTxt = (composerBtn && composerBtn.textContent || '').replace(/\s+/g, ' ').trim();
-    const composerFamily = stripEffortAndBadges(composerTxt);
-    const composerEffort = extractInlineEffortSpec(composerTxt);
+  const composerBtn = findComposerModelButton(document.querySelector('.surface-composer'));
+  const composerTxt = (composerBtn && composerBtn.textContent || '').replace(/\s+/g, ' ').trim();
+  const composerFamily = stripEffortAndBadges(composerTxt);
+  const composerEffort = extractInlineEffortSpec(composerTxt);
 
+  if (matchedRows && matchedRows.length >= 2) {
     const families = new Map();
     let activeFamily = '';
     for (let i = 0; i < matchedRows.length; i++) {
@@ -7241,7 +7326,7 @@ function discoverRealEffortBinding(pop, matchedRows) {
       : (composerFamily && families.get(composerFamily)?.size >= 2 ? composerFamily : '');
     if (targetFam) {
       const options = Array.from(families.get(targetFam).values()).sort((a, b) => a.rank - b.rank);
-      return { mode: 'model-variants', options };
+      return { mode: 'model-variants', modelLabel: extractModelDisplayLabel(composerTxt || targetFam), options };
     }
   }
 
@@ -7272,61 +7357,528 @@ function discoverRealEffortBinding(pop, matchedRows) {
         }
         return {
           mode: 'native-dropdown',
+          modelLabel: extractModelDisplayLabel(composerTxt),
           triggerEl: trig,
           options: standard.map((s) => ({ ...s, disabled: false, active: s.rank === curSpec.rank }))
         };
       }
     }
   }
+
+  // Path 5 (Antigravity 2.0 native submenu-driven model picker!):
+  // Each model row (e.g. `Gemini 4 Neon Extra High ✓`, `Gemini 4 Carbon Medium >`) owns a real native
+  // effort submenu. Anchor our slider ONCE to the active model row (zero hover resizing!) and drive
+  // Antigravity's real native submenu effort option on drag-release / tick-click!
+  if (matchedRows && matchedRows.length >= 1) {
+    let activeRow = null;
+    for (let i = 0; i < matchedRows.length; i++) {
+      const row = matchedRows[i].el;
+      if (isElementSelectedOrChecked(row)) {
+        activeRow = row;
+        break;
+      }
+    }
+    if (!activeRow && composerFamily) {
+      for (let i = 0; i < matchedRows.length; i++) {
+        const row = matchedRows[i].el;
+        const rf = stripEffortAndBadges(row.textContent || '');
+        if (rf && (rf === composerFamily || rf.includes(composerFamily) || composerFamily.includes(rf))) {
+          activeRow = row;
+          break;
+        }
+      }
+    }
+    if (!activeRow) {
+      activeRow = matchedRows.find((r) => !/\bGPT-OSS\b/i.test(r.el.textContent || ''))?.el || matchedRows[0].el;
+    }
+    if (activeRow) {
+      const rowTxt = (activeRow.textContent || '').replace(/\s+/g, ' ').trim();
+      const rowFamily = stripEffortAndBadges(rowTxt) || composerFamily || 'gemini';
+      const curSpec = extractInlineEffortSpec(rowTxt) || composerEffort || { rank: 4, label: 'High', short: 'High' };
+      const cached = MODEL_EFFORT_TIERS_CACHE.get(rowFamily);
+      const baseTiers = (cached && cached.length >= 2)
+        ? cached.map((s) => ({ rank: s.rank, label: s.label, short: s.short }))
+        : [
+            { rank: 2, label: 'Low', short: 'Low' },
+            { rank: 3, label: 'Medium', short: 'Med' },
+            { rank: 4, label: 'High', short: 'High' },
+            { rank: 5, label: 'Extra High', short: 'XHigh' }
+          ];
+      if (!baseTiers.some((s) => s.rank === curSpec.rank)) {
+        baseTiers.push({ rank: curSpec.rank, label: curSpec.label, short: curSpec.short });
+        baseTiers.sort((a, b) => a.rank - b.rank);
+      }
+      return {
+        mode: 'submenu-row',
+        popEl: pop,
+        rowEl: activeRow,
+        family: rowFamily,
+        modelLabel: extractModelDisplayLabel(rowTxt || composerTxt),
+        options: baseTiers.map((s) => ({ ...s, disabled: false, active: s.rank === curSpec.rank }))
+      };
+    }
+  }
   return null;
 }
 
-function selectRealEffortOption(binding, idx, onSynced) {
+function selectRealEffortOption(binding, idx, onSynced, onStatus) {
   if (!binding || !binding.options || !binding.options[idx]) return;
   const opt = binding.options[idx];
   if (opt.disabled) return;
 
   if ((binding.mode === 'native-buttons' || binding.mode === 'model-variants') && opt.el) {
     dispatchRealReactClick(opt.el);
-    window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 90);
+    if (typeof onStatus === 'function') onStatus('已切换至 ' + opt.label);
+    window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 100);
     return;
   }
 
   if (binding.mode === 'native-dropdown' && binding.triggerEl) {
+    effortDriverBusyUntil = Date.now() + 700;
     dispatchRealReactClick(binding.triggerEl);
     let tries = 0;
     const attemptPick = () => {
       tries += 1;
-      const menus = document.querySelectorAll('[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content]');
-      for (let m = 0; m < menus.length; m++) {
-        if (isOwnControlElement(menus[m])) continue;
-        const items = menus[m].querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], button');
-        for (let k = 0; k < items.length; k++) {
-          const spec = parseEffortSpec(items[k].textContent || '') || extractInlineEffortSpec(items[k].textContent || '');
-          if (spec && spec.rank === opt.rank) {
-            dispatchRealReactClick(items[k]);
-            window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 100);
-            return;
-          }
+      const items = findOpenEffortSubmenu(binding.popEl);
+      if (items && items.length >= 2) {
+        const match = items.find((it) => it.rank === opt.rank) || items.reduce((best, it) => Math.abs(it.rank - opt.rank) < Math.abs(best.rank - opt.rank) ? it : best, items[0]);
+        if (match && match.el) {
+          dispatchRealReactClick(match.el);
+          if (typeof onStatus === 'function') onStatus('已切换至 ' + match.label);
+          window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 110);
+          return;
         }
       }
-      if (tries < 6) window.setTimeout(attemptPick, 45);
+      if (tries < 10) window.setTimeout(attemptPick, 45);
       else if (typeof onSynced === 'function') onSynced();
     };
     window.setTimeout(attemptPick, 45);
+    return;
   }
+
+  if (binding.mode === 'submenu-row' && binding.rowEl) {
+    effortDriverBusyUntil = Date.now() + 900;
+    const row = binding.rowEl;
+    if (typeof onStatus === 'function') onStatus('正在同步 ' + opt.label + '…');
+    const tryPickSubmenu = () => {
+      const items = findOpenEffortSubmenu(binding.popEl);
+      if (!items || items.length < 2) return false;
+      if (binding.family) {
+        MODEL_EFFORT_TIERS_CACHE.set(binding.family, items.map((x) => ({ rank: x.rank, label: x.label, short: x.short })));
+      }
+      const exact = items.find((it) => it.rank === opt.rank);
+      const target = exact || items.reduce((best, it) => Math.abs(it.rank - opt.rank) < Math.abs(best.rank - opt.rank) ? it : best, items[0]);
+      if (target && target.el) {
+        dispatchRealReactClick(target.el);
+        const msg = exact
+          ? ('⚡ 已切至 ' + (binding.modelLabel ? binding.modelLabel + ' · ' : '') + target.label)
+          : ('该模型最高支持 ' + target.label + '，已自动对齐');
+        if (typeof onStatus === 'function') onStatus(msg);
+        say(msg, 2200);
+        window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 140);
+        return true;
+      }
+      return false;
+    };
+
+    if (tryPickSubmenu()) return;
+
+    // Step 1: Natural hover on the active model row to open Antigravity's native effort submenu
+    dispatchHoverForSubmenu(row);
+    let step = 0;
+    const poll = () => {
+      step += 1;
+      if (tryPickSubmenu()) return;
+      if (step === 3 && row.isConnected) {
+        // Step 2: Keyboard ArrowRight (Radix / Base-UI SubTrigger instant open)
+        try {
+          row.focus({ preventScroll: true });
+          row.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', bubbles: true, cancelable: true }));
+        } catch (_) {}
+      } else if (step === 6 && row.isConnected) {
+        // Step 3: Re-trigger hover + click chevron if present
+        dispatchHoverForSubmenu(row);
+        const chev = row.querySelector('svg:last-of-type, [data-chevron], button');
+        if (chev && chev !== row) dispatchRealReactClick(chev);
+      }
+      if (step < 14) {
+        window.setTimeout(poll, 38);
+      } else {
+        if (typeof onStatus === 'function') onStatus('悬停模型右侧 > 可查看该模型支持档位');
+        if (typeof onSynced === 'function') onSynced();
+      }
+    };
+    window.setTimeout(poll, 40);
+  }
+}
+
+/* ==================== 大圣披风带动态拖尾 × 王者荣耀·澜 FMVP「逐花归海」120Hz 粒子物理引擎 ==================== */
+function attachWukongLanTrailFX(box, track, canvas, getTargetState) {
+  if (!canvas || canvas.__agyFxAttached) return;
+  canvas.__agyFxAttached = true;
+
+  const NODE_COUNT = 22;
+  const nodes = [];
+  const petals = [];
+  const slashes = [];
+  const rings = [];
+  let thumbX = 0;
+  let lastThumbX = 0;
+  let smoothVx = 0;
+  let initialized = false;
+  let rafId = 0;
+  let lastTs = 0;
+  let idleWave = 0;
+  let windDir = -1; // -1 = cape billows left behind right-moving thumb
+
+  const padX = 10;
+  const padY = 24;
+
+  // Lan FMVP「逐花归海」× 大圣炽焰披风色彩表
+  const PETAL_COLORS = [
+    'rgba(56, 189, 248, 0.92)',  // 沧海梦幻蓝
+    'rgba(34, 211, 238, 0.88)',  // 破浪冰青
+    'rgba(192, 132, 252, 0.92)', // 逐花紫藤紫
+    'rgba(139, 92, 246, 0.88)',  // 幽蓝紫藤
+    'rgba(240, 249, 255, 0.94)', // 冰霜月白
+    'rgba(251, 113, 133, 0.86)'  // 大圣炽焰流红
+  ];
+
+  const spawnPetal = (x, y, vxBase, burst) => {
+    if (petals.length > 64) petals.shift();
+    const ang = (Math.random() - 0.5) * (burst ? Math.PI * 2 : 1.25);
+    const spd = burst ? (1.6 + Math.random() * 4.4) : (0.7 + Math.random() * 2.2);
+    petals.push({
+      x: x + (Math.random() - 0.5) * 8,
+      y: y + (Math.random() - 0.5) * 10,
+      vx: burst ? Math.cos(ang) * spd : (vxBase * 0.35 + windDir * (0.9 + Math.random() * 1.9)),
+      vy: burst ? Math.sin(ang) * spd : ((Math.random() - 0.5) * 1.45),
+      size: (burst ? 4.2 : 3.2) + Math.random() * 4.2,
+      rot: Math.random() * Math.PI * 2,
+      vrot: (Math.random() - 0.5) * 0.19,
+      alpha: 0.95,
+      decay: burst ? 0.022 : 0.028,
+      color: PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)]
+    });
+  };
+
+  const spawnSlash = (x, y, dir) => {
+    if (slashes.length > 18) slashes.shift();
+    slashes.push({
+      x,
+      y: y + (Math.random() - 0.5) * 12,
+      vx: dir * (3.2 + Math.random() * 3.8),
+      len: 14 + Math.random() * 22,
+      alpha: 0.92,
+      hue: Math.random() < 0.65 ? '#38bdf8' : '#c084fc'
+    });
+  };
+
+  box.__agyFxBurst = () => {
+    const st = getTargetState();
+    const tw = track.clientWidth || 220;
+    const tx = padX + 12 + st.ratio * Math.max(1, tw - 24);
+    const midY = padY + (track.clientHeight || 26) * 0.5;
+    rings.push({ x: tx, y: midY, r: 8, maxR: 44, alpha: 0.95 });
+    for (let i = 0; i < 16; i++) spawnPetal(tx, midY, 0, true);
+    for (let i = 0; i < 6; i++) spawnSlash(tx, midY, i % 2 === 0 ? -1 : 1);
+  };
+
+  const renderRibbonBand = (ctx, pts, halfWidths, gradStops, shadowCol, shadowBlur) => {
+    if (pts.length < 3) return;
+    const upper = [];
+    const lower = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      const prev = pts[Math.max(0, i - 1)];
+      const next = pts[Math.min(pts.length - 1, i + 1)];
+      let dx = next.x - prev.x;
+      let dy = next.y - prev.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const nx = -dy / d;
+      const ny = dx / d;
+      const hw = halfWidths[i];
+      upper.push({ x: p.x + nx * hw, y: p.y + ny * hw });
+      lower.push({ x: p.x - nx * hw, y: p.y - ny * hw });
+    }
+    ctx.save();
+    if (shadowBlur > 0) {
+      ctx.shadowColor = shadowCol;
+      ctx.shadowBlur = shadowBlur;
+    }
+    const g = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length - 1].x, pts[pts.length - 1].y);
+    for (let i = 0; i < gradStops.length; i++) g.addColorStop(gradStops[i][0], gradStops[i][1]);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(upper[0].x, upper[0].y);
+    for (let i = 1; i < upper.length; i++) {
+      const prev = upper[i - 1];
+      const cur = upper[i];
+      ctx.quadraticCurveTo(prev.x, prev.y, (prev.x + cur.x) * 0.5, (prev.y + cur.y) * 0.5);
+    }
+    // Swallowtail cape notch at the far tip (大圣披风燕尾分叉)
+    const tail = pts[pts.length - 1];
+    const preTail = pts[pts.length - 3];
+    ctx.lineTo(tail.x + (tail.x - preTail.x) * 0.25, upper[upper.length - 1].y - 1.4);
+    ctx.lineTo(tail.x - (tail.x - preTail.x) * 0.22, tail.y);
+    ctx.lineTo(tail.x + (tail.x - preTail.x) * 0.25, lower[lower.length - 1].y + 1.4);
+    for (let i = lower.length - 1; i >= 1; i--) {
+      const cur = lower[i];
+      const prev = lower[i - 1];
+      ctx.quadraticCurveTo(cur.x, cur.y, (cur.x + prev.x) * 0.5, (cur.y + prev.y) * 0.5);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  };
+
+  const tick = (ts) => {
+    rafId = 0;
+    if (!box.isConnected || !canvas.isConnected || !track.isConnected) return;
+    if (document.hidden) {
+      rafId = window.requestAnimationFrame(tick);
+      return;
+    }
+    const dt = lastTs ? Math.min(0.05, Math.max(0.004, (ts - lastTs) / 1000)) : 0.016;
+    lastTs = ts;
+    idleWave += dt * 7.4;
+
+    const tw = track.clientWidth || 220;
+    const th = track.clientHeight || 26;
+    const cw = tw + padX * 2;
+    const ch = th + padY * 2;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    if (canvas.width !== Math.round(cw * dpr) || canvas.height !== Math.round(ch * dpr)) {
+      canvas.width = Math.round(cw * dpr);
+      canvas.height = Math.round(ch * dpr);
+    }
+
+    const st = getTargetState();
+    const targetX = padX + 12 + st.ratio * Math.max(1, tw - 24);
+    const midY = padY + th * 0.5;
+
+    if (!initialized) {
+      initialized = true;
+      thumbX = targetX;
+      lastThumbX = targetX;
+      nodes.length = 0;
+      for (let i = 0; i < NODE_COUNT; i++) {
+        nodes.push({ x: thumbX - i * 4.5, y: midY });
+      }
+    }
+
+    const lerpRate = st.dragging ? 0.52 : 0.26;
+    thumbX += (targetX - thumbX) * lerpRate;
+    const rawVx = (thumbX - lastThumbX) / Math.max(0.008, dt);
+    lastThumbX = thumbX;
+    smoothVx = smoothVx * 0.78 + rawVx * 0.22;
+
+    const speed = Math.abs(smoothVx);
+    if (speed > 26) {
+      windDir = smoothVx > 0 ? -1 : 1;
+    } else {
+      // Gently align idle heroic cape wind back along the filled crimson bar
+      windDir = st.ratio < 0.14 ? 1 : -1;
+    }
+
+    const energy = Math.min(1.65, 0.36 + st.ratio * 0.55 + (speed / 280) * 0.85 + (st.dragging ? 0.28 : 0));
+    const segLen = 3.6 + energy * 3.1; // cape elongates dramatically when pulled fast!
+    const flutterAmp = 2.6 + energy * 5.2;
+
+    // Update 22-node flowing silk cape chain (大圣披风带 S-曲线飘动)
+    nodes[0].x = thumbX;
+    nodes[0].y = midY;
+    for (let i = 1; i < NODE_COUNT; i++) {
+      const prev = nodes[i - 1];
+      const cur = nodes[i];
+      const frac = i / (NODE_COUNT - 1);
+      const desiredX = prev.x + windDir * segLen;
+      const clothWave =
+        Math.sin(idleWave * (1 + energy * 0.25) - i * 0.52) * flutterAmp * Math.pow(frac, 0.82) +
+        Math.cos(idleWave * 1.75 - i * 0.86) * (flutterAmp * 0.34) * frac;
+      const liftBias = -Math.sin(frac * Math.PI) * (2.5 + energy * 2.2);
+      const desiredY = midY + clothWave + liftBias;
+      const follow = 0.44 - frac * 0.16;
+      cur.x += (desiredX - cur.x) * follow;
+      cur.y += (desiredY - cur.y) * follow;
+    }
+
+    // Spawn Lan FMVP wisteria petals & blade streaks on motion or high-tier ambient aura
+    if (speed > 35 || (st.dragging && Math.random() < 0.42)) {
+      spawnPetal(thumbX, midY, -smoothVx * 0.014, false);
+      if (speed > 130 && Math.random() < 0.55) spawnSlash(thumbX, midY, windDir);
+    } else if (st.ratio >= 0.62 && Math.random() < 0.11) {
+      const idx = 3 + Math.floor(Math.random() * 10);
+      spawnPetal(nodes[idx].x, nodes[idx].y, 0, false);
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+
+    // 1. Wide Outer Aura Wake — 澜·逐花归海 沧海蓝 × 幽蓝紫藤紫
+    const auraWidths = nodes.map((_, i) => {
+      const f = i / (NODE_COUNT - 1);
+      return (1 - f * 0.72) * (6.5 + energy * 4.5);
+    });
+    renderRibbonBand(
+      ctx,
+      nodes,
+      auraWidths,
+      [
+        [0.00, 'rgba(240, 249, 255, 0.62)'],
+        [0.18, 'rgba(56, 189, 248, 0.56)'],
+        [0.48, 'rgba(139, 92, 246, 0.46)'],
+        [0.78, 'rgba(225, 29, 72, 0.32)'],
+        [1.00, 'rgba(192, 132, 252, 0.00)']
+      ],
+      'rgba(56, 189, 248, 0.65)',
+      12
+    );
+
+    // 2. Main Sun-Wukong Flowing Cape Ribbon — 冰霜月白锋芒 → 沧海蓝紫藤 → 炽焰红金燕尾披风
+    const mainWidths = nodes.map((_, i) => {
+      const f = i / (NODE_COUNT - 1);
+      const belly = Math.sin(Math.min(1, f * 1.15) * Math.PI);
+      return Math.max(0.8, (3.2 + belly * 4.6) * (0.72 + energy * 0.32) * (1 - f * 0.42));
+    });
+    renderRibbonBand(
+      ctx,
+      nodes,
+      mainWidths,
+      [
+        [0.00, 'rgba(255, 255, 255, 0.96)'],
+        [0.14, 'rgba(56, 189, 248, 0.94)'],
+        [0.36, 'rgba(168, 85, 247, 0.92)'],
+        [0.64, 'rgba(235, 30, 82, 0.90)'],
+        [0.86, 'rgba(251, 146, 60, 0.62)'],
+        [1.00, 'rgba(251, 113, 133, 0.00)']
+      ],
+      'rgba(168, 85, 247, 0.72)',
+      8
+    );
+
+    // 3. Secondary Upper Silk Streamer (大圣第二缕飘逸细丝带 · 澜蓝白锋芒)
+    const subNodes = nodes.map((n, i) => {
+      const f = i / (NODE_COUNT - 1);
+      return {
+        x: n.x + windDir * (f * 6),
+        y: n.y - (2.2 + Math.sin(idleWave * 1.4 - i * 0.62) * (3.6 * f))
+      };
+    });
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(subNodes[0].x, subNodes[0].y);
+    for (let i = 1; i < subNodes.length; i++) {
+      ctx.lineTo(subNodes[i].x, subNodes[i].y);
+    }
+    const sg = ctx.createLinearGradient(subNodes[0].x, subNodes[0].y, subNodes[subNodes.length - 1].x, subNodes[subNodes.length - 1].y);
+    sg.addColorStop(0.0, 'rgba(255, 255, 255, 0.95)');
+    sg.addColorStop(0.28, 'rgba(34, 211, 238, 0.85)');
+    sg.addColorStop(0.62, 'rgba(192, 132, 252, 0.72)');
+    sg.addColorStop(0.85, 'rgba(253, 224, 71, 0.56)');
+    sg.addColorStop(1.0, 'rgba(253, 224, 71, 0)');
+    ctx.strokeStyle = sg;
+    ctx.lineWidth = 1.65;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.restore();
+
+    // 4. Lan FMVP Water-Blade Slash Streaks (破浪蓝紫刀芒)
+    for (let i = slashes.length - 1; i >= 0; i--) {
+      const sl = slashes[i];
+      sl.x += sl.vx;
+      sl.alpha -= 0.055;
+      if (sl.alpha <= 0.02) { slashes.splice(i, 1); continue; }
+      ctx.save();
+      ctx.globalAlpha = sl.alpha;
+      const lg = ctx.createLinearGradient(sl.x, sl.y, sl.x - sl.vx * 4.5, sl.y);
+      lg.addColorStop(0, '#ffffff');
+      lg.addColorStop(0.45, sl.hue);
+      lg.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.strokeStyle = lg;
+      ctx.lineWidth = 2.0;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(sl.x, sl.y);
+      ctx.lineTo(sl.x - Math.sign(sl.vx) * sl.len, sl.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 5. Lan FMVP Wisteria Petals (蓝紫月白紫藤花瓣飞舞)
+    for (let i = petals.length - 1; i >= 0; i--) {
+      const p = petals[i];
+      p.x += p.vx;
+      p.y += p.vy + Math.sin(idleWave + p.rot) * 0.25;
+      p.vx *= 0.96;
+      p.vy *= 0.96;
+      p.rot += p.vrot;
+      p.alpha -= p.decay;
+      if (p.alpha <= 0.02) { petals.splice(i, 1); continue; }
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.moveTo(0, -p.size * 0.65);
+      ctx.bezierCurveTo(p.size * 0.55, -p.size * 0.25, p.size * 0.45, p.size * 0.45, 0, p.size * 0.68);
+      ctx.bezierCurveTo(-p.size * 0.45, p.size * 0.45, -p.size * 0.55, -p.size * 0.25, 0, -p.size * 0.65);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // 6. Snap Shockwave Rings (逐花破浪冲击环)
+    for (let i = rings.length - 1; i >= 0; i--) {
+      const rg = rings[i];
+      rg.r += (rg.maxR - rg.r) * 0.22;
+      rg.alpha -= 0.055;
+      if (rg.alpha <= 0.02) { rings.splice(i, 1); continue; }
+      ctx.save();
+      ctx.globalAlpha = rg.alpha;
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.90)';
+      ctx.lineWidth = 2.4 * rg.alpha;
+      ctx.beginPath();
+      ctx.arc(rg.x, rg.y, rg.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(192, 132, 252, 0.72)';
+      ctx.lineWidth = 1.4 * rg.alpha;
+      ctx.beginPath();
+      ctx.arc(rg.x, rg.y, rg.r * 0.72, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    rafId = window.requestAnimationFrame(tick);
+  };
+
+  rafId = window.requestAnimationFrame(tick);
+  box.__agyStopFx = () => {
+    if (rafId) {
+      window.cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+  };
 }
 
 function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
   const existing = pop.querySelector('#agy-real-effort-box');
   if (hasNativeSlider) {
-    if (existing) existing.remove();
+    if (existing) {
+      if (typeof existing.__agyStopFx === 'function') existing.__agyStopFx();
+      existing.remove();
+    }
     return;
   }
 
   const binding = discoverRealEffortBinding(pop, matchedRows);
   if (!binding || !binding.options || binding.options.length < 2) {
-    if (existing) existing.remove();
+    if (existing) {
+      if (typeof existing.__agyStopFx === 'function') existing.__agyStopFx();
+      existing.remove();
+    }
     return;
   }
 
@@ -7339,27 +7891,55 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
   }
   if (activeIdx < 0) activeIdx = Math.max(0, options.length - 1);
 
-  const sig = binding.mode + ':' + options.map((o) => o.rank + (o.disabled ? 'x' : '')).join(',');
+  const sig = binding.mode + ':' + (binding.family || '') + ':' + options.map((o) => o.rank + (o.disabled ? 'x' : '')).join(',');
   let box = existing;
   if (!box || box.dataset.agySig !== sig) {
-    if (box) box.remove();
+    if (box) {
+      if (typeof box.__agyStopFx === 'function') box.__agyStopFx();
+      box.remove();
+    }
     box = document.createElement('div');
     box.id = 'agy-real-effort-box';
     box.className = 'notranslate';
     box.dataset.agySig = sig;
     box.innerHTML =
       '<div class="agy-re-head">' +
-        '<span class="agy-re-title"><span class="agy-re-live-dot"></span><span>思考强度</span></span>' +
+        '<span class="agy-re-title">' +
+          '<span class="agy-re-live-dot"></span>' +
+          '<span>思考深度</span>' +
+          (binding.modelLabel ? '<span class="agy-re-model-chip">' + escHtml(binding.modelLabel) + '</span>' : '') +
+        '</span>' +
         '<span class="agy-thinking-level agy-re-val"></span>' +
       '</div>' +
-      '<div class="agy-re-track" role="slider" tabindex="0" aria-label="思考强度" aria-valuemin="0" aria-valuemax="' + (options.length - 1) + '">' +
-        '<div class="agy-re-fill"></div>' +
-        '<div class="agy-re-thumb"></div>' +
+      '<div class="agy-re-stage">' +
+        '<div class="agy-re-track" role="slider" tabindex="0" aria-label="思考深度" aria-valuemin="0" aria-valuemax="' + (options.length - 1) + '">' +
+          '<div class="agy-re-fill"></div>' +
+          '<div class="agy-re-thumb"></div>' +
+        '</div>' +
+        '<canvas class="agy-re-fx-canvas"></canvas>' +
       '</div>' +
       '<div class="agy-re-ticks">' +
         options.map((o, i) => '<button type="button" class="agy-re-tick" data-idx="' + i + '"' + (o.disabled ? ' disabled' : '') + '>' + escHtml(o.short) + '</button>').join('') +
-      '</div>';
-    pop.appendChild(box);
+      '</div>' +
+      '<div class="agy-re-status"><span>✦ 大圣披风 · 逐花归海实控条</span><span class="agy-re-msg"></span></div>';
+
+    // Insert cleanly right above "查看用量统计 / View usage stats" footer if present, else append
+    let footerAnchor = null;
+    const footerNodes = pop.querySelectorAll('button, [role="menuitem"], a, div');
+    for (let i = 0; i < footerNodes.length; i++) {
+      const fn = footerNodes[i];
+      if (fn.parentElement !== pop && fn.parentElement?.parentElement !== pop) continue;
+      const ft = (fn.textContent || '').trim();
+      if (/^(?:查看用量统计|View\s+usage\s+stats)$/i.test(ft)) {
+        footerAnchor = fn.parentElement === pop ? fn : fn.parentElement;
+        break;
+      }
+    }
+    if (footerAnchor && footerAnchor.parentElement === pop) {
+      pop.insertBefore(box, footerAnchor);
+    } else {
+      pop.appendChild(box);
+    }
   }
 
   box.__agyBinding = binding;
@@ -7367,84 +7947,106 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
   const fill = box.querySelector('.agy-re-fill');
   const thumb = box.querySelector('.agy-re-thumb');
   const valEl = box.querySelector('.agy-re-val');
+  const msgEl = box.querySelector('.agy-re-msg');
+  const fxCanvas = box.querySelector('.agy-re-fx-canvas');
   const ticks = box.querySelectorAll('.agy-re-tick');
 
-  const renderIdx = (idx) => {
+  const setStatusMsg = (s) => {
+    if (msgEl) msgEl.textContent = s || '';
+  };
+
+  const renderContinuous = (ratio, previewIdx) => {
     const curBinding = box.__agyBinding || binding;
     const opts = curBinding.options;
-    const safeIdx = Math.max(0, Math.min(opts.length - 1, idx));
-    const ratio = opts.length > 1 ? (safeIdx / (opts.length - 1)) : 1;
-    const pct = (ratio * 100).toFixed(1);
-    const thumbLeft = (11 + ratio * (track.clientWidth ? (track.clientWidth - 22) : 200));
-    if (fill) fill.style.width = 'calc(24px + (100% - 24px) * ' + ratio.toFixed(4) + ')';
-    if (thumb) thumb.style.left = track.clientWidth ? (thumbLeft.toFixed(1) + 'px') : ('calc(12px + (100% - 24px) * ' + ratio.toFixed(4) + ')');
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const safeIdx = Math.max(0, Math.min(opts.length - 1, previewIdx));
+    const pct = (clampedRatio * 100).toFixed(1);
+    const tw = track.clientWidth;
+    const thumbLeft = 12 + clampedRatio * (tw ? (tw - 24) : 200);
+    if (fill) fill.style.width = 'calc(26px + (100% - 26px) * ' + clampedRatio.toFixed(4) + ')';
+    if (thumb) thumb.style.left = tw ? (thumbLeft.toFixed(1) + 'px') : ('calc(12px + (100% - 24px) * ' + clampedRatio.toFixed(4) + ')');
     if (valEl) valEl.textContent = opts[safeIdx].label;
     track.setAttribute('aria-valuenow', String(safeIdx));
     track.setAttribute('aria-valuetext', opts[safeIdx].label);
     track.dataset.curIdx = String(safeIdx);
+    track.dataset.curRatio = clampedRatio.toFixed(4);
     for (let i = 0; i < ticks.length; i++) {
       ticks[i].classList.toggle('active', i === safeIdx);
     }
     track.style.setProperty('--agy-slider-pct', pct + '%');
   };
 
+  const renderIdx = (idx) => {
+    const curBinding = box.__agyBinding || binding;
+    const opts = curBinding.options;
+    const safeIdx = Math.max(0, Math.min(opts.length - 1, idx));
+    const ratio = opts.length > 1 ? (safeIdx / (opts.length - 1)) : 1;
+    renderContinuous(ratio, safeIdx);
+  };
+
   if (!track.classList.contains('dragging')) {
     renderIdx(activeIdx);
   }
 
+  attachWukongLanTrailFX(box, track, fxCanvas, () => ({
+    ratio: Number(track.dataset.curRatio || 0.75),
+    dragging: track.classList.contains('dragging')
+  }));
+
   if (!box.dataset.agyBound) {
     box.dataset.agyBound = '1';
-    const commitIdx = (nextIdx) => {
+    const commitIdx = (nextIdx, force) => {
       const curBinding = box.__agyBinding;
       if (!curBinding || !curBinding.options[nextIdx] || curBinding.options[nextIdx].disabled) return;
-      const prevIdx = Number(track.dataset.curIdx || 0);
+      const prevIdx = Number(track.dataset.committedIdx ?? track.dataset.curIdx ?? 0);
       renderIdx(nextIdx);
-      if (nextIdx !== prevIdx) {
-        selectRealEffortOption(curBinding, nextIdx, () => {
-          decorateModelPopovers();
-          const comp = document.querySelector('.surface-composer');
-          if (comp) decorateComposerModelTrigger(comp);
-        });
+      if (typeof box.__agyFxBurst === 'function') box.__agyFxBurst();
+      if (force || nextIdx !== prevIdx) {
+        track.dataset.committedIdx = String(nextIdx);
+        selectRealEffortOption(
+          curBinding,
+          nextIdx,
+          () => {
+            const comp = document.querySelector('.surface-composer');
+            if (comp) decorateComposerModelTrigger(comp);
+          },
+          setStatusMsg
+        );
       }
     };
 
-    const idxFromClientX = (clientX) => {
+    const ratioAndIdxFromClientX = (clientX) => {
       const curBinding = box.__agyBinding;
       const n = curBinding ? curBinding.options.length : 1;
-      if (n <= 1) return 0;
       const r = track.getBoundingClientRect();
-      if (r.width <= 0) return 0;
-      const norm = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-      return Math.round(norm * (n - 1));
+      if (r.width <= 0 || n <= 1) return { ratio: 0, idx: 0 };
+      const ratio = Math.max(0, Math.min(1, (clientX - r.left - 12) / Math.max(1, r.width - 24)));
+      const idx = Math.round(ratio * (n - 1));
+      return { ratio, idx };
     };
 
     track.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      track.dataset.committedIdx = track.dataset.curIdx || '0';
       track.classList.add('dragging');
       try { track.setPointerCapture(e.pointerId); } catch (_) {}
-      renderIdx(idxFromClientX(e.clientX));
+      const { ratio, idx } = ratioAndIdxFromClientX(e.clientX);
+      renderContinuous(ratio, idx);
     });
     track.addEventListener('pointermove', (e) => {
       if (!track.classList.contains('dragging')) return;
       e.stopPropagation();
-      renderIdx(idxFromClientX(e.clientX));
+      const { ratio, idx } = ratioAndIdxFromClientX(e.clientX);
+      renderContinuous(ratio, idx);
     });
     const finishDrag = (e) => {
       if (!track.classList.contains('dragging')) return;
       e.stopPropagation();
       track.classList.remove('dragging');
       try { track.releasePointerCapture(e.pointerId); } catch (_) {}
-      const targetIdx = idxFromClientX(e.clientX);
-      const curBinding = box.__agyBinding;
-      if (curBinding && curBinding.options[targetIdx] && !curBinding.options[targetIdx].disabled) {
-        renderIdx(targetIdx);
-        selectRealEffortOption(curBinding, targetIdx, () => {
-          decorateModelPopovers();
-          const comp = document.querySelector('.surface-composer');
-          if (comp) decorateComposerModelTrigger(comp);
-        });
-      }
+      const { idx } = ratioAndIdxFromClientX(e.clientX);
+      commitIdx(idx, true);
     };
     track.addEventListener('pointerup', finishDrag);
     track.addEventListener('pointercancel', finishDrag);
@@ -7453,86 +8055,119 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
       const maxIdx = (box.__agyBinding?.options.length || 1) - 1;
       if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
         e.preventDefault();
-        commitIdx(Math.min(maxIdx, cur + 1));
+        commitIdx(Math.min(maxIdx, cur + 1), false);
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
         e.preventDefault();
-        commitIdx(Math.max(0, cur - 1));
+        commitIdx(Math.max(0, cur - 1), false);
       }
     });
     box.addEventListener('click', (e) => {
+      e.stopPropagation();
       const tb = e.target instanceof Element ? e.target.closest('.agy-re-tick') : null;
       if (!tb) return;
-      e.stopPropagation();
-      commitIdx(Number(tb.dataset.idx || 0));
+      commitIdx(Number(tb.dataset.idx || 0), true);
     });
   }
+}
+
+function findModelRowsInPopover(pop) {
+  const matchedRows = [];
+  let orchestratorBtn = null;
+  const seen = new Set();
+
+  const tryCollect = (nodeList) => {
+    for (let i = 0; i < nodeList.length; i++) {
+      const el = nodeList[i];
+      if (!el || el === pop || seen.has(el) || el.getAttribute('role') === 'slider' || el.closest('#agy-real-effort-box')) continue;
+      const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!txt || txt.length > 108) continue;
+      if (/^(?:查看用量统计|View\s+usage\s+stats|模型选择|Model|Select\s+model)$/i.test(txt)) continue;
+      const isOrch = ORCHESTRATOR_RX.test(txt);
+      const tone = classifyModelTone(txt);
+      if (!isOrch && !tone) continue;
+      if (el.querySelector('[role="menuitem"], [role="menuitemradio"], [role="option"]')) continue;
+      const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      if (r && (r.height < 18 || r.height > 68 || r.width < 110)) continue;
+      // Avoid collecting both a wrapper and its inner span/div
+      let nested = false;
+      for (const prev of seen) {
+        if (prev.contains(el) || el.contains(prev)) { nested = true; break; }
+      }
+      if (nested) continue;
+      seen.add(el);
+      if (isOrch && !orchestratorBtn) orchestratorBtn = el;
+      matchedRows.push({ el, tone: tone || 'neon', isOrch });
+    }
+  };
+
+  tryCollect(pop.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], button, [tabindex], li'));
+  if (matchedRows.length < 2) {
+    // Fallback for Antigravity 2.0 custom clickable <div> rows without ARIA menuitem roles
+    const divs = pop.querySelectorAll('div');
+    const leafRows = [];
+    for (let i = 0; i < divs.length; i++) {
+      const d = divs[i];
+      if (d === pop || d.closest('#agy-real-effort-box')) continue;
+      const r = d.getBoundingClientRect();
+      if (r.height < 22 || r.height > 60 || r.width < 140) continue;
+      const t = (d.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!t || t.length > 108) continue;
+      if (MODEL_NAME_STRICT_RX.test(t) || ORCHESTRATOR_RX.test(t)) {
+        leafRows.push(d);
+      }
+    }
+    tryCollect(leafRows);
+  }
+  return { matchedRows, orchestratorBtn };
 }
 
 function decorateSingleModelPopover(pop) {
   if (!pop || pop.nodeType !== 1 || isOwnControlElement(pop)) return;
   if (pop.classList.contains('settings-modal-container')) return;
-  if (readThemeMode() === 'native') {
-    const staleBox = pop.querySelector('#agy-real-effort-box');
-    if (staleBox) staleBox.remove();
-    return;
-  }
+  if (Date.now() < effortDriverBusyUntil) return;
   if (pop.parentElement && pop.parentElement.closest('.agy-model-popover')) return;
 
-  const fullText = (pop.textContent || '').slice(0, 2600);
+  const fullText = (pop.textContent || '').slice(0, 3000);
   if (!MODEL_NAME_STRICT_RX.test(fullText)) return;
 
-  const rowCandidates = pop.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], button, div[tabindex="0"]');
-  const matchedRows = [];
-  let orchestratorBtn = null;
-
-  for (let i = 0; i < rowCandidates.length; i++) {
-    const el = rowCandidates[i];
-    if (el === pop || el.getAttribute('role') === 'slider' || el.closest('#agy-real-effort-box')) continue;
-    const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
-    if (!txt || txt.length > 96) continue;
-    if (ORCHESTRATOR_RX.test(txt) && txt.length <= 28 && !MODEL_NAME_STRICT_RX.test(txt)) {
-      orchestratorBtn = el;
-      continue;
-    }
-    const tone = classifyModelTone(txt);
-    if (tone) {
-      if (el.querySelector('[role="menuitem"], [role="menuitemradio"], [role="option"]')) continue;
-      matchedRows.push({ el, tone });
-    }
-  }
-
-  const hasControlHint = Boolean(orchestratorBtn) || THINKING_LABEL_RX.test(fullText) || /主\s*Agent|Main\s*Agent/i.test(fullText);
+  const { matchedRows, orchestratorBtn } = findModelRowsInPopover(pop);
+  const hasControlHint = Boolean(orchestratorBtn) || THINKING_LABEL_RX.test(fullText) || /主\s*Agent|Main\s*Agent|模型选择|查看用量统计|View\s+usage\s+stats/i.test(fullText);
   if (matchedRows.length < 2 && !(matchedRows.length >= 1 && hasControlHint)) return;
 
-  const structuralSig = matchedRows.length + ':' + (orchestratorBtn ? 1 : 0) + ':' + pop.querySelectorAll('input[type="range"], [role="slider"]').length;
-  if (pop.classList.contains('agy-model-popover') && pop.dataset.agyModelSig === structuralSig) {
+  const isOffTheme = readThemeMode() === 'off';
+  const structuralSig = (isOffTheme ? 'off:' : 'on:') + matchedRows.length + ':' + (orchestratorBtn ? 1 : 0) + ':' + pop.querySelectorAll('input[type="range"], [role="slider"]').length;
+  if (pop.dataset.agyModelSig === structuralSig && pop.querySelector('#agy-real-effort-box')) {
     return;
   }
   pop.dataset.agyModelSig = structuralSig;
 
-  if (!pop.classList.contains('agy-model-popover')) {
-    pop.classList.add('agy-model-popover');
-  }
-
-  for (let i = 0; i < matchedRows.length; i++) {
-    const { el, tone } = matchedRows[i];
-    if (!el.classList.contains('agy-model-item')) el.classList.add('agy-model-item');
-    if (el.getAttribute('data-agy-model-tone') !== tone) {
-      el.setAttribute('data-agy-model-tone', tone);
+  if (!isOffTheme) {
+    if (!pop.classList.contains('agy-model-popover')) {
+      pop.classList.add('agy-model-popover');
     }
-    const leafSpans = el.querySelectorAll('span, small');
-    for (let j = 0; j < leafSpans.length; j++) {
-      const sp = leafSpans[j];
-      if (sp.children.length > 0) continue;
-      const st = (sp.textContent || '').trim();
-      if (EFFORT_WORD_RX.test(st)) {
-        if (sp.getAttribute('data-agy-effort') !== '1') sp.setAttribute('data-agy-effort', '1');
+
+    for (let i = 0; i < matchedRows.length; i++) {
+      const { el, tone, isOrch } = matchedRows[i];
+      if (!isOrch) {
+        if (!el.classList.contains('agy-model-item')) el.classList.add('agy-model-item');
+        if (el.getAttribute('data-agy-model-tone') !== tone) {
+          el.setAttribute('data-agy-model-tone', tone);
+        }
+      }
+      const leafSpans = el.querySelectorAll('span, small');
+      for (let j = 0; j < leafSpans.length; j++) {
+        const sp = leafSpans[j];
+        if (sp.children.length > 0) continue;
+        const st = (sp.textContent || '').trim();
+        if (EFFORT_WORD_RX.test(st)) {
+          if (sp.getAttribute('data-agy-effort') !== '1') sp.setAttribute('data-agy-effort', '1');
+        }
       }
     }
-  }
 
-  if (orchestratorBtn && !orchestratorBtn.classList.contains('agy-orchestrator-pill')) {
-    orchestratorBtn.classList.add('agy-orchestrator-pill');
+    if (orchestratorBtn && !orchestratorBtn.classList.contains('agy-orchestrator-pill')) {
+      orchestratorBtn.classList.add('agy-orchestrator-pill');
+    }
   }
 
   const allLeafNodes = pop.querySelectorAll('span, div, label, p');
@@ -7587,19 +8222,73 @@ function decorateSingleModelPopover(pop) {
     }
   }
 
-  // Paths 2–4: Mount REAL-bound liquid-glass slider when native UI uses discrete effort buttons/variants/dropdown
+  // Paths 2–5: Mount REAL-bound Wukong-Cape + Lan-FMVP Thinking Effort Slider
   const hasNativeSlider = nativeRanges.length > 0 || ariaSliders.length > 0;
   mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider);
 }
 
+function findFloatingCardAncestor(node) {
+  let cur = node && node.nodeType === 1 ? node : node?.parentElement;
+  let best = null;
+  for (let depth = 0; cur && depth < 8; depth++, cur = cur.parentElement) {
+    if (cur === document.body || cur === document.documentElement || cur.tagName === 'MAIN' || cur.tagName === 'NAV') break;
+    if (cur.classList.contains('settings-modal-container') || isOwnControlElement(cur)) return null;
+    const r = cur.getBoundingClientRect();
+    if (r.width < 200 || r.width > 540 || r.height < 150 || r.height > 780) continue;
+    const txt = (cur.textContent || '').slice(0, 3000);
+    if (!MODEL_NAME_STRICT_RX.test(txt)) continue;
+    const cs = window.getComputedStyle(cur);
+    const isFloating = cs.position === 'fixed' || cs.position === 'absolute' ||
+      cur.getAttribute('role') === 'menu' || cur.getAttribute('role') === 'listbox' || cur.getAttribute('role') === 'dialog' ||
+      (cs.boxShadow && cs.boxShadow !== 'none') || (cs.borderRadius && parseFloat(cs.borderRadius) >= 8 && cs.borderWidth && parseFloat(cs.borderWidth) > 0);
+    if (isFloating) {
+      best = cur;
+      if (cs.borderWidth && parseFloat(cs.borderWidth) > 0 && cs.borderRadius && parseFloat(cs.borderRadius) >= 8) {
+        return cur; // Exact visual card box!
+      }
+    }
+  }
+  return best;
+}
+
 function decorateModelPopovers() {
+  if (Date.now() < effortDriverBusyUntil) return;
+  const rawSet = new Set();
   const candidates = document.querySelectorAll(
-    '[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content], ' +
+    '[role="menu"], [role="listbox"], [role="dialog"], [data-radix-menu-content], [data-radix-select-content], ' +
     '[data-radix-popper-content-wrapper] > div, [data-floating-ui-portal] > div, ' +
-    'div[class*="popover-content"], div[class*="dropdown-content"]'
+    '[data-slot*="popover"], [data-slot*="menu"], div[class*="popover"], div[class*="dropdown"], ' +
+    'div[class*="bg-popover"], div[class*="z-50"][class*="rounded"], ' +
+    'div[class*="shadow-lg"][class*="rounded"], div[class*="shadow-xl"][class*="rounded"], div[class*="shadow-md"][class*="rounded"]'
   );
-  for (let i = 0; i < candidates.length; i++) {
-    decorateSingleModelPopover(candidates[i]);
+  for (let i = 0; i < candidates.length; i++) rawSet.add(candidates[i]);
+
+  // Fast O(body.children) portal check (zero scan of message list in <main>!)
+  const bodyKids = document.body ? document.body.children : [];
+  for (let i = 0; i < bodyKids.length; i++) {
+    const ch = bodyKids[i];
+    if (!ch || ch.nodeType !== 1 || isOwnControlElement(ch)) continue;
+    const id = ch.id || '';
+    if (id === 'root' || id === 'app' || id === '__next') continue;
+    const txt = (ch.textContent || '').slice(0, 3000);
+    if (!MODEL_NAME_STRICT_RX.test(txt)) continue;
+    const leaf = ch.querySelector('[role="menu"], [role="listbox"], [role="dialog"], div[class*="rounded"], div[class*="border"]');
+    const card = findFloatingCardAncestor(leaf || ch) || ch;
+    if (card) rawSet.add(card);
+  }
+
+  // Deduplicate nested ancestors so only the tightest model card is decorated
+  const list = Array.from(rawSet).filter((el) => {
+    if (!el || !el.isConnected || isOwnControlElement(el) || el.classList.contains('settings-modal-container')) return false;
+    if (el.tagName === 'MAIN' || el.tagName === 'NAV' || el.classList.contains('surface-composer') || el.classList.contains('surface-composer-card')) return false;
+    const r = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    if (!r || r.width < 190 || r.width > 560 || r.height < 120 || r.height > 800) return false;
+    const t = (el.textContent || '').slice(0, 3000);
+    return MODEL_NAME_STRICT_RX.test(t);
+  });
+  const tightest = list.filter((el) => !list.some((other) => other !== el && el.contains(other)));
+  for (let i = 0; i < tightest.length; i++) {
+    decorateSingleModelPopover(tightest[i]);
   }
 }
 
