@@ -12,7 +12,13 @@ const WP_ALPHA_STORE = 'agy-wallpaper-alpha:v1';
 const WUHUN_ENABLED_STORE = 'agy-wuhun-enabled:v1';
 const MUSE_COLLAPSED_STORE = 'agy-hakimi-collapsed:v1';
 const VALID_THEMES = ['codex', 'claude', 'google', 'off'];
-const VALID_WALLPAPERS = ['cyber-sakura', 'starlight-aurora', 'crimson-eclipse', 'cloud-atelier', 'custom', 'none'];
+const VALID_WALLPAPERS = ['obsidian-silk', 'glacier-glass', 'amber-dune', 'mist-jade', 'custom', 'none'];
+const LEGACY_WP_MAP = {
+  'cyber-sakura': 'obsidian-silk',
+  'starlight-aurora': 'glacier-glass',
+  'crimson-eclipse': 'amber-dune',
+  'cloud-atelier': 'mist-jade',
+};
 
 const THEME_META = {
   codex:  { dot: '#111113', darkDot: '#f3f3f6', label: '极简工作台', desc: '极简工作台' },
@@ -22,20 +28,28 @@ const THEME_META = {
 };
 
 const WALLPAPER_META = {
-  'cyber-sakura':     { label: '霓虹樱夜', accent: '#f472b6' },
-  'starlight-aurora': { label: '星海极光', accent: '#22d3ee' },
-  'crimson-eclipse':  { label: '绯红星环', accent: '#e11d48' },
-  'cloud-atelier':    { label: '晴空云境', accent: '#60a5fa' },
-  'custom':           { label: '本地自选', accent: '#a855f7' },
-  'none':             { label: '纯净无图', accent: '#64748b' }
+  'obsidian-silk': { label: '墨曜丝韵', accent: '#818cf8' },
+  'glacier-glass': { label: '冰川浮光', accent: '#38bdf8' },
+  'amber-dune':    { label: '琥珀沙丘', accent: '#d97757' },
+  'mist-jade':     { label: '岚雾青瓷', accent: '#64748b' },
+  'custom':        { label: '本地自选', accent: '#a855f7' },
+  'none':          { label: '纯净无图', accent: '#64748b' }
 };
+
+function normalizeWallpaperKey(mode) {
+  const mapped = LEGACY_WP_MAP[mode] || mode;
+  return VALID_WALLPAPERS.includes(mapped) ? mapped : 'none';
+}
 
 function readWallpaperMode() {
   try {
-    const v = localStorage.getItem(WP_STORE);
-    if (v && VALID_WALLPAPERS.includes(v)) return v;
+    const raw = localStorage.getItem(WP_STORE);
+    if (raw) {
+      const mapped = LEGACY_WP_MAP[raw] || raw;
+      if (VALID_WALLPAPERS.includes(mapped)) return mapped;
+    }
   } catch (_) {}
-  return AGY_WALLPAPERS && AGY_WALLPAPERS['cyber-sakura'] ? 'cyber-sakura' : 'none';
+  return AGY_WALLPAPERS && AGY_WALLPAPERS['obsidian-silk'] ? 'obsidian-silk' : 'none';
 }
 
 function readWallpaperAlpha() {
@@ -201,11 +215,13 @@ function crossfadeWallpaperTo(imgUrl) {
     window.requestAnimationFrame(() => {
       if (token !== wpSwapToken) return;
       nextImg.style.opacity = '1';
+      nextImg.style.transform = 'translate3d(0, 0, 0) scale3d(1, 1, 1)';
       activeImg.style.opacity = '0';
       wpActiveSlot = wpActiveSlot === 0 ? 1 : 0;
     });
   };
   nextImg.style.opacity = '0';
+  nextImg.style.transform = 'translate3d(0, 0, 0) scale3d(1.032, 1.032, 1)';
   nextImg.src = imgUrl;
   if (typeof nextImg.decode === 'function') {
     nextImg.decode().then(commitSwap, commitSwap);
@@ -237,14 +253,20 @@ function parseCssBgAlpha(bg) {
 }
 
 const WP_SHELL_SKIP_SEL = [
-  '[role="dialog"]', '[role="alertdialog"]', '[role="menu"]', '[role="listbox"]',
-  '[role="tooltip"]', '[data-radix-popper-content-wrapper]', '[data-floating-ui-portal]',
+  '[role="dialog"]', '[role="alertdialog"]', '[aria-modal="true"]', '[data-radix-dialog-content]',
+  '[role="menu"]', '[role="listbox"]', '[role="tooltip"]',
+  '[data-radix-popper-content-wrapper]', '[data-floating-ui-portal]',
   '[data-radix-menu-content]', '[data-radix-select-content]',
-  '.settings-modal-container', '.surface-composer', '.agy-model-popover',
+  '.settings-modal-container', '.agy-dialog',
+  '[class*="settings-modal"]', '[class*="modal-container"]', '[class*="modal-content"]', '[class*="dialog-content"]',
+  '[class*="popover"]', '[class*="dropdown"]', '[class*="drawer"]',
+  '.surface-composer', '.agy-model-popover',
   '[data-testid="conversation-row-sidebar"]', '[data-testid="running-items-card"]',
   '[data-quotable="true"]', '.markdown-body', '[data-testid="planner-response-text"]',
   '.monaco-editor', '.cm-editor', '.hljs', 'pre', 'code', 'table', 'iframe', 'video', 'canvas'
 ].join(',');
+
+const WP_MODAL_GUARD_SEL = '[role="dialog"], [role="alertdialog"], [aria-modal="true"], [data-radix-dialog-content], .settings-modal-container, .agy-dialog, [class*="settings-modal"], [class*="modal-container"]';
 
 const WP_SHELL_TAGS = new Set(['DIV', 'MAIN', 'SECTION', 'ARTICLE', 'ASIDE', 'NAV', 'HEADER', 'FOOTER']);
 let wpShellSyncTimer = 0;
@@ -262,6 +284,16 @@ function syncWallpaperShellTransparency() {
     return 0;
   }
   if (!document.body) return 0;
+  // Purge any accidental marks inside open dialogs/settings modals first
+  document.querySelectorAll(WP_MODAL_GUARD_SEL).forEach((dlg) => {
+    dlg.removeAttribute('data-agy-wp-shell');
+    dlg.removeAttribute('data-agy-wp-side');
+    dlg.querySelectorAll('[data-agy-wp-shell], [data-agy-wp-side]').forEach((child) => {
+      child.removeAttribute('data-agy-wp-shell');
+      child.removeAttribute('data-agy-wp-side');
+    });
+  });
+
   const vw = window.innerWidth || 1200;
   const vh = window.innerHeight || 800;
   // BFS traversal guarantees every top/mid-level layout shell across sidebar, topbar,
@@ -280,10 +312,27 @@ function syncWallpaperShellTransparency() {
     const tag = el.tagName;
     if (!WP_SHELL_TAGS.has(tag) && !tag.includes('-')) continue;
     if (el.matches(WP_SHELL_SKIP_SEL)) continue;
+    if (el.closest(WP_MODAL_GUARD_SEL)) continue;
 
     const r = el.getBoundingClientRect();
     if (r.width < 150 || r.height < 24) continue;
     if (r.bottom < -20 || r.top > vh + 20 || r.right < -20 || r.left > vw + 20) continue;
+
+    const cs = window.getComputedStyle(el);
+    const zVal = parseInt(cs.zIndex, 10);
+    // Never pierce fixed modal overlays / floating panels (e.g., Settings modal, popups, inspectors)
+    if (cs.position === 'fixed') {
+      const coversWholeViewport = r.width >= vw - 8 && r.height >= vh - 8;
+      if (!coversWholeViewport || (Number.isFinite(zVal) && zVal >= 10)) continue;
+    }
+    // Never pierce a centered floating box (e.g. Settings window inside a fixed backdrop wrapper)
+    if (
+      r.left >= 24 && r.right <= vw - 24 &&
+      r.top >= 20 && r.bottom <= vh - 20 &&
+      (cs.boxShadow && cs.boxShadow !== 'none')
+    ) {
+      continue;
+    }
 
     const isSidebar = (
       (el.matches('div[role="navigation"], aside, nav') || el.getAttribute('aria-label') === 'Sidebar') &&
@@ -305,7 +354,6 @@ function syncWallpaperShellTransparency() {
         if (!el.hasAttribute('data-agy-wp-shell') && !el.hasAttribute('data-agy-wp-side')) {
           const role = el.getAttribute('role') || '';
           if (role !== 'button' && role !== 'tab' && el.getAttribute('tabindex') !== '0') {
-            const cs = window.getComputedStyle(el);
             const alpha = parseCssBgAlpha(cs.backgroundColor);
             const hasBgImg = Boolean(cs.backgroundImage && cs.backgroundImage !== 'none');
             if (alpha > 0.08 || hasBgImg) {
@@ -358,7 +406,7 @@ function applyWallpaperAlpha(pct) {
 }
 
 function applyWallpaperMode(mode) {
-  let normalized = VALID_WALLPAPERS.includes(mode) ? mode : 'none';
+  let normalized = normalizeWallpaperKey(mode);
   let imgUrl = '';
   if (normalized === 'custom') {
     imgUrl = readCustomWallpaperData();
@@ -367,9 +415,9 @@ function applyWallpaperMode(mode) {
       let storedMode = '';
       try { storedMode = localStorage.getItem(WP_STORE) || ''; } catch (_) {}
       if (storedMode === 'custom') {
-        imgUrl = (AGY_WALLPAPERS && AGY_WALLPAPERS['cyber-sakura']) || '';
+        imgUrl = (AGY_WALLPAPERS && AGY_WALLPAPERS['obsidian-silk']) || '';
       } else {
-        normalized = 'cyber-sakura';
+        normalized = 'obsidian-silk';
       }
     }
   }
@@ -2102,22 +2150,32 @@ html[data-agy-dark="1"] #agy-pulse-drawer {
   padding: 7px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px) saturate(170%);
-  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(22px) saturate(175%);
+  -webkit-backdrop-filter: blur(22px) saturate(175%);
   border: 1px solid var(--gs-line, #e3e8ef);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 3px;
   contain: layout style;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform-origin: top right;
+  transform: translate3d(0, -8px, 0) scale3d(0.96, 0.96, 1);
+  transition: opacity 0.20s cubic-bezier(0.16, 1, 0.3, 1), transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.20s step-end;
 }
 html[data-agy-dark="1"] #agy-theme-menu {
-  background: rgba(24, 26, 35, 0.92);
+  background: rgba(22, 24, 33, 0.92);
   border-color: rgba(255, 255, 255, 0.14);
   box-shadow: 0 16px 42px rgba(0, 0, 0, 0.56);
 }
 #agy-theme-menu.open {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s step-start;
 }
 .agy-tm-sec {
   font-size: 10.5px;
@@ -7432,7 +7490,7 @@ function openThemeMenu(anchorBtn) {
         '<span class="agy-tm-check">✓</span></button>';
     }).join('');
 
-    const presetKeys = ['cyber-sakura', 'starlight-aurora', 'crimson-eclipse', 'cloud-atelier'];
+    const presetKeys = ['obsidian-silk', 'glacier-glass', 'amber-dune', 'mist-jade'];
     const wpCardsHtml = presetKeys.map((k) => {
       const wm = WALLPAPER_META[k];
       const bg = (AGY_WALLPAPERS && AGY_WALLPAPERS[k]) ? ('background-image:url(\'' + AGY_WALLPAPERS[k] + '\')') : ('background:' + wm.accent);
@@ -9247,6 +9305,16 @@ window.__AGY_I18N__ = {
   translate: translateText,
 };
 
+function triggerStageEntranceChoreography() {
+  if (window.__agyStageEntered) return;
+  window.__agyStageEntered = true;
+  document.documentElement.classList.add('agy-stage-entering');
+  window.setTimeout(() => {
+    document.documentElement.classList.remove('agy-stage-entering');
+  }, 960);
+}
+
+triggerStageEntranceChoreography();
 syncDarkAttribute();
 applyThemeMode(readThemeMode());
 applyWallpaperMode(readWallpaperMode());

@@ -22,10 +22,10 @@ DIST = os.path.join(BASE, "dist")
 
 MUSE_POSES = ["idle", "laptop1", "laptop2", "write1", "write2", "done", "sleepy"]
 WALLPAPER_SPECS = [
-    ("cyber-sakura", "cyber-sakura.jpg", "image/jpeg"),
-    ("starlight-aurora", "starlight-aurora.jpg", "image/jpeg"),
-    ("crimson-eclipse", "crimson-eclipse.svg", "image/svg+xml"),
-    ("cloud-atelier", "cloud-atelier.svg", "image/svg+xml"),
+    ("obsidian-silk", "obsidian-silk.jpg", "image/jpeg"),
+    ("glacier-glass", "glacier-glass.jpg", "image/jpeg"),
+    ("amber-dune", "amber-dune.jpg", "image/jpeg"),
+    ("mist-jade", "mist-jade.jpg", "image/jpeg"),
 ]
 TARGET_W = 360
 MAX_COLORS = 224
