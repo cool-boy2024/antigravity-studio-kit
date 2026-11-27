@@ -1004,10 +1004,14 @@ html[data-agy-dark="1"] .agy-re-tick.active {
 }
 
 /* ============================================================
-   10. 120Hz 零重排炫酷壁纸 + 单层通透毛玻璃工作台模式（零 background-attachment:fixed）
+   10. 120Hz 零重排炫酷壁纸 + 单层通透毛玻璃工作台模式（高权重覆盖四主题令牌）
    ============================================================ */
 html[data-agy-wallpaper="on"],
-html[data-agy-wallpaper="on"] body {
+html[data-agy-wallpaper="on"][data-agy-theme],
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark],
+html[data-agy-wallpaper="on"] body,
+html[data-agy-wallpaper="on"][data-agy-theme] body,
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] body {
   --background: transparent !important;
   --bg-canvas: transparent !important;
   --color-background: transparent !important;
@@ -1026,24 +1030,33 @@ html[data-agy-wallpaper="on"] body > #__next {
 }
 
 /* 主画布与嵌套 bg-background / bg-canvas 全部交由单一 #agy-wallpaper-veil 控透，避免多层叠加变纯黑 */
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] main,
 html[data-agy-wallpaper="on"] main,
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] div[class*="bg-background"]:not([role="dialog"]):not([role="menu"]):not([role="listbox"]):not(.settings-modal-container):not(.agy-model-popover),
 html[data-agy-wallpaper="on"] div[class*="bg-background"]:not([role="dialog"]):not([role="menu"]):not([role="listbox"]):not(.settings-modal-container):not(.agy-model-popover),
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark] div[class*="bg-canvas"]:not([role="dialog"]):not(.settings-modal-container),
 html[data-agy-wallpaper="on"] div[class*="bg-canvas"]:not([role="dialog"]):not(.settings-modal-container) {
   background-color: transparent !important;
   background-image: none !important;
 }
 
 /* 侧栏仅外层保持单层通透磨砂感，不建 transform/will-change 合成层，避免裁切弹出菜单 */
+html[data-agy-wallpaper="on"][data-agy-theme]:not([data-agy-dark="1"]) div[role="navigation"].bg-sidebar,
+html[data-agy-wallpaper="on"][data-agy-theme]:not([data-agy-dark="1"]) div[role="navigation"][aria-label="Sidebar"],
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"].bg-sidebar,
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"][aria-label="Sidebar"] {
-  background: rgba(246, 249, 254, var(--agy-wp-side-alpha, 0.56)) !important;
-  background-color: rgba(246, 249, 254, var(--agy-wp-side-alpha, 0.56)) !important;
+  background: rgba(246, 249, 254, var(--agy-wp-side-alpha, 0.52)) !important;
+  background-color: rgba(246, 249, 254, var(--agy-wp-side-alpha, 0.52)) !important;
 }
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark="1"] div[role="navigation"].bg-sidebar,
+html[data-agy-wallpaper="on"][data-agy-theme][data-agy-dark="1"] div[role="navigation"][aria-label="Sidebar"],
 html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"].bg-sidebar,
 html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"][aria-label="Sidebar"] {
-  background: rgba(10, 14, 24, var(--agy-wp-side-alpha, 0.54)) !important;
-  background-color: rgba(10, 14, 24, var(--agy-wp-side-alpha, 0.54)) !important;
+  background: rgba(10, 14, 24, var(--agy-wp-side-alpha, 0.48)) !important;
+  background-color: rgba(10, 14, 24, var(--agy-wp-side-alpha, 0.48)) !important;
 }
+html[data-agy-wallpaper="on"][data-agy-theme] div[role="navigation"] .bg-sidebar,
+html[data-agy-wallpaper="on"][data-agy-theme] div[role="navigation"] [class*="group/section-header"],
 html[data-agy-wallpaper="on"] div[role="navigation"] .bg-sidebar,
 html[data-agy-wallpaper="on"] div[role="navigation"] [class*="group/section-header"] {
   background: transparent !important;

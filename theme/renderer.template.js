@@ -71,9 +71,9 @@ function ensureWallpaperLayers() {
 
 function applyWallpaperAlpha(pct) {
   const clamped = Math.max(20, Math.min(92, Math.round(Number(pct) || 68)));
-  // Higher 通透度 (e.g. 70% -> 90%) = clearer/more vivid wallpaper; lower = calmer frosted veil
-  const veilAlpha = Math.max(0.14, Math.min(0.84, (100 - clamped * 0.72) / 100)).toFixed(2);
-  const sideAlpha = Math.max(0.26, Math.min(0.86, (100 - clamped * 0.56) / 100)).toFixed(2);
+  // Higher 通透度 (e.g. 68% -> 92%) = vivid crystal-clear wallpaper; lower = calmer frosted veil
+  const veilAlpha = Math.max(0.10, Math.min(0.80, (96 - clamped * 0.85) / 100)).toFixed(2);
+  const sideAlpha = Math.max(0.22, Math.min(0.84, (98 - clamped * 0.68) / 100)).toFixed(2);
   document.documentElement.style.setProperty('--agy-wp-veil-alpha', veilAlpha);
   document.documentElement.style.setProperty('--agy-wp-side-alpha', sideAlpha);
   try { localStorage.setItem(WP_ALPHA_STORE, String(clamped)); } catch (_) {}
@@ -4787,11 +4787,13 @@ function closeUpdatePopover() {
   document.getElementById('agy-kit-update-pop')?.classList.remove('open');
 }
 
-function closePulseViews(restoreFocus = false) {
+function closePulseViews(restoreFocus = false, includeMenus = true) {
   const drawer = document.getElementById('agy-pulse-drawer');
   const pop = document.getElementById('agy-codex-ctx-popover');
-  closeThemeMenu();
-  closeUpdatePopover();
+  if (includeMenus) {
+    closeThemeMenu();
+    closeUpdatePopover();
+  }
   if (!drawer?.classList.contains('open') && !pop?.classList.contains('open')) return false;
   window.clearTimeout(popHideTimer);
   pop?.classList.remove('open');
@@ -4812,11 +4814,23 @@ function closePulseViews(restoreFocus = false) {
 function dismissPulseOutside(event) {
   const target = event.target;
   if (target instanceof Element) {
-    if (!target.closest('#agy-theme-menu, #agy-inline-theme-btn')) closeThemeMenu();
-    if (!target.closest('#agy-kit-update-pop, #agy-kit-update-wrap')) closeUpdatePopover();
-    if (target.closest('#agy-pulse-drawer, #agy-codex-ctx-popover, #agy-codex-ctx-btn')) return;
+    if (target.closest('#agy-theme-menu, #agy-inline-theme-btn')) {
+      closeUpdatePopover();
+      closePulseViews(false, false);
+      return;
+    }
+    if (target.closest('#agy-kit-update-pop, #agy-kit-update-wrap')) {
+      closeThemeMenu();
+      closePulseViews(false, false);
+      return;
+    }
+    if (target.closest('#agy-pulse-drawer, #agy-codex-ctx-popover, #agy-codex-ctx-btn')) {
+      closeThemeMenu();
+      closeUpdatePopover();
+      return;
+    }
   }
-  closePulseViews();
+  closePulseViews(false, true);
 }
 
 if (!window.__AGY_GLOBAL_LISTENERS__) {
