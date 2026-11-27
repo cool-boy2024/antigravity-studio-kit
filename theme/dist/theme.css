@@ -2316,6 +2316,22 @@ html[data-agy-dark="1"] .agy-re-tick.active {
 #agy-wallpaper-veil[data-wp-active="1"] {
   opacity: 1 !important;
 }
+#agy-ambient-canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
+  opacity: 0;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+#agy-ambient-canvas[data-ambient-active="1"] {
+  opacity: 1 !important;
+}
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) #agy-wallpaper-veil {
   background: rgba(250, 247, 240, var(--agy-wp-veil-alpha, 0.42)) !important;
 }
@@ -2589,7 +2605,20 @@ div[data-testid="conversation-row-sidebar"]:active {
   transform: scale3d(0.986, 0.986, 1) !important;
 }
 
+/* 主题丝滑色彩渐变切换（仅短暂加在局部容器，绝不使用通配符 *） */
+html.agy-theme-morphing body,
+html.agy-theme-morphing main,
+html.agy-theme-morphing div[role="navigation"],
+html.agy-theme-morphing .surface-composer,
+html.agy-theme-morphing #agy-theme-menu,
+html.agy-theme-morphing [role="dialog"] {
+  transition: background-color 0.42s cubic-bezier(0.16, 1, 0.3, 1), color 0.42s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.42s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  #agy-ambient-canvas {
+    display: none !important;
+  }
   #agy-wallpaper-layer,
   html.agy-stage-entering div[role="navigation"].bg-sidebar,
   html.agy-stage-entering main,

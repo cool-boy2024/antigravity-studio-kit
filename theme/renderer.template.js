@@ -7,12 +7,14 @@ const AGY_THEMES = __AGY_THEMES__;
 const AGY_WALLPAPERS = __AGY_WALLPAPERS__;
 const THEME_STORE = 'agy-theme-mode:v1';
 const WP_STORE = 'agy-wallpaper-mode:v1';
+const WP_GEN_STORE = 'agy-wallpaper-gen:v3';
+const AMBIENT_STORE = 'agy-ambient-fx:v1';
 const WP_CUSTOM_STORE = 'agy-wallpaper-custom:v1';
 const WP_ALPHA_STORE = 'agy-wallpaper-alpha:v1';
 const WUHUN_ENABLED_STORE = 'agy-wuhun-enabled:v1';
 const MUSE_COLLAPSED_STORE = 'agy-hakimi-collapsed:v1';
 const VALID_THEMES = ['codex', 'claude', 'google', 'off'];
-const VALID_WALLPAPERS = ['obsidian-silk', 'glacier-glass', 'amber-dune', 'mist-jade', 'custom', 'none'];
+const VALID_WALLPAPERS = ['hakimi-dream', 'hakimi-sky', 'obsidian-silk', 'glacier-glass', 'amber-dune', 'mist-jade', 'custom', 'none'];
 const LEGACY_WP_MAP = {
   'cyber-sakura': 'obsidian-silk',
   'starlight-aurora': 'glacier-glass',
@@ -28,12 +30,14 @@ const THEME_META = {
 };
 
 const WALLPAPER_META = {
-  'obsidian-silk': { label: '墨曜丝韵', accent: '#818cf8' },
-  'glacier-glass': { label: '冰川浮光', accent: '#38bdf8' },
-  'amber-dune':    { label: '琥珀沙丘', accent: '#d97757' },
-  'mist-jade':     { label: '岚雾青瓷', accent: '#64748b' },
-  'custom':        { label: '本地自选', accent: '#a855f7' },
-  'none':          { label: '纯净无图', accent: '#64748b' }
+  'hakimi-dream':  { label: '哈基米梦境', accent: '#c4b5fd', light: false },
+  'hakimi-sky':    { label: '哈基米晴空', accent: '#f0abfc', light: true },
+  'obsidian-silk': { label: '墨曜丝韵', accent: '#818cf8', light: false },
+  'glacier-glass': { label: '冰川浮光', accent: '#38bdf8', light: false },
+  'amber-dune':    { label: '琥珀沙丘', accent: '#d97757', light: false },
+  'mist-jade':     { label: '岚雾青瓷', accent: '#64748b', light: true },
+  'custom':        { label: '本地自选', accent: '#a855f7', light: false },
+  'none':          { label: '纯净无图', accent: '#64748b', light: false }
 };
 
 function normalizeWallpaperKey(mode) {
@@ -49,7 +53,35 @@ function readWallpaperMode() {
       if (VALID_WALLPAPERS.includes(mapped)) return mapped;
     }
   } catch (_) {}
-  return AGY_WALLPAPERS && AGY_WALLPAPERS['obsidian-silk'] ? 'obsidian-silk' : 'none';
+  return AGY_WALLPAPERS && AGY_WALLPAPERS['hakimi-dream'] ? 'hakimi-dream' : 'none';
+}
+
+function readAmbientEnabled() {
+  try {
+    return localStorage.getItem(AMBIENT_STORE) !== '0';
+  } catch (_) {
+    return true;
+  }
+}
+
+function applyAmbientEnabled(enabled) {
+  const on = Boolean(enabled);
+  try { localStorage.setItem(AMBIENT_STORE, on ? '1' : '0'); } catch (_) {}
+  window.__agyAmbientEnabled = on;
+  const menu = document.getElementById('agy-theme-menu');
+  if (menu) {
+    const sw = menu.querySelector('[data-ambient-toggle="1"]');
+    if (sw) {
+      sw.classList.toggle('on', on);
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    }
+  }
+  if (on && document.documentElement.getAttribute('data-agy-wallpaper') === 'on') {
+    startAmbient();
+  } else {
+    stopAmbient();
+  }
+  return on;
 }
 
 function readWallpaperAlpha() {
@@ -165,6 +197,7 @@ function ensureWallpaperLayers() {
   let imgA = document.getElementById('agy-wallpaper-img');
   let imgB = document.getElementById('agy-wallpaper-img-alt');
   let veil = document.getElementById('agy-wallpaper-veil');
+  let ambient = document.getElementById('agy-ambient-canvas');
   if (!bg) {
     bg = document.createElement('div');
     bg.id = 'agy-wallpaper-layer';
@@ -199,7 +232,14 @@ function ensureWallpaperLayers() {
     veil.setAttribute('aria-hidden', 'true');
     bg.insertAdjacentElement('afterend', veil);
   }
-  return { bg, imgA, imgB, veil };
+  if (!ambient) {
+    ambient = document.createElement('canvas');
+    ambient.id = 'agy-ambient-canvas';
+    ambient.className = 'notranslate';
+    ambient.setAttribute('aria-hidden', 'true');
+    veil.insertAdjacentElement('afterend', ambient);
+  }
+  return { bg, imgA, imgB, veil, ambient };
 }
 
 function crossfadeWallpaperTo(imgUrl) {
@@ -218,6 +258,7 @@ function crossfadeWallpaperTo(imgUrl) {
       nextImg.style.transform = 'translate3d(0, 0, 0) scale3d(1, 1, 1)';
       activeImg.style.opacity = '0';
       wpActiveSlot = wpActiveSlot === 0 ? 1 : 0;
+      ambientSweep();
     });
   };
   nextImg.style.opacity = '0';
@@ -230,6 +271,579 @@ function crossfadeWallpaperTo(imgUrl) {
   } else {
     nextImg.onload = commitSwap;
     nextImg.onerror = commitSwap;
+  }
+}
+
+// ==================== Ambient Living Light & Hakimi-Reactive Layer ====================
+const AMBIENT_PALETTES = {
+  'hakimi-dream':  ['#c4b5fd', '#f0abfc', '#67e8f9', '#fde68a'],
+  'hakimi-sky':    ['#a78bfa', '#f472b6', '#38bdf8'],
+  'obsidian-silk': ['#818cf8', '#a78bfa', '#c4b5fd'],
+  'glacier-glass': ['#38bdf8', '#7dd3fc', '#a5b4fc'],
+  'amber-dune':    ['#f59e0b', '#fdba74', '#f0abfc'],
+  'mist-jade':     ['#5eead4', '#a5b4fc', '#f9a8d4'],
+  'custom':        ['#c4b5fd', '#f0abfc', '#67e8f9', '#fde68a'],
+};
+
+const ambientState = {
+  rafId: 0,
+  running: false,
+  lastMs: 0,
+  width: 0,
+  height: 0,
+  scale: 0.5,
+  lowPerf: false,
+  emaDrawMs: 0,
+  slowFrames: 0,
+  fpsEstimate: 0,
+  energy: 0.35,
+  pointerX: 0,
+  pointerY: 0,
+  targetPointerX: 0,
+  targetPointerY: 0,
+  pointerBound: false,
+  paletteKey: '',
+  isLight: false,
+  sprites: null, // { orbs: [], paws: [], sparkles: [] }
+  ribbons: [],
+  orbs: [],
+  motifs: [],
+  nextMotifAt: 0,
+  bursts: [],
+  sweeps: [],
+  lastCelebrateAt: 0,
+  resizeTimer: 0,
+};
+
+function hexToRgba(hex, alpha) {
+  const h = String(hex || '#c4b5fd').replace('#', '');
+  const n = h.length === 3
+    ? [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)]
+    : [parseInt(h.slice(0, 2), 16) || 196, parseInt(h.slice(2, 4), 16) || 181, parseInt(h.slice(4, 6), 16) || 253];
+  return 'rgba(' + n[0] + ',' + n[1] + ',' + n[2] + ',' + Math.max(0, Math.min(1, alpha)).toFixed(3) + ')';
+}
+
+function isAmbientLightSurface(wpKey) {
+  if (wpKey === 'custom') {
+    return document.documentElement.getAttribute('data-agy-dark') !== '1';
+  }
+  return Boolean(WALLPAPER_META[wpKey] && WALLPAPER_META[wpKey].light);
+}
+
+function makeOrbSprite(colorHex) {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 64;
+  const g = c.getContext('2d');
+  if (g) {
+    const grad = g.createRadialGradient(32, 32, 1, 32, 32, 31);
+    grad.addColorStop(0, hexToRgba(colorHex, 0.92));
+    grad.addColorStop(0.36, hexToRgba(colorHex, 0.42));
+    grad.addColorStop(0.74, hexToRgba(colorHex, 0.10));
+    grad.addColorStop(1, hexToRgba(colorHex, 0));
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+  }
+  return c;
+}
+
+function makePawSprite(colorHex) {
+  const c = document.createElement('canvas');
+  c.width = 32;
+  c.height = 32;
+  const g = c.getContext('2d');
+  if (g) {
+    g.fillStyle = hexToRgba(colorHex, 0.85);
+    g.shadowColor = hexToRgba(colorHex, 0.55);
+    g.shadowBlur = 3.5;
+    // Soft main pad
+    g.beginPath();
+    g.ellipse(16, 19.5, 6.2, 4.8, 0, 0, Math.PI * 2);
+    g.fill();
+    // 4 tiny toes
+    const toes = [[9.4, 12.6, -0.25], [13.5, 9.6, -0.08], [18.5, 9.6, 0.08], [22.6, 12.6, 0.25]];
+    for (let i = 0; i < toes.length; i++) {
+      g.beginPath();
+      g.ellipse(toes[i][0], toes[i][1], 2.15, 2.75, toes[i][2], 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  return c;
+}
+
+function makeSparkleSprite(colorHex) {
+  const c = document.createElement('canvas');
+  c.width = 24;
+  c.height = 24;
+  const g = c.getContext('2d');
+  if (g) {
+    const grad = g.createRadialGradient(12, 12, 0.5, 12, 12, 11);
+    grad.addColorStop(0, hexToRgba('#ffffff', 0.95));
+    grad.addColorStop(0.32, hexToRgba(colorHex, 0.72));
+    grad.addColorStop(1, hexToRgba(colorHex, 0));
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 24, 24);
+    g.fillStyle = hexToRgba(colorHex, 0.90);
+    g.beginPath();
+    g.moveTo(12, 2);
+    g.quadraticCurveTo(13.1, 10.9, 22, 12);
+    g.quadraticCurveTo(13.1, 13.1, 12, 22);
+    g.quadraticCurveTo(10.9, 13.1, 2, 12);
+    g.quadraticCurveTo(10.9, 10.9, 12, 2);
+    g.closePath();
+    g.fill();
+  }
+  return c;
+}
+
+function rebuildAmbientSprites(force) {
+  const wpKey = window.__agyCurrentWallpaper || readWallpaperMode() || 'hakimi-dream';
+  const pal = AMBIENT_PALETTES[wpKey] || AMBIENT_PALETTES['hakimi-dream'];
+  const light = isAmbientLightSurface(wpKey);
+  const sig = wpKey + '|' + (light ? 'L' : 'D');
+  if (!force && ambientState.paletteKey === sig && ambientState.sprites) return pal;
+  ambientState.paletteKey = sig;
+  ambientState.isLight = light;
+  ambientState.sprites = {
+    orbs: pal.map(makeOrbSprite),
+    paws: pal.map(makePawSprite),
+    sparkles: pal.map(makeSparkleSprite),
+  };
+  return pal;
+}
+
+function initAmbientEntities() {
+  if (ambientState.ribbons.length === 0) {
+    ambientState.ribbons = [
+      { yFrac: 0.28, amp: 0.055, band: 0.14, period: 22, phase: 0.3, baseAlpha: 0.105, cA: 0, cB: 1 },
+      { yFrac: 0.56, amp: 0.068, band: 0.17, period: 31, phase: 2.1, baseAlpha: 0.125, cA: 1, cB: 2 },
+      { yFrac: 0.79, amp: 0.048, band: 0.13, period: 38, phase: 4.0, baseAlpha: 0.092, cA: 2, cB: 0 },
+    ];
+  }
+  if (ambientState.orbs.length === 0) {
+    const count = ambientState.lowPerf ? 12 : 22;
+    for (let i = 0; i < count; i++) {
+      const tier = i % 3;
+      ambientState.orbs.push({
+        x: Math.random(),
+        y: Math.random(),
+        tier,
+        r: (tier === 0 ? 18 : (tier === 1 ? 30 : 46)) * (0.78 + Math.random() * 0.45),
+        speed: 0.008 + tier * 0.004 + Math.random() * 0.006,
+        swayAmp: 0.012 + Math.random() * 0.018,
+        swayFreq: 0.35 + Math.random() * 0.45,
+        phase: Math.random() * Math.PI * 2,
+        alpha: 0.075 + Math.random() * 0.13,
+        colorIdx: i % 4,
+      });
+    }
+  }
+}
+
+function resizeAmbientCanvasNow() {
+  const canvas = document.getElementById('agy-ambient-canvas');
+  if (!canvas) return;
+  const cssW = Math.max(320, window.innerWidth || 1280);
+  const cssH = Math.max(240, window.innerHeight || 800);
+  const s = ambientState.lowPerf ? 0.38 : 0.5;
+  ambientState.scale = s;
+  const targetW = Math.min(1280, Math.max(240, Math.round(cssW * s)));
+  const targetH = Math.min(800, Math.max(180, Math.round(cssH * s)));
+  if (canvas.width !== targetW || canvas.height !== targetH) {
+    canvas.width = targetW;
+    canvas.height = targetH;
+  }
+  ambientState.width = targetW;
+  ambientState.height = targetH;
+}
+
+function scheduleAmbientResize() {
+  if (ambientState.resizeTimer) window.clearTimeout(ambientState.resizeTimer);
+  ambientState.resizeTimer = window.setTimeout(() => {
+    ambientState.resizeTimer = 0;
+    resizeAmbientCanvasNow();
+  }, 150);
+}
+
+function getTargetHakimiEnergy() {
+  try {
+    if (typeof spriteEl !== 'undefined' && spriteEl && spriteEl.classList.contains('sprinting')) return 1.0;
+    if (typeof currentMode !== 'undefined') {
+      if (currentMode === 'write' || currentMode === 'laptop') return 0.75;
+      if (currentMode === 'sleepy') return 0.2;
+    }
+  } catch (_) {}
+  return 0.35;
+}
+
+function spawnAmbientMotif(nowSec, palLen) {
+  if (ambientState.motifs.length >= 12) return;
+  ambientState.motifs.push({
+    kind: Math.random() < 0.46 ? 'paw' : 'sparkle',
+    x: 0.14 + Math.random() * 0.78,
+    y: 0.62 + Math.random() * 0.34,
+    size: 10 + Math.random() * 8,
+    speed: 0.018 + Math.random() * 0.016,
+    sway: (Math.random() - 0.5) * 0.025,
+    rot: (Math.random() - 0.5) * 0.5,
+    vrot: (Math.random() - 0.5) * 0.14,
+    born: nowSec,
+    life: 5.0 + Math.random() * 2.0,
+    maxAlpha: 0.26 + Math.random() * 0.14,
+    colorIdx: Math.floor(Math.random() * Math.max(1, palLen)),
+  });
+}
+
+function ambientCelebrate() {
+  try {
+    if (!readAmbientEnabled()) return;
+    if (document.documentElement.getAttribute('data-agy-wallpaper') !== 'on') return;
+    if (typeof museMotion !== 'undefined' && museMotion.reducedMotion) return;
+    const now = performance.now();
+    if (now - ambientState.lastCelebrateAt < 1500) return;
+    ambientState.lastCelebrateAt = now;
+    const cssW = Math.max(320, window.innerWidth || 1280);
+    const cssH = Math.max(240, window.innerHeight || 800);
+    let nx = 0.5;
+    let ny = 0.82;
+    if (typeof stageEl !== 'undefined' && stageEl && stageEl.isConnected) {
+      const r = stageEl.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        nx = Math.max(0.06, Math.min(0.94, (r.left + r.width * 0.5) / cssW));
+        ny = Math.max(0.10, Math.min(0.94, (r.top + r.height * 0.5) / cssH));
+      }
+    }
+    const nowSec = now / 1000;
+    const sparkles = [];
+    const cnt = 12;
+    for (let i = 0; i < cnt; i++) {
+      const ang = (i / cnt) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
+      const spd = 0.07 + Math.random() * 0.09;
+      sparkles.push({
+        ang,
+        spd,
+        size: 8 + Math.random() * 6,
+        colorIdx: i % 4,
+      });
+    }
+    ambientState.bursts.push({
+      x: nx,
+      y: ny,
+      born: nowSec,
+      duration: 0.9,
+      sparkles,
+    });
+    if (!ambientState.running) startAmbient();
+  } catch (_) {}
+}
+
+function ambientSweep() {
+  try {
+    if (!readAmbientEnabled()) return;
+    if (document.documentElement.getAttribute('data-agy-wallpaper') !== 'on') return;
+    if (typeof museMotion !== 'undefined' && museMotion.reducedMotion) return;
+    ambientState.sweeps.push({ born: performance.now() / 1000, duration: 0.9 });
+  } catch (_) {}
+}
+
+function drawAmbientFrame(nowMs, isStaticOnly) {
+  const canvas = document.getElementById('agy-ambient-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d', { alpha: true });
+  if (!ctx) return;
+
+  const t0 = performance.now();
+  const prevMs = ambientState.lastMs || nowMs;
+  const dt = isStaticOnly ? 0.016 : Math.min(0.05, Math.max(0.001, (nowMs - prevMs) / 1000));
+  ambientState.lastMs = nowMs;
+  if (!isStaticOnly && dt > 0) {
+    const instFps = 1 / dt;
+    ambientState.fpsEstimate = ambientState.fpsEstimate
+      ? (ambientState.fpsEstimate * 0.88 + instFps * 0.12)
+      : instFps;
+  }
+
+  resizeAmbientCanvasNow();
+  const W = ambientState.width;
+  const H = ambientState.height;
+  if (W < 8 || H < 8) return;
+
+  const wpKey = window.__agyCurrentWallpaper || readWallpaperMode() || 'hakimi-dream';
+  const pal = rebuildAmbientSprites(false);
+  initAmbientEntities();
+
+  // Lerp Hakimi reactivity energy & pointer parallax
+  const targetEnergy = getTargetHakimiEnergy();
+  ambientState.energy += (targetEnergy - ambientState.energy) * Math.min(1, dt * 2.2);
+  ambientState.pointerX += (ambientState.targetPointerX - ambientState.pointerX) * Math.min(1, dt * 4.5);
+  ambientState.pointerY += (ambientState.targetPointerY - ambientState.pointerY) * Math.min(1, dt * 4.5);
+
+  const energy = ambientState.energy;
+  const speedScale = 0.6 + 1.6 * energy;
+  const alphaBoost = 1 + 0.4 * Math.max(0, (energy - 0.35) / 0.65);
+  const lightMul = ambientState.isLight ? 0.7 : 1.0;
+  const nowSec = nowMs / 1000;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.globalCompositeOperation = ambientState.isLight ? 'source-over' : 'lighter';
+
+  // Hakimi activity tint weighted smoothly into ribbon gradients (zero sprite rebuilds)
+  let modeTintHex = null;
+  try {
+    if (typeof currentMode !== 'undefined') {
+      if (currentMode === 'write') modeTintHex = '#f59e0b';
+      else if (currentMode === 'laptop') modeTintHex = '#38bdf8';
+    }
+  } catch (_) {}
+
+  // Layer 1: 3 aurora silk ribbons
+  const ribPx = ambientState.pointerX * 10 * ambientState.scale;
+  const ribPy = ambientState.pointerY * 10 * ambientState.scale;
+  for (let i = 0; i < ambientState.ribbons.length; i++) {
+    const rb = ambientState.ribbons[i];
+    const cy = rb.yFrac * H + ribPy;
+    const amp = rb.amp * H;
+    const band = rb.band * H * (0.9 + 0.22 * energy);
+    const omega = (Math.PI * 2) / rb.period;
+    const ph = nowSec * omega * speedScale + rb.phase;
+    const y0 = cy + Math.sin(ph) * amp;
+    const y1 = cy + Math.sin(ph + 1.45) * amp;
+    const y2 = cy + Math.cos(ph + 0.7) * amp;
+    const y3 = cy + Math.sin(ph + 2.6) * amp;
+
+    const grad = ctx.createLinearGradient(-40 + ribPx, y0, W + 40 + ribPx, y3);
+    const colA = pal[rb.cA % pal.length];
+    const colB = modeTintHex && i === 1 ? modeTintHex : pal[rb.cB % pal.length];
+    const colC = modeTintHex && i !== 1 ? modeTintHex : pal[(rb.cA + 2) % pal.length];
+    const a = Math.min(0.16, rb.baseAlpha * alphaBoost) * lightMul;
+    grad.addColorStop(0, hexToRgba(colA, 0));
+    grad.addColorStop(0.24, hexToRgba(colA, a * 0.85));
+    grad.addColorStop(0.55, hexToRgba(colB, a));
+    grad.addColorStop(0.84, hexToRgba(colC, a * 0.72));
+    grad.addColorStop(1, hexToRgba(colC, 0));
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(-40 + ribPx, y0 - band * 0.5);
+    ctx.bezierCurveTo(
+      W * 0.33 + ribPx, y1 - band * 0.65,
+      W * 0.67 + ribPx, y2 - band * 0.42,
+      W + 40 + ribPx, y3 - band * 0.55
+    );
+    ctx.lineTo(W + 40 + ribPx, y3 + band * 0.55);
+    ctx.bezierCurveTo(
+      W * 0.67 + ribPx, y2 + band * 0.62,
+      W * 0.33 + ribPx, y1 + band * 0.45,
+      -40 + ribPx, y0 + band * 0.5
+    );
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Layer 2: 18-24 pre-rendered bokeh orbs in 3 depth tiers
+  const orbSprites = ambientState.sprites.orbs;
+  const tierParallax = [14, 22, 30];
+  for (let i = 0; i < ambientState.orbs.length; i++) {
+    const o = ambientState.orbs[i];
+    if (!isStaticOnly) {
+      o.y -= o.speed * speedScale * dt;
+      if (o.y < -0.14) {
+        o.y = 1.12;
+        o.x = Math.random();
+      }
+    }
+    const sway = Math.sin(nowSec * o.swayFreq + o.phase) * o.swayAmp;
+    const pxOff = ambientState.pointerX * tierParallax[o.tier] * ambientState.scale;
+    const pyOff = ambientState.pointerY * tierParallax[o.tier] * ambientState.scale;
+    const ox = (o.x + sway) * W + pxOff;
+    const oy = o.y * H + pyOff;
+    const rad = o.r * ambientState.scale * (0.95 + 0.1 * Math.sin(nowSec * 0.7 + o.phase));
+    const twinkle = 0.68 + 0.32 * Math.sin(nowSec * 0.9 + o.phase);
+    ctx.globalAlpha = Math.min(0.28, o.alpha * twinkle * alphaBoost) * lightMul;
+    const sp = orbSprites[o.colorIdx % orbSprites.length];
+    ctx.drawImage(sp, ox - rad, oy - rad, rad * 2, rad * 2);
+  }
+
+  // Layer 3: Hakimi paw prints & 4-point sparkles
+  if (!isStaticOnly && nowSec >= ambientState.nextMotifAt) {
+    spawnAmbientMotif(nowSec, pal.length);
+    const interval = Math.max(0.85, (2.5 + Math.random() * 1.5) / (0.65 + energy * 1.15));
+    ambientState.nextMotifAt = nowSec + interval;
+  }
+  const pawSprites = ambientState.sprites.paws;
+  const sparkleSprites = ambientState.sprites.sparkles;
+  for (let i = ambientState.motifs.length - 1; i >= 0; i--) {
+    const m = ambientState.motifs[i];
+    const age = nowSec - m.born;
+    if (age >= m.life) {
+      ambientState.motifs.splice(i, 1);
+      continue;
+    }
+    const p = age / m.life;
+    if (!isStaticOnly) {
+      m.y -= m.speed * speedScale * dt;
+      m.x += m.sway * dt;
+      m.rot += m.vrot * dt;
+    }
+    const fade = p < 0.18 ? (p / 0.18) : (p > 0.72 ? (1 - p) / 0.28 : 1);
+    const spArr = m.kind === 'paw' ? pawSprites : sparkleSprites;
+    const sp = spArr[m.colorIdx % spArr.length];
+    const sz = m.size * ambientState.scale * 2;
+    const mx = m.x * W + ambientState.pointerX * 22 * ambientState.scale;
+    const my = m.y * H + ambientState.pointerY * 22 * ambientState.scale;
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.45, m.maxAlpha * fade * alphaBoost) * lightMul;
+    ctx.translate(mx, my);
+    ctx.rotate(m.rot);
+    ctx.drawImage(sp, -sz * 0.5, -sz * 0.5, sz, sz);
+    ctx.restore();
+  }
+
+  // Hakimi completion celebration rings & sparkles
+  for (let i = ambientState.bursts.length - 1; i >= 0; i--) {
+    const b = ambientState.bursts[i];
+    const age = nowSec - b.born;
+    if (age >= b.duration) {
+      ambientState.bursts.splice(i, 1);
+      continue;
+    }
+    const p = age / b.duration;
+    const ease = 1 - Math.pow(1 - p, 3);
+    const bx = b.x * W;
+    const by = b.y * H;
+    const ringR = (18 + ease * 150) * ambientState.scale;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, (1 - p) * 0.34) * lightMul;
+    ctx.strokeStyle = pal[0] || '#c4b5fd';
+    ctx.lineWidth = Math.max(1, 2.2 * ambientState.scale * (1 - p * 0.6));
+    ctx.beginPath();
+    ctx.arc(bx, by, ringR, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let j = 0; j < b.sparkles.length; j++) {
+      const s = b.sparkles[j];
+      const dist = ease * s.spd * Math.max(W, H);
+      const sx = bx + Math.cos(s.ang) * dist;
+      const sy = by + Math.sin(s.ang) * dist;
+      const sz = s.size * ambientState.scale * (1 - p * 0.45);
+      const sp = sparkleSprites[s.colorIdx % sparkleSprites.length];
+      ctx.globalAlpha = Math.max(0, (1 - p) * 0.72) * lightMul;
+      ctx.drawImage(sp, sx - sz * 0.5, sy - sz * 0.5, sz, sz);
+    }
+    ctx.restore();
+  }
+
+  // Wallpaper crossfade diagonal shimmer sweep (alpha <= 0.12)
+  for (let i = ambientState.sweeps.length - 1; i >= 0; i--) {
+    const sw = ambientState.sweeps[i];
+    const age = nowSec - sw.born;
+    if (age >= sw.duration) {
+      ambientState.sweeps.splice(i, 1);
+      continue;
+    }
+    const p = age / sw.duration;
+    const ease = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    const cx = (-0.35 + ease * 1.70) * W;
+    const bandW = W * 0.24;
+    const alpha = Math.sin(p * Math.PI) * 0.115 * lightMul;
+    const g = ctx.createLinearGradient(cx - bandW, 0, cx + bandW, H);
+    g.addColorStop(0, hexToRgba('#ffffff', 0));
+    g.addColorStop(0.5, hexToRgba(pal[0] || '#ffffff', alpha));
+    g.addColorStop(1, hexToRgba('#ffffff', 0));
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Adaptive quality monitor
+  const drawMs = performance.now() - t0;
+  ambientState.emaDrawMs = ambientState.emaDrawMs ? (ambientState.emaDrawMs * 0.9 + drawMs * 0.1) : drawMs;
+  if (!isStaticOnly && !ambientState.lowPerf) {
+    if (ambientState.emaDrawMs > 2.5) {
+      ambientState.slowFrames += 1;
+      if (ambientState.slowFrames >= 60) {
+        ambientState.lowPerf = true;
+        ambientState.scale = 0.38;
+        if (ambientState.orbs.length > 12) ambientState.orbs.length = 12;
+        resizeAmbientCanvasNow();
+      }
+    } else {
+      ambientState.slowFrames = Math.max(0, ambientState.slowFrames - 1);
+    }
+  }
+}
+
+function ambientLoopTick(nowMs) {
+  ambientState.rafId = 0;
+  const wpOn = document.documentElement.getAttribute('data-agy-wallpaper') === 'on';
+  const shattered = typeof wuhunState !== 'undefined' && Boolean(wuhunState.shattered);
+  if (!wpOn || !readAmbientEnabled() || document.hidden || shattered) {
+    ambientState.running = false;
+    return;
+  }
+  if (typeof museMotion !== 'undefined' && museMotion.reducedMotion) {
+    drawAmbientFrame(nowMs, true);
+    ambientState.running = false;
+    return;
+  }
+  drawAmbientFrame(nowMs, false);
+  ambientState.rafId = window.requestAnimationFrame(ambientLoopTick);
+}
+
+function bindAmbientPointerParallax() {
+  if (ambientState.pointerBound) return;
+  ambientState.pointerBound = true;
+  window.addEventListener('pointermove', (e) => {
+    const w = window.innerWidth || 1280;
+    const h = window.innerHeight || 800;
+    ambientState.targetPointerX = (e.clientX / w) - 0.5;
+    ambientState.targetPointerY = (e.clientY / h) - 0.5;
+  }, { passive: true });
+}
+
+function startAmbient() {
+  const { ambient } = ensureWallpaperLayers();
+  const wpOn = document.documentElement.getAttribute('data-agy-wallpaper') === 'on';
+  const shattered = typeof wuhunState !== 'undefined' && Boolean(wuhunState.shattered);
+  if (!wpOn || !readAmbientEnabled() || shattered) {
+    stopAmbient();
+    return;
+  }
+  bindAmbientPointerParallax();
+  rebuildAmbientSprites(true);
+  ambient.setAttribute('data-ambient-active', '1');
+  if (typeof museMotion !== 'undefined' && museMotion.reducedMotion) {
+    stopAmbient(true);
+    drawAmbientFrame(performance.now(), true);
+    return;
+  }
+  if (document.hidden) {
+    if (ambientState.rafId) {
+      window.cancelAnimationFrame(ambientState.rafId);
+      ambientState.rafId = 0;
+    }
+    ambientState.running = false;
+    return;
+  }
+  if (!ambientState.rafId) {
+    ambientState.lastMs = performance.now();
+    ambientState.running = true;
+    ambientState.rafId = window.requestAnimationFrame(ambientLoopTick);
+  }
+}
+
+function stopAmbient(keepVisible) {
+  if (ambientState.rafId) {
+    window.cancelAnimationFrame(ambientState.rafId);
+    ambientState.rafId = 0;
+  }
+  ambientState.running = false;
+  const ambient = document.getElementById('agy-ambient-canvas');
+  if (ambient && !keepVisible) {
+    ambient.setAttribute('data-ambient-active', '0');
+    const ctx = ambient.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, ambient.width, ambient.height);
   }
 }
 
@@ -415,9 +1029,9 @@ function applyWallpaperMode(mode) {
       let storedMode = '';
       try { storedMode = localStorage.getItem(WP_STORE) || ''; } catch (_) {}
       if (storedMode === 'custom') {
-        imgUrl = (AGY_WALLPAPERS && AGY_WALLPAPERS['obsidian-silk']) || '';
+        imgUrl = (AGY_WALLPAPERS && AGY_WALLPAPERS['hakimi-dream']) || '';
       } else {
-        normalized = 'obsidian-silk';
+        normalized = 'hakimi-dream';
       }
     }
   }
@@ -459,6 +1073,11 @@ function applyWallpaperMode(mode) {
   applyWallpaperAlpha(readWallpaperAlpha());
   try { localStorage.setItem(WP_STORE, normalized); } catch (_) {}
   window.__agyCurrentWallpaper = normalized;
+  if (normalized === 'none' || !imgUrl) {
+    stopAmbient();
+  } else {
+    startAmbient();
+  }
   const menu = document.getElementById('agy-theme-menu');
   if (menu) {
     menu.querySelectorAll('.agy-wp-card, .agy-wp-pill, #agy-wp-custom-card').forEach((el) => {
@@ -606,6 +1225,9 @@ function syncDarkAttribute() {
     updateThemeButtonUI(readThemeMode());
     syncPulseSurface();
     scheduleWallpaperShellSync(120);
+    if (document.documentElement.getAttribute('data-agy-wallpaper') === 'on' && readAmbientEnabled()) {
+      startAmbient();
+    }
   }
 }
 
@@ -652,12 +1274,25 @@ function updateThemeButtonUI(mode) {
   }
 }
 
+let themeMorphTimer = 0;
+
 function applyThemeMode(mode) {
   const normalized = VALID_THEMES.includes(mode) ? mode : 'google';
   syncDarkAttribute();
-  if (document.documentElement.getAttribute('data-agy-theme') !== normalized) {
+  const prevTheme = document.documentElement.getAttribute('data-agy-theme');
+  const changedAfterBoot = Boolean(window.__agyThemeBooted && prevTheme && prevTheme !== normalized);
+  if (changedAfterBoot) {
+    document.documentElement.classList.add('agy-theme-morphing');
+    if (themeMorphTimer) window.clearTimeout(themeMorphTimer);
+    themeMorphTimer = window.setTimeout(() => {
+      themeMorphTimer = 0;
+      document.documentElement.classList.remove('agy-theme-morphing');
+    }, 480);
+  }
+  if (prevTheme !== normalized) {
     document.documentElement.setAttribute('data-agy-theme', normalized);
   }
+  window.__agyThemeBooted = true;
   // Backward compatibility if an older dist/theme.css without bundled themes is active
   if (AGY_THEMES && Object.keys(AGY_THEMES).length > 0) {
     const css = AGY_THEMES[normalized] || '';
@@ -826,7 +1461,7 @@ const OWN_IDS = new Set([
   'agy-codex-ctx-btn', 'agy-codex-ctx-popover', 'agy-pulse-drawer',
   'agy-kit-update-wrap', 'agy-kit-update-pop',
   'agy-inline-ask-trigger', 'agy-inline-ask-popover', 'agy-inline-ask-pins',
-  'agy-wallpaper-layer', 'agy-wallpaper-img', 'agy-wallpaper-img-alt', 'agy-wallpaper-veil', 'agy-wp-file-input',
+  'agy-wallpaper-layer', 'agy-wallpaper-img', 'agy-wallpaper-img-alt', 'agy-wallpaper-veil', 'agy-ambient-canvas', 'agy-wp-file-input',
   'agy-composer-sprint-bar', 'hakimi-wuhun-overlay', 'hakimi-shatter-canvas',
   'hakimi-comfort-card', 'hakimi-clones-layer', 'agy-real-effort-box'
 ]);
@@ -2147,6 +2782,8 @@ html[data-agy-dark="1"] #agy-pulse-drawer {
   position: fixed;
   z-index: 999998;
   width: 248px;
+  max-height: calc(100vh - 54px);
+  overflow-y: auto;
   padding: 7px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
@@ -2318,6 +2955,7 @@ html[data-agy-dark="1"] #agy-wp-custom-card.active {
   accent-color: var(--gs-accent, #1a73e8);
   cursor: pointer;
 }
+.agy-ambient-row,
 .agy-wuhun-row {
   display: flex;
   align-items: center;
@@ -2331,6 +2969,7 @@ html[data-agy-dark="1"] #agy-wp-custom-card.active {
   cursor: pointer;
   user-select: none;
 }
+.agy-ambient-row:hover,
 .agy-wuhun-row:hover {
   background: var(--gs-side-hover, rgba(0, 0, 0, 0.05));
 }
@@ -3565,6 +4204,7 @@ function triggerHakimiCelebration(kind, speakLine) {
   museMotion.nextTrickAt = now + 11000 + Math.random() * 5000;
   if (spriteEl) spriteEl.classList.add('mode-spin');
   fireHakimiSparkles();
+  ambientCelebrate();
   if (speakLine) say(speakLine, 2600);
   startMuseMotionLoop();
 }
@@ -3576,6 +4216,7 @@ function setMuseMode(nextMode, statusLabel, opts) {
     animToggle = false;
     startAnimTimerIfVisible();
     applyPoseFrame();
+    if (nextMode === 'done') ambientCelebrate();
   }
 
   const working = nextMode === 'laptop' || nextMode === 'write';
@@ -4302,6 +4943,7 @@ function drawShatterFrame() {
     wuhunState.shattered = false;
     wuhunState.healing = false;
     wuhunState.rafId = 0;
+    startAmbient();
     return;
   }
 
@@ -4841,6 +5483,7 @@ function triggerHakimiWuhunRage(manual = false) {
           wuhunState.cracks = generateGlassFractureModel(ix, iy, window.innerWidth, window.innerHeight);
           wuhunState.shards = wuhunState.cracks.shards;
           wuhunState.shattered = true;
+          stopAmbient();
           wuhunState.healing = false;
           wuhunState.healProgress = 0;
           canvas.classList.add('active');
@@ -5193,6 +5836,7 @@ function mountMuseHakimi() {
     window.addEventListener('resize', () => {
       scheduleLayoutMuseStage();
       positionCodexPopover();
+      scheduleAmbientResize();
       if (wuhunState.shattered && !wuhunState.rafId) {
         wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
       }
@@ -5203,9 +5847,11 @@ function mountMuseHakimi() {
       if (document.hidden) {
         stopMuseMotionLoop();
         stopDomSpeedSampler();
+        stopAmbient(true);
       } else {
         startMuseMotionLoop();
         if (isBusy()) startDomSpeedSampler();
+        startAmbient();
       }
     });
     try {
@@ -5216,8 +5862,10 @@ function mountMuseHakimi() {
           if (museMotion.reducedMotion) {
             stopMuseMotionLoop();
             if (bodyEl) bodyEl.style.transform = 'translate3d(0,0,0)';
+            startAmbient();
           } else {
             startMuseMotionLoop();
+            startAmbient();
           }
         };
         if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onMqChange);
@@ -7490,7 +8138,7 @@ function openThemeMenu(anchorBtn) {
         '<span class="agy-tm-check">✓</span></button>';
     }).join('');
 
-    const presetKeys = ['obsidian-silk', 'glacier-glass', 'amber-dune', 'mist-jade'];
+    const presetKeys = ['hakimi-dream', 'hakimi-sky', 'obsidian-silk', 'glacier-glass', 'amber-dune', 'mist-jade'];
     const wpCardsHtml = presetKeys.map((k) => {
       const wm = WALLPAPER_META[k];
       const bg = (AGY_WALLPAPERS && AGY_WALLPAPERS[k]) ? ('background-image:url(\'' + AGY_WALLPAPERS[k] + '\')') : ('background:' + wm.accent);
@@ -7499,6 +8147,7 @@ function openThemeMenu(anchorBtn) {
     }).join('');
 
     const alphaVal = readWallpaperAlpha();
+    const ambientOn = readAmbientEnabled();
     const wuhunOn = readWuhunEnabled();
     menu.innerHTML =
       '<div class="agy-tm-sec">工作台主题</div>' +
@@ -7519,6 +8168,10 @@ function openThemeMenu(anchorBtn) {
         '<span>通透度</span>' +
         '<input type="range" id="agy-wp-alpha-slider" min="20" max="92" value="' + alphaVal + '"/>' +
         '<span id="agy-wp-alpha-val">' + alphaVal + '%</span>' +
+      '</div>' +
+      '<div class="agy-ambient-row">' +
+        '<span>✨ 灵动光影 · 哈基米联动</span>' +
+        '<button type="button" role="switch" class="agy-wuhun-switch' + (ambientOn ? ' on' : '') + '" data-ambient-toggle="1" aria-checked="' + (ambientOn ? 'true' : 'false') + '" title="开启/关闭背景流光与哈基米互动光影"></button>' +
       '</div>' +
       '<div class="agy-tm-sep"></div>' +
       '<div class="agy-wuhun-row">' +
@@ -7556,6 +8209,13 @@ function openThemeMenu(anchorBtn) {
         e.stopPropagation();
         openCustomWallpaperPicker();
         closeThemeMenu();
+        return;
+      }
+      if (t.closest('[data-ambient-toggle="1"], .agy-ambient-row')) {
+        e.stopPropagation();
+        const nextAmbient = !readAmbientEnabled();
+        applyAmbientEnabled(nextAmbient);
+        say(nextAmbient ? '已开启「灵动光影 · 哈基米联动」✨' : '已关闭背景动态光影，保持纯静壁纸 ✨', 2000);
         return;
       }
       if (t.closest('[data-wuhun-toggle="1"], .agy-wuhun-row')) {
@@ -7610,6 +8270,7 @@ function openThemeMenu(anchorBtn) {
   });
   syncCustomWallpaperCardUI();
   applyWuhunEnabled(readWuhunEnabled());
+  applyAmbientEnabled(readAmbientEnabled());
   const r = anchorBtn.getBoundingClientRect();
   menu.classList.add('open');
   const w = menu.offsetWidth || 248;
@@ -9188,6 +9849,7 @@ function ensureObserver() {
     }
     if (composer) decorateComposerModelTrigger(composer);
     decorateModelPopovers();
+    tryTriggerStageEntrance();
     scheduleWallpaperShellSync(360);
     if (window.__agyUpdateState && window.__agyUpdateState.available && !document.getElementById('agy-kit-update-wrap')) {
       syncSidebarUpdatePill();
@@ -9287,6 +9949,17 @@ window.__AGY_THEME__ = {
   wuhun: () => triggerHakimiWuhunRage(true),
   setWuhunEnabled: (v) => applyWuhunEnabled(v),
   getWuhunEnabled: () => readWuhunEnabled(),
+  setAmbient: (v) => applyAmbientEnabled(v),
+  getAmbient: () => readAmbientEnabled(),
+  debugAmbient: () => ({
+    fpsEstimate: Math.round(ambientState.fpsEstimate * 10) / 10,
+    scale: ambientState.scale,
+    orbCount: ambientState.orbs.length,
+    energy: Math.round(ambientState.energy * 100) / 100,
+    running: ambientState.running,
+    lowPerf: ambientState.lowPerf,
+    emaDrawMs: Math.round(ambientState.emaDrawMs * 100) / 100,
+  }),
   openPulse: () => togglePulseSidePanel(),
   closeInlineAsk: () => closeInlineAskPopover(),
 };
@@ -9305,16 +9978,39 @@ window.__AGY_I18N__ = {
   translate: translateText,
 };
 
-function triggerStageEntranceChoreography() {
-  if (window.__agyStageEntered) return;
+function tryTriggerStageEntrance() {
+  if (window.__agyStageEntered) return true;
+  const hasNav = Boolean(document.querySelector('div[role="navigation"]'));
+  const hasComposer = Boolean(document.querySelector('.surface-composer'));
+  if (!hasNav || !hasComposer) return false;
   window.__agyStageEntered = true;
   document.documentElement.classList.add('agy-stage-entering');
   window.setTimeout(() => {
     document.documentElement.classList.remove('agy-stage-entering');
-  }, 960);
+  }, 1000);
+  return true;
 }
 
-triggerStageEntranceChoreography();
+if (!tryTriggerStageEntrance()) {
+  window.setTimeout(() => {
+    if (!window.__agyStageEntered) {
+      window.__agyStageEntered = true;
+      document.documentElement.classList.add('agy-stage-entering');
+      window.setTimeout(() => {
+        document.documentElement.classList.remove('agy-stage-entering');
+      }, 1000);
+    }
+  }, 2500);
+}
+try {
+  if (!localStorage.getItem(WP_GEN_STORE)) {
+    const prevWp = localStorage.getItem(WP_STORE);
+    if (prevWp !== 'custom' && prevWp !== 'none') {
+      localStorage.setItem(WP_STORE, 'hakimi-dream');
+    }
+    localStorage.setItem(WP_GEN_STORE, '1');
+  }
+} catch (_) {}
 syncDarkAttribute();
 applyThemeMode(readThemeMode());
 applyWallpaperMode(readWallpaperMode());

@@ -22,6 +22,8 @@ DIST = os.path.join(BASE, "dist")
 
 MUSE_POSES = ["idle", "laptop1", "laptop2", "write1", "write2", "done", "sleepy"]
 WALLPAPER_SPECS = [
+    ("hakimi-dream", "hakimi-dream.jpg", "image/jpeg"),
+    ("hakimi-sky", "hakimi-sky.jpg", "image/jpeg"),
     ("obsidian-silk", "obsidian-silk.jpg", "image/jpeg"),
     ("glacier-glass", "glacier-glass.jpg", "image/jpeg"),
     ("amber-dune", "amber-dune.jpg", "image/jpeg"),
