@@ -7010,15 +7010,16 @@ function openThemeMenu(anchorBtn) {
 // ==================== Part 4.7: Liquid-Glass Model Popover & REAL Thinking Effort Slider ====================
 
 const MODEL_TONE_RULES = [
-  [/\bneon\b/i, 'neon'],
-  [/\bcarbon\b/i, 'carbon'],
-  [/\bargon\b/i, 'argon'],
-  [/\bhydrogen\b/i, 'hydrogen'],
-  [/\bflash\b/i, 'flash'],
-  [/\bopus\b/i, 'opus'],
-  [/\b(sonnet|haiku|claude)\b/i, 'sonnet'],
-  [/\b(gpt|o[134])\b/i, 'gpt'],
-  [/\bgemini\b/i, 'neon'],
+  [/neon/i, 'neon'],
+  [/carbon/i, 'carbon'],
+  [/argon/i, 'argon'],
+  [/hydrogen/i, 'hydrogen'],
+  [/flash/i, 'flash'],
+  [/opus/i, 'opus'],
+  [/sonnet|haiku/i, 'sonnet'],
+  [/gpt|\bo[134]\b/i, 'gpt'],
+  [/claude/i, 'sonnet'],
+  [/gemini/i, 'neon'],
 ];
 
 const EFFORT_SPECS = [
@@ -7469,31 +7470,30 @@ function discoverRealEffortBinding(pop, matchedRows) {
   return null;
 }
 
-function selectRealEffortOption(binding, idx, onSynced) {
+function selectRealEffortOption(binding, idx, onSynced, isLiveDrag = false) {
   if (!binding || !binding.options || !binding.options[idx] || binding.locked) return;
   const opt = binding.options[idx];
   if (opt.disabled) return;
 
   if (binding.mode === 'react-fiber' && binding.ctx && opt.raw) {
-    effortDriverBusyUntil = Date.now() + 220;
+    effortDriverBusyUntil = Date.now() + 260;
     const ctx = binding.ctx;
     try {
       if (binding.usingOrch && typeof ctx.setOrchestratorPlanner === 'function') {
         ctx.setOrchestratorPlanner(opt.raw);
-      } else {
-        if (typeof ctx.setModelConfigByLabelForConversation === 'function' && opt.raw.label) {
-          ctx.setModelConfigByLabelForConversation(opt.raw.label, ctx.conversationId || undefined, true);
-        }
-        if (typeof ctx.setSelectedModel === 'function') {
-          ctx.setSelectedModel(opt.raw);
-        }
+      } else if (typeof ctx.setModelConfigByLabelForConversation === 'function' && opt.raw.label) {
+        // Prefer conversation-level setter: genuinely switches Gemini thinking effort WITHOUT closing the popover mid-drag!
+        ctx.setModelConfigByLabelForConversation(opt.raw.label, ctx.conversationId || undefined, true);
+      } else if (!isLiveDrag && typeof ctx.setSelectedModel === 'function') {
+        // Only fall back to setSelectedModel on drag-release / tick-click (it may close the menu in some host versions)
+        ctx.setSelectedModel(opt.raw);
       }
     } catch (_) {}
     window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 70);
     return;
   }
 
-  if ((binding.mode === 'native-buttons' || binding.mode === 'model-variants') && opt.el) {
+  if (!isLiveDrag && (binding.mode === 'native-buttons' || binding.mode === 'model-variants') && opt.el) {
     dispatchRealReactClick(opt.el);
     window.setTimeout(() => { if (typeof onSynced === 'function') onSynced(); }, 80);
   }
@@ -7519,7 +7519,7 @@ function attachWukongLanTrailFX(box, track, canvas, getTargetState) {
   let windDir = -1; // -1 = cape billows left behind right-moving thumb
 
   const padX = 10;
-  const padY = 24;
+  const padY = 22;
 
   // Lan FMVP「逐花归海」× 大圣炽焰披风色彩表
   const PETAL_COLORS = [
@@ -7564,9 +7564,9 @@ function attachWukongLanTrailFX(box, track, canvas, getTargetState) {
   box.__agyFxBurst = () => {
     const st = getTargetState();
     const tw = track.clientWidth || 220;
-    const tx = padX + 12 + st.ratio * Math.max(1, tw - 24);
-    const midY = padY + (track.clientHeight || 26) * 0.5;
-    rings.push({ x: tx, y: midY, r: 8, maxR: 44, alpha: 0.95 });
+    const tx = padX + 11 + st.ratio * Math.max(1, tw - 22);
+    const midY = padY + (track.clientHeight || 22) * 0.5;
+    rings.push({ x: tx, y: midY, r: 7, maxR: 40, alpha: 0.95 });
     for (let i = 0; i < 16; i++) spawnPetal(tx, midY, 0, true);
     for (let i = 0; i < 6; i++) spawnSlash(tx, midY, i % 2 === 0 ? -1 : 1);
   };
@@ -7631,7 +7631,7 @@ function attachWukongLanTrailFX(box, track, canvas, getTargetState) {
     idleWave += dt * 7.4;
 
     const tw = track.clientWidth || 220;
-    const th = track.clientHeight || 26;
+    const th = track.clientHeight || 22;
     const cw = tw + padX * 2;
     const ch = th + padY * 2;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -7641,7 +7641,7 @@ function attachWukongLanTrailFX(box, track, canvas, getTargetState) {
     }
 
     const st = getTargetState();
-    const targetX = padX + 12 + st.ratio * Math.max(1, tw - 24);
+    const targetX = padX + 11 + st.ratio * Math.max(1, tw - 22);
     const midY = padY + th * 0.5;
 
     if (!initialized) {
@@ -7961,9 +7961,9 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
     const safeIdx = Math.max(0, Math.min(opts.length - 1, previewIdx));
     const pct = (clampedRatio * 100).toFixed(1);
     const tw = track.clientWidth;
-    const thumbLeft = 12 + clampedRatio * (tw ? (tw - 24) : 200);
-    if (fill) fill.style.width = 'calc(26px + (100% - 26px) * ' + clampedRatio.toFixed(4) + ')';
-    if (thumb) thumb.style.left = tw ? (thumbLeft.toFixed(1) + 'px') : ('calc(12px + (100% - 24px) * ' + clampedRatio.toFixed(4) + ')');
+    const thumbLeft = 11 + clampedRatio * (tw ? (tw - 22) : 200);
+    if (fill) fill.style.width = 'calc(22px + (100% - 22px) * ' + clampedRatio.toFixed(4) + ')';
+    if (thumb) thumb.style.left = tw ? (thumbLeft.toFixed(1) + 'px') : ('calc(11px + (100% - 22px) * ' + clampedRatio.toFixed(4) + ')');
     if (valEl) valEl.textContent = opts[safeIdx].label;
     track.setAttribute('aria-valuenow', String(safeIdx));
     track.setAttribute('aria-valuetext', opts[safeIdx].label);
@@ -7995,13 +7995,28 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
 
   if (!box.dataset.agyBound) {
     box.dataset.agyBound = '1';
-    const commitIdx = (nextIdx, snapVisual, burstFx) => {
+
+    // Completely isolate slider box from host Radix/Floating-UI menu hover, focus-steal, and drag-dismiss!
+    const stopMenuLeak = (e) => {
+      e.stopPropagation();
+    };
+    const preventDragSelect = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    for (const ev of ['mousedown', 'mouseup', 'mousemove', 'pointerover', 'mouseover', 'pointerenter', 'mouseenter']) {
+      box.addEventListener(ev, stopMenuLeak);
+    }
+    box.addEventListener('dragstart', preventDragSelect);
+    box.addEventListener('selectstart', preventDragSelect);
+
+    const commitIdx = (nextIdx, snapVisual, burstFx, isLiveDrag) => {
       const curBinding = box.__agyBinding;
       if (!curBinding || curBinding.locked || !curBinding.options[nextIdx] || curBinding.options[nextIdx].disabled) return;
       const prevCommitted = Number(track.dataset.committedIdx ?? -1);
       if (snapVisual) renderIdx(nextIdx);
       if (burstFx && typeof box.__agyFxBurst === 'function') box.__agyFxBurst();
-      if (nextIdx !== prevCommitted) {
+      if (nextIdx !== prevCommitted || !isLiveDrag) {
         track.dataset.committedIdx = String(nextIdx);
         selectRealEffortOption(
           curBinding,
@@ -8009,7 +8024,8 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
           () => {
             const comp = document.querySelector('.surface-composer');
             if (comp) decorateComposerModelTrigger(comp);
-          }
+          },
+          Boolean(isLiveDrag)
         );
       }
     };
@@ -8019,7 +8035,7 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
       const n = curBinding ? curBinding.options.length : 1;
       const r = track.getBoundingClientRect();
       if (r.width <= 0 || n <= 1) return { ratio: 1, idx: 0 };
-      const ratio = Math.max(0, Math.min(1, (clientX - r.left - 12) / Math.max(1, r.width - 24)));
+      const ratio = Math.max(0, Math.min(1, (clientX - r.left - 11) / Math.max(1, r.width - 22)));
       const step = 1 / (n - 1);
       const curCenter = curIdx * step;
       const hysteresis = step * 0.34;
@@ -8034,46 +8050,74 @@ function mountRealThinkingEffortSlider(pop, matchedRows, hasNativeSlider) {
       return { ratio, idx };
     };
 
+    let activePointerId = null;
+    let lastPreviewIdx = -1;
+    const onWinMove = (e) => {
+      if (!track.classList.contains('dragging')) return;
+      if (activePointerId !== null && e.pointerId !== activePointerId) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const baseIdx = lastPreviewIdx >= 0 ? lastPreviewIdx : Number(track.dataset.curIdx || 0);
+      const { ratio, idx } = ratioAndDetentFromClientX(e.clientX, baseIdx);
+      renderContinuous(ratio, idx);
+      if (idx !== lastPreviewIdx) {
+        lastPreviewIdx = idx;
+        if (typeof box.__agyFxBurst === 'function') box.__agyFxBurst();
+      }
+    };
+    const cleanupWinDrag = () => {
+      activePointerId = null;
+      lastPreviewIdx = -1;
+      window.removeEventListener('pointermove', onWinMove, true);
+      window.removeEventListener('pointerup', onWinUp, true);
+      window.removeEventListener('pointercancel', onWinUp, true);
+      window.removeEventListener('blur', onWinBlur);
+    };
+    const onWinUp = (e) => {
+      if (!track.classList.contains('dragging')) { cleanupWinDrag(); return; }
+      if (activePointerId !== null && e && typeof e.pointerId === 'number' && e.pointerId !== activePointerId) return;
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const curIdx = Number(track.dataset.curIdx || 0);
+      track.classList.remove('dragging');
+      cleanupWinDrag();
+      renderIdx(curIdx);
+      commitIdx(curIdx, true, true, false);
+    };
+    const onWinBlur = () => onWinUp(null);
+
     track.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
       e.preventDefault();
       e.stopPropagation();
       const curBinding = box.__agyBinding;
       if (!curBinding || curBinding.locked) return;
       const curIdx = Number(track.dataset.curIdx || 0);
       track.dataset.committedIdx = String(curIdx);
+      lastPreviewIdx = curIdx;
       track.classList.add('dragging');
-      try { track.setPointerCapture(e.pointerId); } catch (_) {}
+      activePointerId = e.pointerId;
+      window.addEventListener('pointermove', onWinMove, true);
+      window.addEventListener('pointerup', onWinUp, true);
+      window.addEventListener('pointercancel', onWinUp, true);
+      window.addEventListener('blur', onWinBlur);
       const n = curBinding.options.length;
       const r = track.getBoundingClientRect();
-      const ratio = Math.max(0, Math.min(1, (e.clientX - r.left - 12) / Math.max(1, r.width - 24)));
+      const ratio = Math.max(0, Math.min(1, (e.clientX - r.left - 11) / Math.max(1, r.width - 22)));
       const idx = n > 1 ? Math.round(ratio * (n - 1)) : 0;
       renderContinuous(ratio, idx);
-      if (idx !== curIdx) commitIdx(idx, false, true);
+      if (idx !== lastPreviewIdx) {
+        lastPreviewIdx = idx;
+        if (typeof box.__agyFxBurst === 'function') box.__agyFxBurst();
+      }
     });
-    track.addEventListener('pointermove', (e) => {
-      if (!track.classList.contains('dragging')) return;
-      e.stopPropagation();
-      const curIdx = Number(track.dataset.committedIdx ?? track.dataset.curIdx ?? 0);
-      const { ratio, idx } = ratioAndDetentFromClientX(e.clientX, curIdx);
-      renderContinuous(ratio, idx);
-      if (idx !== curIdx) commitIdx(idx, false, true);
-    });
-    const finishDrag = (e) => {
-      if (!track.classList.contains('dragging')) return;
-      e.stopPropagation();
-      track.classList.remove('dragging');
-      try { track.releasePointerCapture(e.pointerId); } catch (_) {}
-      const curIdx = Number(track.dataset.curIdx || 0);
-      renderIdx(curIdx);
-      commitIdx(curIdx, true, true);
-    };
-    track.addEventListener('pointerup', finishDrag);
-    track.addEventListener('pointercancel', finishDrag);
     box.addEventListener('click', (e) => {
       e.stopPropagation();
       const tb = e.target instanceof Element ? e.target.closest('.agy-re-tick') : null;
       if (!tb) return;
-      commitIdx(Number(tb.dataset.idx || 0), true, true);
+      commitIdx(Number(tb.dataset.idx || 0), true, true, false);
     });
   }
 }
