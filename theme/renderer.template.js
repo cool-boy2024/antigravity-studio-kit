@@ -80,6 +80,7 @@ function readCustomWallpaperData() {
 
 function ensureWallpaperLayers() {
   let bg = document.getElementById('agy-wallpaper-layer');
+  let img = document.getElementById('agy-wallpaper-img');
   let veil = document.getElementById('agy-wallpaper-veil');
   if (!bg) {
     bg = document.createElement('div');
@@ -88,6 +89,15 @@ function ensureWallpaperLayers() {
     bg.setAttribute('aria-hidden', 'true');
     document.body.insertBefore(bg, document.body.firstChild);
   }
+  if (!img) {
+    img = document.createElement('img');
+    img.id = 'agy-wallpaper-img';
+    img.className = 'notranslate';
+    img.alt = '';
+    img.decoding = 'async';
+    img.setAttribute('aria-hidden', 'true');
+    bg.appendChild(img);
+  }
   if (!veil) {
     veil = document.createElement('div');
     veil.id = 'agy-wallpaper-veil';
@@ -95,19 +105,146 @@ function ensureWallpaperLayers() {
     veil.setAttribute('aria-hidden', 'true');
     bg.insertAdjacentElement('afterend', veil);
   }
-  return { bg, veil };
+  return { bg, img, veil };
+}
+
+function parseCssBgAlpha(bg) {
+  if (!bg || bg === 'transparent' || bg === 'none') return 0;
+  const slashIdx = bg.lastIndexOf('/');
+  if (slashIdx !== -1) {
+    const raw = bg.slice(slashIdx + 1).replace(')', '').trim();
+    if (raw.endsWith('%')) return Math.max(0, Math.min(1, parseFloat(raw) / 100));
+    const n = parseFloat(raw);
+    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
+  }
+  if (/^(?:rgba|hsla)\(/i.test(bg)) {
+    const parts = bg.slice(bg.indexOf('(') + 1, bg.lastIndexOf(')')).split(',');
+    if (parts.length >= 4) {
+      const n = parseFloat(parts[3]);
+      return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
+    }
+  }
+  return 1;
+}
+
+const WP_SHELL_SKIP_SEL = [
+  '[role="dialog"]', '[role="alertdialog"]', '[role="menu"]', '[role="listbox"]',
+  '[role="tooltip"]', '[data-radix-popper-content-wrapper]', '[data-floating-ui-portal]',
+  '[data-radix-menu-content]', '[data-radix-select-content]',
+  '.settings-modal-container', '.surface-composer', '.agy-model-popover',
+  '[data-testid="conversation-row-sidebar"]', '[data-testid="running-items-card"]',
+  '[data-quotable="true"]', '.markdown-body', '[data-testid="planner-response-text"]',
+  '.monaco-editor', '.cm-editor', '.hljs', 'pre', 'code', 'table', 'iframe', 'video', 'canvas'
+].join(',');
+
+const WP_SHELL_TAGS = new Set(['DIV', 'MAIN', 'SECTION', 'ARTICLE', 'ASIDE', 'NAV', 'HEADER', 'FOOTER']);
+let wpShellSyncTimer = 0;
+
+function clearWallpaperShellMarks() {
+  document.querySelectorAll('[data-agy-wp-shell], [data-agy-wp-side]').forEach((el) => {
+    el.removeAttribute('data-agy-wp-shell');
+    el.removeAttribute('data-agy-wp-side');
+  });
+}
+
+function syncWallpaperShellTransparency() {
+  if (document.documentElement.getAttribute('data-agy-wallpaper') !== 'on') {
+    clearWallpaperShellMarks();
+    return 0;
+  }
+  if (!document.body) return 0;
+  const vw = window.innerWidth || 1200;
+  const vh = window.innerHeight || 800;
+  // BFS traversal guarantees every top/mid-level layout shell across sidebar, topbar,
+  // chat column, and split panes is visited first before deep message nodes.
+  const queue = [];
+  for (let c = document.body.firstElementChild; c; c = c.nextElementSibling) {
+    queue.push(c);
+  }
+  let head = 0;
+  let marked = 0;
+  const MAX_VISIT = 560;
+  while (head < queue.length && head < MAX_VISIT) {
+    const el = queue[head++];
+    if (!el || el.nodeType !== 1) continue;
+    if (el.id && OWN_IDS.has(el.id)) continue;
+    const tag = el.tagName;
+    if (!WP_SHELL_TAGS.has(tag) && !tag.includes('-')) continue;
+    if (el.matches(WP_SHELL_SKIP_SEL)) continue;
+
+    const r = el.getBoundingClientRect();
+    if (r.width < 150 || r.height < 24) continue;
+    if (r.bottom < -20 || r.top > vh + 20 || r.right < -20 || r.left > vw + 20) continue;
+
+    const isSidebar = (
+      (el.matches('div[role="navigation"], aside, nav') || el.getAttribute('aria-label') === 'Sidebar') &&
+      r.height >= vh * 0.45 &&
+      r.width >= 140 &&
+      r.width <= Math.max(440, vw * 0.38)
+    );
+    if (isSidebar) {
+      if (el.getAttribute('data-agy-wp-side') !== '1') {
+        el.setAttribute('data-agy-wp-side', '1');
+        el.removeAttribute('data-agy-wp-shell');
+      }
+      marked += 1;
+    } else {
+      const isLargePane = r.width >= 200 && r.height >= Math.min(220, vh * 0.30);
+      const isTopBar = r.width >= vw * 0.30 && r.height >= 24 && r.height <= 76 && r.top <= 56;
+      const isBottomDock = r.width >= 260 && r.height >= 36 && r.bottom >= vh - 16;
+      if (isLargePane || isTopBar || isBottomDock) {
+        if (!el.hasAttribute('data-agy-wp-shell') && !el.hasAttribute('data-agy-wp-side')) {
+          const role = el.getAttribute('role') || '';
+          if (role !== 'button' && role !== 'tab' && el.getAttribute('tabindex') !== '0') {
+            const cs = window.getComputedStyle(el);
+            const alpha = parseCssBgAlpha(cs.backgroundColor);
+            const hasBgImg = Boolean(cs.backgroundImage && cs.backgroundImage !== 'none');
+            if (alpha > 0.08 || hasBgImg) {
+              const isFloatingOverlay = (
+                (cs.position === 'fixed' || cs.position === 'absolute') &&
+                (r.width < vw * 0.42 || r.height < vh * 0.42) &&
+                !isTopBar
+              );
+              const br = parseFloat(cs.borderTopLeftRadius) || 0;
+              const isRoundedCard = br >= 8 && !(r.height >= vh * 0.56 || (r.width >= vw * 0.65 && r.height >= vh * 0.42));
+              if (!isFloatingOverlay && !isRoundedCard) {
+                el.setAttribute('data-agy-wp-shell', '1');
+                marked += 1;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    for (let ch = el.firstElementChild; ch; ch = ch.nextElementSibling) {
+      if (WP_SHELL_TAGS.has(ch.tagName) || ch.tagName.includes('-')) queue.push(ch);
+    }
+  }
+  return marked;
+}
+
+function scheduleWallpaperShellSync(delayMs = 120) {
+  if (document.documentElement.getAttribute('data-agy-wallpaper') !== 'on') return;
+  if (wpShellSyncTimer) window.clearTimeout(wpShellSyncTimer);
+  wpShellSyncTimer = window.setTimeout(() => {
+    wpShellSyncTimer = 0;
+    syncWallpaperShellTransparency();
+  }, delayMs);
 }
 
 function applyWallpaperAlpha(pct) {
   const clamped = Math.max(20, Math.min(92, Math.round(Number(pct) || 68)));
   // Higher 通透度 (e.g. 68% -> 92%) = vivid crystal-clear wallpaper; lower = calmer frosted veil
   const veilAlpha = Math.max(0.10, Math.min(0.80, (96 - clamped * 0.85) / 100)).toFixed(2);
-  const sideAlpha = Math.max(0.22, Math.min(0.84, (98 - clamped * 0.68) / 100)).toFixed(2);
+  const sideAlpha = Math.max(0.20, Math.min(0.82, (96 - clamped * 0.68) / 100)).toFixed(2);
   document.documentElement.style.setProperty('--agy-wp-veil-alpha', veilAlpha);
   document.documentElement.style.setProperty('--agy-wp-side-alpha', sideAlpha);
   try { localStorage.setItem(WP_ALPHA_STORE, String(clamped)); } catch (_) {}
   const valEl = document.getElementById('agy-wp-alpha-val');
   if (valEl) valEl.textContent = clamped + '%';
+  const sliderEl = document.getElementById('agy-wp-alpha-slider');
+  if (sliderEl && String(sliderEl.value) !== String(clamped)) sliderEl.value = String(clamped);
   return clamped;
 }
 
@@ -123,17 +260,31 @@ function applyWallpaperMode(mode) {
     if (!imgUrl) normalized = 'none';
   }
 
-  const { bg, veil } = ensureWallpaperLayers();
+  const { bg, img, veil } = ensureWallpaperLayers();
   if (normalized === 'none' || !imgUrl) {
     document.documentElement.setAttribute('data-agy-wallpaper', 'off');
+    bg.setAttribute('data-wp-active', '0');
+    veil.setAttribute('data-wp-active', '0');
     bg.style.opacity = '0';
     bg.style.backgroundImage = 'none';
+    img.removeAttribute('src');
     veil.style.opacity = '0';
+    clearWallpaperShellMarks();
   } else {
     document.documentElement.setAttribute('data-agy-wallpaper', 'on');
-    bg.style.backgroundImage = 'url("' + imgUrl + '")';
+    bg.style.backgroundImage = 'none';
+    if (img.getAttribute('src') !== imgUrl) img.src = imgUrl;
+    bg.setAttribute('data-wp-active', '1');
+    veil.setAttribute('data-wp-active', '1');
     bg.style.opacity = '1';
     veil.style.opacity = '1';
+    syncWallpaperShellTransparency();
+    scheduleWallpaperShellSync(320);
+    window.setTimeout(() => {
+      if (document.documentElement.getAttribute('data-agy-wallpaper') === 'on') {
+        syncWallpaperShellTransparency();
+      }
+    }, 1100);
   }
   applyWallpaperAlpha(readWallpaperAlpha());
   try { localStorage.setItem(WP_STORE, normalized); } catch (_) {}
@@ -214,6 +365,7 @@ function syncDarkAttribute() {
     document.documentElement.setAttribute('data-agy-dark', dark);
     updateThemeButtonUI(readThemeMode());
     syncPulseSurface();
+    scheduleWallpaperShellSync(120);
   }
 }
 
@@ -285,6 +437,7 @@ function applyThemeMode(mode) {
   window.__agyCurrentTheme = normalized;
   updateThemeButtonUI(normalized);
   syncPulseSurface();
+  scheduleWallpaperShellSync(120);
   return normalized;
 }
 
@@ -433,7 +586,7 @@ const OWN_IDS = new Set([
   'agy-codex-ctx-btn', 'agy-codex-ctx-popover', 'agy-pulse-drawer',
   'agy-kit-update-wrap', 'agy-kit-update-pop',
   'agy-inline-ask-trigger', 'agy-inline-ask-popover', 'agy-inline-ask-pins',
-  'agy-wallpaper-layer', 'agy-wallpaper-veil', 'agy-wp-file-input',
+  'agy-wallpaper-layer', 'agy-wallpaper-img', 'agy-wallpaper-veil', 'agy-wp-file-input',
   'agy-composer-sprint-bar', 'hakimi-wuhun-overlay', 'hakimi-shatter-canvas',
   'hakimi-comfort-card', 'hakimi-clones-layer', 'agy-real-effort-box'
 ]);
@@ -804,36 +957,51 @@ html.agy-page-hidden .hakimi-glyph { animation-play-state: paused !important; }
 /* Fixed 120Hz GPU Wallpaper Backdrop Layer (zero background-attachment:fixed!) */
 #agy-wallpaper-layer {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: -2;
   pointer-events: none;
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
+  overflow: hidden;
   opacity: 0;
-  contain: strict;
   will-change: opacity;
   transform: translate3d(0, 0, 0);
   transition: opacity 0.28s ease;
 }
+#agy-wallpaper-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
 #agy-wallpaper-veil {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: -1;
   pointer-events: none;
   opacity: 0;
-  contain: strict;
-  background: rgba(248, 250, 255, var(--agy-wp-veil-alpha, 0.56));
+  background: rgba(248, 250, 255, var(--agy-wp-veil-alpha, 0.40));
   transition: opacity 0.28s ease, background-color 0.12s ease;
 }
 html[data-agy-theme="claude"]:not([data-agy-dark="1"]) #agy-wallpaper-veil {
-  background: rgba(250, 247, 240, var(--agy-wp-veil-alpha, 0.58));
+  background: rgba(250, 247, 240, var(--agy-wp-veil-alpha, 0.42));
 }
 html[data-agy-dark="1"] #agy-wallpaper-veil {
-  background: rgba(10, 14, 24, var(--agy-wp-veil-alpha, 0.50));
+  background: rgba(8, 11, 20, var(--agy-wp-veil-alpha, 0.38));
 }
 html[data-agy-theme="claude"][data-agy-dark="1"] #agy-wallpaper-veil {
-  background: rgba(24, 21, 18, var(--agy-wp-veil-alpha, 0.52));
+  background: rgba(20, 17, 15, var(--agy-wp-veil-alpha, 0.40));
 }
 
 /* Composer Top-Border Racing Energy Track (Synced 1:1 with Hakimi Sprint at 120Hz) */
@@ -8688,10 +8856,13 @@ function ensureObserver() {
     }
     if (composer) decorateComposerModelTrigger(composer);
     decorateModelPopovers();
+    scheduleWallpaperShellSync(360);
     if (window.__agyUpdateState && window.__agyUpdateState.available && !document.getElementById('agy-kit-update-wrap')) {
       syncSidebarUpdatePill();
     }
   }
+
+  window.addEventListener('resize', () => scheduleWallpaperShellSync(260), { passive: true });
 
   // Lightweight visibility-gated heartbeat so Hakimi busy/sprint transitions NEVER stall
   if (!window.__AGY_HAKIMI_HEARTBEAT__) {
@@ -8761,6 +8932,25 @@ window.__AGY_THEME__ = {
   listWallpapers: () => VALID_WALLPAPERS.slice(),
   setWallpaperAlpha: (a) => applyWallpaperAlpha(a),
   pickWallpaper: () => openCustomWallpaperPicker(),
+  syncWallpaperShells: () => syncWallpaperShellTransparency(),
+  debugWallpaper: () => {
+    const bg = document.getElementById('agy-wallpaper-layer');
+    const img = document.getElementById('agy-wallpaper-img');
+    const veil = document.getElementById('agy-wallpaper-veil');
+    return {
+      mode: readWallpaperMode(),
+      attr: document.documentElement.getAttribute('data-agy-wallpaper'),
+      theme: document.documentElement.getAttribute('data-agy-theme'),
+      dark: document.documentElement.getAttribute('data-agy-dark'),
+      alpha: readWallpaperAlpha(),
+      imgComplete: Boolean(img && img.complete),
+      imgSize: img ? [img.naturalWidth, img.naturalHeight] : [0, 0],
+      layerOpacity: bg ? window.getComputedStyle(bg).opacity : null,
+      veilOpacity: veil ? window.getComputedStyle(veil).opacity : null,
+      shells: document.querySelectorAll('[data-agy-wp-shell="1"]').length,
+      sides: document.querySelectorAll('[data-agy-wp-side="1"]').length,
+    };
+  },
   wuhun: () => triggerHakimiWuhunRage(true),
   setWuhunEnabled: (v) => applyWuhunEnabled(v),
   getWuhunEnabled: () => readWuhunEnabled(),
