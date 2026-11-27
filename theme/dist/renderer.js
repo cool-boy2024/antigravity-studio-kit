@@ -1846,10 +1846,16 @@ html[data-agy-dark="1"] .agy-wp-card.active {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 5px 6px 3px;
+  padding: 5px 6px;
+  border-radius: 7px;
   font-size: 11.5px;
   font-weight: 500;
   color: var(--gs-ink, #1f1f1f);
+  cursor: pointer;
+  user-select: none;
+}
+.agy-wuhun-row:hover {
+  background: var(--gs-side-hover, rgba(0, 0, 0, 0.05));
 }
 .agy-wuhun-switch {
   position: relative;
@@ -1895,47 +1901,7 @@ html[data-agy-dark="1"] .agy-wp-card.active {
   align-items: center;
   justify-content: space-between;
 }
-html[data-agy-dark="1"] .agy-wuhun-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 5px 6px 3px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--gs-ink, #1f1f1f);
-}
-.agy-wuhun-switch {
-  position: relative;
-  width: 34px;
-  height: 19px;
-  border-radius: 999px;
-  border: none;
-  padding: 0;
-  background: rgba(128, 138, 155, 0.34);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background-color 0.16s ease;
-}
-.agy-wuhun-switch::after {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 2px;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
-  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.agy-wuhun-switch.on {
-  background: linear-gradient(135deg, #cf2647, #9333ea);
-}
-.agy-wuhun-switch.on::after {
-  transform: translate3d(15px, 0, 0);
-}
-.agy-wuhun-trigger {
+html[data-agy-dark="1"] .agy-wuhun-trigger {
   color: #fda4af;
   border-color: rgba(251, 113, 133, 0.36);
 }
@@ -4060,6 +4026,7 @@ function spawnSubagentCloneSprint() {
 }
 
 function triggerHakimiWuhunRage(manual = false) {
+  if (!readWuhunEnabled()) return;
   if (wuhunState.active && !manual) return;
   clearWuhunTimers();
   wuhunState.active = true;
@@ -7109,7 +7076,7 @@ function openThemeMenu(anchorBtn) {
         openCustomWallpaperPicker();
         return;
       }
-      if (t.closest('[data-wuhun-toggle="1"]')) {
+      if (t.closest('[data-wuhun-toggle="1"], .agy-wuhun-row')) {
         e.stopPropagation();
         const nextOn = !readWuhunEnabled();
         applyWuhunEnabled(nextOn);
