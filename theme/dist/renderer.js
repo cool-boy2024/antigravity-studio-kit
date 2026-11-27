@@ -40,9 +40,9 @@ function readWallpaperMode() {
 function readWallpaperAlpha() {
   try {
     const raw = Number(localStorage.getItem(WP_ALPHA_STORE));
-    if (Number.isFinite(raw) && raw >= 35 && raw <= 94) return Math.round(raw);
+    if (Number.isFinite(raw) && raw >= 20 && raw <= 92) return Math.round(raw);
   } catch (_) {}
-  return 72;
+  return 68;
 }
 
 function readCustomWallpaperData() {
@@ -70,10 +70,11 @@ function ensureWallpaperLayers() {
 }
 
 function applyWallpaperAlpha(pct) {
-  const clamped = Math.max(35, Math.min(94, Math.round(Number(pct) || 72)));
-  const mainAlpha = (clamped / 100).toFixed(2);
-  const sideAlpha = Math.max(0.32, (clamped - 6) / 100).toFixed(2);
-  document.documentElement.style.setProperty('--agy-wp-main-alpha', mainAlpha);
+  const clamped = Math.max(20, Math.min(92, Math.round(Number(pct) || 68)));
+  // Higher 通透度 (e.g. 70% -> 90%) = clearer/more vivid wallpaper; lower = calmer frosted veil
+  const veilAlpha = Math.max(0.14, Math.min(0.84, (100 - clamped * 0.72) / 100)).toFixed(2);
+  const sideAlpha = Math.max(0.26, Math.min(0.86, (100 - clamped * 0.56) / 100)).toFixed(2);
+  document.documentElement.style.setProperty('--agy-wp-veil-alpha', veilAlpha);
   document.documentElement.style.setProperty('--agy-wp-side-alpha', sideAlpha);
   try { localStorage.setItem(WP_ALPHA_STORE, String(clamped)); } catch (_) {}
   const valEl = document.getElementById('agy-wp-alpha-val');
@@ -793,11 +794,17 @@ html.agy-page-hidden .hakimi-glyph { animation-play-state: paused !important; }
   pointer-events: none;
   opacity: 0;
   contain: strict;
-  background: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.14) 0%, rgba(15, 23, 42, 0.08) 100%);
-  transition: opacity 0.28s ease;
+  background: rgba(248, 250, 255, var(--agy-wp-veil-alpha, 0.56));
+  transition: opacity 0.28s ease, background-color 0.12s ease;
+}
+html[data-agy-theme="claude"]:not([data-agy-dark="1"]) #agy-wallpaper-veil {
+  background: rgba(250, 247, 240, var(--agy-wp-veil-alpha, 0.58));
 }
 html[data-agy-dark="1"] #agy-wallpaper-veil {
-  background: radial-gradient(ellipse at 50% 45%, rgba(9, 12, 20, 0.16) 0%, rgba(5, 7, 13, 0.42) 100%);
+  background: rgba(10, 14, 24, var(--agy-wp-veil-alpha, 0.50));
+}
+html[data-agy-theme="claude"][data-agy-dark="1"] #agy-wallpaper-veil {
+  background: rgba(24, 21, 18, var(--agy-wp-veil-alpha, 0.52));
 }
 
 /* Composer Top-Border Racing Energy Track (Synced 1:1 with Hakimi Sprint at 120Hz) */
@@ -6936,7 +6943,7 @@ function openThemeMenu(anchorBtn) {
       '</div>' +
       '<div class="agy-wp-alpha-row">' +
         '<span>通透度</span>' +
-        '<input type="range" id="agy-wp-alpha-slider" min="35" max="94" value="' + alphaVal + '"/>' +
+        '<input type="range" id="agy-wp-alpha-slider" min="20" max="92" value="' + alphaVal + '"/>' +
         '<span id="agy-wp-alpha-val">' + alphaVal + '%</span>' +
       '</div>' +
       '<div class="agy-tm-sep"></div>' +
@@ -8518,23 +8525,11 @@ function mountCodexRingAndTopTheme() {
       btn.id = 'agy-inline-theme-btn';
       btn.type = 'button';
       btn.className = 'notranslate';
-      btn.title = '点击切换主题 · 点击 ▾ 或右键展开选择 (极简工作台 / 暖纸书房 / 晨光画布 / 原生界面)';
-      btn.innerHTML = '<span class="agy-tb-dot"></span><span class="agy-tb-label">晨光画布</span><span class="agy-tb-caret" title="展开主题列表">▾</span>';
+      btn.title = '点击打开主题、炫酷壁纸、通透度与法天象地菜单（右键同样可展开）';
+      btn.innerHTML = '<span class="agy-tb-dot"></span><span class="agy-tb-label">晨光画布</span><span class="agy-tb-caret" title="展开主题与壁纸设置">▾</span>';
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (e.target instanceof Element && e.target.closest('.agy-tb-caret')) {
-          openThemeMenu(btn);
-          return;
-        }
-        closeThemeMenu();
-        const cur = readThemeMode();
-        const next = VALID_THEMES[(VALID_THEMES.indexOf(cur) + 1) % VALID_THEMES.length];
-        applyThemeMode(next);
-        if (!isBusy()) {
-          setMuseMode('done', '', { silentDone: true });
-          say((THEME_META[next] && THEME_META[next].desc) || next, 1500);
-          window.setTimeout(() => { if (!isBusy() && currentMode === 'done') setMuseMode('idle'); }, 1400);
-        }
+        openThemeMenu(btn);
       });
       btn.addEventListener('contextmenu', (e) => {
         e.preventDefault();

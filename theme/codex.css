@@ -1004,10 +1004,13 @@ html[data-agy-dark="1"] .agy-re-tick.active {
 }
 
 /* ============================================================
-   10. 120Hz 零重排炫酷壁纸 + 通透毛玻璃工作台模式（零 background-attachment:fixed）
+   10. 120Hz 零重排炫酷壁纸 + 单层通透毛玻璃工作台模式（零 background-attachment:fixed）
    ============================================================ */
 html[data-agy-wallpaper="on"],
 html[data-agy-wallpaper="on"] body {
+  --background: transparent !important;
+  --bg-canvas: transparent !important;
+  --color-background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
 }
@@ -1015,38 +1018,36 @@ html[data-agy-wallpaper="on"] body {
   position: relative !important;
   z-index: 0 !important;
 }
-
-html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) main,
-html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[class*="bg-background"]:not([role="dialog"]):not(.settings-modal-container) {
-  background-color: rgba(252, 253, 255, var(--agy-wp-main-alpha, 0.72)) !important;
-}
-html[data-agy-wallpaper="on"][data-agy-dark="1"] main,
-html[data-agy-wallpaper="on"][data-agy-dark="1"] div[class*="bg-background"]:not([role="dialog"]):not(.settings-modal-container) {
-  background-color: rgba(13, 17, 25, var(--agy-wp-main-alpha, 0.68)) !important;
-}
-html[data-agy-wallpaper="on"][data-agy-theme="claude"]:not([data-agy-dark="1"]) main,
-html[data-agy-wallpaper="on"][data-agy-theme="claude"]:not([data-agy-dark="1"]) div[class*="bg-background"]:not([role="dialog"]):not(.settings-modal-container) {
-  background-color: rgba(250, 249, 245, var(--agy-wp-main-alpha, 0.74)) !important;
-}
-html[data-agy-wallpaper="on"][data-agy-theme="claude"][data-agy-dark="1"] main,
-html[data-agy-wallpaper="on"][data-agy-theme="claude"][data-agy-dark="1"] div[class*="bg-background"]:not([role="dialog"]):not(.settings-modal-container) {
-  background-color: rgba(28, 26, 23, var(--agy-wp-main-alpha, 0.70)) !important;
+html[data-agy-wallpaper="on"] body > #root,
+html[data-agy-wallpaper="on"] body > #app,
+html[data-agy-wallpaper="on"] body > #__next {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
-/* 侧栏保持通透但不建 transform/will-change 合成层，避免裁切弹出菜单 */
+/* 主画布与嵌套 bg-background / bg-canvas 全部交由单一 #agy-wallpaper-veil 控透，避免多层叠加变纯黑 */
+html[data-agy-wallpaper="on"] main,
+html[data-agy-wallpaper="on"] div[class*="bg-background"]:not([role="dialog"]):not([role="menu"]):not([role="listbox"]):not(.settings-modal-container):not(.agy-model-popover),
+html[data-agy-wallpaper="on"] div[class*="bg-canvas"]:not([role="dialog"]):not(.settings-modal-container) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 侧栏仅外层保持单层通透磨砂感，不建 transform/will-change 合成层，避免裁切弹出菜单 */
 html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"].bg-sidebar,
-html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"][aria-label="Sidebar"],
-html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"] .bg-sidebar,
-html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"] [class*="group/section-header"] {
-  background: rgba(244, 247, 252, var(--agy-wp-side-alpha, 0.66)) !important;
-  background-color: rgba(244, 247, 252, var(--agy-wp-side-alpha, 0.66)) !important;
+html[data-agy-wallpaper="on"]:not([data-agy-dark="1"]) div[role="navigation"][aria-label="Sidebar"] {
+  background: rgba(246, 249, 254, var(--agy-wp-side-alpha, 0.56)) !important;
+  background-color: rgba(246, 249, 254, var(--agy-wp-side-alpha, 0.56)) !important;
 }
 html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"].bg-sidebar,
-html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"][aria-label="Sidebar"],
-html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"] .bg-sidebar,
-html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"] [class*="group/section-header"] {
-  background: rgba(11, 14, 22, var(--agy-wp-side-alpha, 0.64)) !important;
-  background-color: rgba(11, 14, 22, var(--agy-wp-side-alpha, 0.64)) !important;
+html[data-agy-wallpaper="on"][data-agy-dark="1"] div[role="navigation"][aria-label="Sidebar"] {
+  background: rgba(10, 14, 24, var(--agy-wp-side-alpha, 0.54)) !important;
+  background-color: rgba(10, 14, 24, var(--agy-wp-side-alpha, 0.54)) !important;
+}
+html[data-agy-wallpaper="on"] div[role="navigation"] .bg-sidebar,
+html[data-agy-wallpaper="on"] div[role="navigation"] [class*="group/section-header"] {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* 输入框在壁纸模式下升级为磨砂玻璃悬浮质感 */
