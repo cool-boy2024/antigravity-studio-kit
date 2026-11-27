@@ -4461,7 +4461,10 @@ function mountMuseHakimi() {
 
   spriteEl = document.createElement('div');
   spriteEl.id = 'hakimi-muse-sprite';
-  spriteEl.title = '左键对话报速 · 双击 360° 转圈跳舞 · Alt+双击 法天象地碎屏 · Shift+双击打盹 · 右键折叠';
+  const _isMacKb = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '');
+  spriteEl.title = _isMacKb
+    ? '左键对话报速 · 双击 360° 转圈跳舞 · ⌥ Option / ⌘ Cmd + 双击 法天象地碎屏 · Shift+双击打盹 · 右键折叠'
+    : '左键对话报速 · 双击 360° 转圈跳舞 · Alt / Ctrl + 双击 法天象地碎屏 · Shift+双击打盹 · 右键折叠';
 
   auraEl = document.createElement('div');
   auraEl.id = 'hakimi-muse-aura';
@@ -4539,7 +4542,7 @@ function mountMuseHakimi() {
 
   spriteEl.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (wuhunState.shattered && !wuhunState.active && !e.altKey) {
+    if (wuhunState.shattered && !wuhunState.active && !e.altKey && !e.metaKey && !e.ctrlKey) {
       healShatterScreen('praise');
       return;
     }
@@ -4564,7 +4567,7 @@ function mountMuseHakimi() {
   spriteEl.addEventListener('dblclick', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.altKey) {
+    if (e.altKey || e.metaKey || e.ctrlKey) {
       triggerHakimiWuhunRage(true);
       return;
     }
