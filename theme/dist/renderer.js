@@ -74,13 +74,82 @@ function applyWuhunEnabled(enabled) {
   return on;
 }
 
+let liveCustomWallpaperUrl = '';
+let wpSwapToken = 0;
+let wpActiveSlot = 0;
+
 function readCustomWallpaperData() {
+  if (liveCustomWallpaperUrl) return liveCustomWallpaperUrl;
   try { return localStorage.getItem(WP_CUSTOM_STORE) || ''; } catch (_) { return ''; }
+}
+
+function openWallpaperDB() {
+  return new Promise((resolve) => {
+    try {
+      if (!window.indexedDB) { resolve(null); return; }
+      const req = window.indexedDB.open('agy-studio-wallpapers-v1', 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('blobs')) db.createObjectStore('blobs');
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    } catch (_) {
+      resolve(null);
+    }
+  });
+}
+
+function saveCustomWallpaperBlob(blob) {
+  return openWallpaperDB().then((db) => new Promise((resolve) => {
+    if (!db) { resolve(false); return; }
+    try {
+      const tx = db.transaction('blobs', 'readwrite');
+      tx.objectStore('blobs').put(blob, 'custom');
+      tx.oncomplete = () => { try { db.close(); } catch (_) {} resolve(true); };
+      tx.onerror = () => { try { db.close(); } catch (_) {} resolve(false); };
+    } catch (_) {
+      try { db.close(); } catch (_) {}
+      resolve(false);
+    }
+  }));
+}
+
+function loadCustomWallpaperBlob() {
+  return openWallpaperDB().then((db) => new Promise((resolve) => {
+    if (!db) { resolve(null); return; }
+    try {
+      const tx = db.transaction('blobs', 'readonly');
+      const req = tx.objectStore('blobs').get('custom');
+      req.onsuccess = () => { try { db.close(); } catch (_) {} resolve(req.result || null); };
+      req.onerror = () => { try { db.close(); } catch (_) {} resolve(null); };
+    } catch (_) {
+      try { db.close(); } catch (_) {}
+      resolve(null);
+    }
+  }));
+}
+
+function syncCustomWallpaperCardUI() {
+  const menu = document.getElementById('agy-theme-menu');
+  if (!menu) return;
+  const card = menu.querySelector('#agy-wp-custom-card');
+  if (!card) return;
+  const url = readCustomWallpaperData();
+  if (url) {
+    card.style.display = 'flex';
+    const thumb = card.querySelector('.agy-wp-custom-thumb');
+    if (thumb) thumb.style.backgroundImage = 'url("' + url + '")';
+    card.classList.toggle('active', readWallpaperMode() === 'custom');
+  } else {
+    card.style.display = 'none';
+  }
 }
 
 function ensureWallpaperLayers() {
   let bg = document.getElementById('agy-wallpaper-layer');
-  let img = document.getElementById('agy-wallpaper-img');
+  let imgA = document.getElementById('agy-wallpaper-img');
+  let imgB = document.getElementById('agy-wallpaper-img-alt');
   let veil = document.getElementById('agy-wallpaper-veil');
   if (!bg) {
     bg = document.createElement('div');
@@ -89,14 +158,25 @@ function ensureWallpaperLayers() {
     bg.setAttribute('aria-hidden', 'true');
     document.body.insertBefore(bg, document.body.firstChild);
   }
-  if (!img) {
-    img = document.createElement('img');
-    img.id = 'agy-wallpaper-img';
-    img.className = 'notranslate';
-    img.alt = '';
-    img.decoding = 'async';
-    img.setAttribute('aria-hidden', 'true');
-    bg.appendChild(img);
+  if (!imgA) {
+    imgA = document.createElement('img');
+    imgA.id = 'agy-wallpaper-img';
+    imgA.className = 'notranslate agy-wp-img';
+    imgA.alt = '';
+    imgA.decoding = 'async';
+    imgA.style.opacity = '0';
+    imgA.setAttribute('aria-hidden', 'true');
+    bg.appendChild(imgA);
+  }
+  if (!imgB) {
+    imgB = document.createElement('img');
+    imgB.id = 'agy-wallpaper-img-alt';
+    imgB.className = 'notranslate agy-wp-img';
+    imgB.alt = '';
+    imgB.decoding = 'async';
+    imgB.style.opacity = '0';
+    imgB.setAttribute('aria-hidden', 'true');
+    bg.appendChild(imgB);
   }
   if (!veil) {
     veil = document.createElement('div');
@@ -105,7 +185,36 @@ function ensureWallpaperLayers() {
     veil.setAttribute('aria-hidden', 'true');
     bg.insertAdjacentElement('afterend', veil);
   }
-  return { bg, img, veil };
+  return { bg, imgA, imgB, veil };
+}
+
+function crossfadeWallpaperTo(imgUrl) {
+  const { imgA, imgB } = ensureWallpaperLayers();
+  const activeImg = wpActiveSlot === 0 ? imgA : imgB;
+  const nextImg = wpActiveSlot === 0 ? imgB : imgA;
+  if (activeImg.getAttribute('src') === imgUrl && activeImg.style.opacity === '1') {
+    return;
+  }
+  const token = ++wpSwapToken;
+  const commitSwap = () => {
+    if (token !== wpSwapToken) return;
+    window.requestAnimationFrame(() => {
+      if (token !== wpSwapToken) return;
+      nextImg.style.opacity = '1';
+      activeImg.style.opacity = '0';
+      wpActiveSlot = wpActiveSlot === 0 ? 1 : 0;
+    });
+  };
+  nextImg.style.opacity = '0';
+  nextImg.src = imgUrl;
+  if (typeof nextImg.decode === 'function') {
+    nextImg.decode().then(commitSwap, commitSwap);
+  } else if (nextImg.complete) {
+    commitSwap();
+  } else {
+    nextImg.onload = commitSwap;
+    nextImg.onerror = commitSwap;
+  }
 }
 
 function parseCssBgAlpha(bg) {
@@ -253,31 +362,44 @@ function applyWallpaperMode(mode) {
   let imgUrl = '';
   if (normalized === 'custom') {
     imgUrl = readCustomWallpaperData();
-    if (!imgUrl) normalized = 'cyber-sakura';
+    if (!imgUrl) {
+      // Keep stored preference as 'custom' so async IndexedDB hydration can upgrade seamlessly
+      let storedMode = '';
+      try { storedMode = localStorage.getItem(WP_STORE) || ''; } catch (_) {}
+      if (storedMode === 'custom') {
+        imgUrl = (AGY_WALLPAPERS && AGY_WALLPAPERS['cyber-sakura']) || '';
+      } else {
+        normalized = 'cyber-sakura';
+      }
+    }
   }
   if (normalized !== 'none' && normalized !== 'custom') {
     imgUrl = (AGY_WALLPAPERS && AGY_WALLPAPERS[normalized]) || '';
     if (!imgUrl) normalized = 'none';
   }
 
-  const { bg, img, veil } = ensureWallpaperLayers();
+  const { bg, imgA, imgB, veil } = ensureWallpaperLayers();
   if (normalized === 'none' || !imgUrl) {
+    wpSwapToken += 1;
     document.documentElement.setAttribute('data-agy-wallpaper', 'off');
     bg.setAttribute('data-wp-active', '0');
     veil.setAttribute('data-wp-active', '0');
     bg.style.opacity = '0';
     bg.style.backgroundImage = 'none';
-    img.removeAttribute('src');
+    imgA.style.opacity = '0';
+    imgB.style.opacity = '0';
+    imgA.removeAttribute('src');
+    imgB.removeAttribute('src');
     veil.style.opacity = '0';
     clearWallpaperShellMarks();
   } else {
     document.documentElement.setAttribute('data-agy-wallpaper', 'on');
     bg.style.backgroundImage = 'none';
-    if (img.getAttribute('src') !== imgUrl) img.src = imgUrl;
     bg.setAttribute('data-wp-active', '1');
     veil.setAttribute('data-wp-active', '1');
     bg.style.opacity = '1';
     veil.style.opacity = '1';
+    crossfadeWallpaperTo(imgUrl);
     syncWallpaperShellTransparency();
     scheduleWallpaperShellSync(320);
     window.setTimeout(() => {
@@ -291,11 +413,109 @@ function applyWallpaperMode(mode) {
   window.__agyCurrentWallpaper = normalized;
   const menu = document.getElementById('agy-theme-menu');
   if (menu) {
-    menu.querySelectorAll('.agy-wp-card, .agy-wp-pill').forEach((el) => {
+    menu.querySelectorAll('.agy-wp-card, .agy-wp-pill, #agy-wp-custom-card').forEach((el) => {
       el.classList.toggle('active', el.dataset.wp === normalized);
     });
   }
+  syncCustomWallpaperCardUI();
   return normalized;
+}
+
+function cacheCustomPreviewToLocalStorage(file, previewObjUrl) {
+  const isGif = (file && file.type === 'image/gif') || /\.gif$/i.test((file && file.name) || '');
+  if (isGif && file.size <= 1250000) {
+    try {
+      const fr = new FileReader();
+      fr.onload = () => {
+        try { localStorage.setItem(WP_CUSTOM_STORE, String(fr.result || '')); } catch (_) {}
+      };
+      fr.readAsDataURL(file);
+      return;
+    } catch (_) {}
+  }
+  const probe = new Image();
+  probe.onload = () => {
+    try {
+      const maxW = 1920;
+      const maxH = 1080;
+      const scale = Math.min(1, maxW / (probe.naturalWidth || probe.width || 1920), maxH / (probe.naturalHeight || probe.height || 1080));
+      const w = Math.max(1, Math.round((probe.naturalWidth || probe.width || 1280) * scale));
+      const h = Math.max(1, Math.round((probe.naturalHeight || probe.height || 720) * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(probe, 0, 0, w, h);
+      const attempts = [
+        ['image/webp', 0.84],
+        ['image/webp', 0.68],
+        ['image/jpeg', 0.78],
+        ['image/jpeg', 0.58],
+      ];
+      for (let i = 0; i < attempts.length; i++) {
+        let dataUrl = '';
+        try { dataUrl = canvas.toDataURL(attempts[i][0], attempts[i][1]); } catch (_) {}
+        if (!dataUrl || !dataUrl.startsWith('data:image/')) continue;
+        if (dataUrl.length > 1500000 && i < attempts.length - 1) continue;
+        try {
+          localStorage.setItem(WP_CUSTOM_STORE, dataUrl);
+          return;
+        } catch (_) {}
+      }
+    } catch (_) {}
+  };
+  probe.src = previewObjUrl;
+}
+
+function applyCustomWallpaperFile(file) {
+  if (!file) return false;
+  const isImg = (file.type && file.type.startsWith('image/')) || /\.(png|jpe?g|webp|gif|avif|svg|bmp)$/i.test(file.name || '');
+  if (!isImg) {
+    say('请选择图片文件（PNG / JPG / WebP / GIF / AVIF）哦～', 2400);
+    return false;
+  }
+  const prevUrl = liveCustomWallpaperUrl;
+  let objUrl = '';
+  try {
+    objUrl = URL.createObjectURL(file);
+  } catch (_) {
+    objUrl = '';
+  }
+  if (!objUrl) {
+    say('读取本地壁纸失败，请换一张图片试试～', 2400);
+    return false;
+  }
+  // 0ms instant smooth crossfade via GPU Blob ObjectURL (supports 4K/8K & animated GIF!)
+  liveCustomWallpaperUrl = objUrl;
+  applyWallpaperMode('custom');
+  syncCustomWallpaperCardUI();
+  say('已丝滑换上你的本地壁纸！✨', 2200);
+  if (prevUrl && prevUrl !== objUrl) {
+    window.setTimeout(() => { try { URL.revokeObjectURL(prevUrl); } catch (_) {} }, 600);
+  }
+  // Persist verbatim Blob in IndexedDB (high-res + animated GIF) & lightweight cache in localStorage
+  void saveCustomWallpaperBlob(file);
+  cacheCustomPreviewToLocalStorage(file, objUrl);
+  return true;
+}
+
+function hydrateCustomWallpaperFromIDB() {
+  loadCustomWallpaperBlob().then((blob) => {
+    if (!blob) return;
+    try {
+      const objUrl = URL.createObjectURL(blob);
+      const prevUrl = liveCustomWallpaperUrl;
+      liveCustomWallpaperUrl = objUrl;
+      if (readWallpaperMode() === 'custom') {
+        applyWallpaperMode('custom');
+      } else {
+        syncCustomWallpaperCardUI();
+      }
+      if (prevUrl && prevUrl !== objUrl) {
+        window.setTimeout(() => { try { URL.revokeObjectURL(prevUrl); } catch (_) {} }, 600);
+      }
+    } catch (_) {}
+  });
 }
 
 function openCustomWallpaperPicker() {
@@ -304,45 +524,17 @@ function openCustomWallpaperPicker() {
     picker = document.createElement('input');
     picker.id = 'agy-wp-file-input';
     picker.type = 'file';
-    picker.accept = 'image/png,image/jpeg,image/webp,image/gif';
-    picker.style.display = 'none';
+    picker.accept = 'image/*,.png,.jpg,.jpeg,.webp,.gif,.avif,.svg,.bmp';
+    picker.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
     picker.addEventListener('change', () => {
       const file = picker.files && picker.files[0];
       picker.value = '';
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          const maxW = 1600;
-          const maxH = 900;
-          const scale = Math.min(1, maxW / img.width, maxH / img.height);
-          const w = Math.max(1, Math.round(img.width * scale));
-          const h = Math.max(1, Math.round(img.height * scale));
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          let dataUrl = '';
-          try { dataUrl = canvas.toDataURL('image/webp', 0.84); } catch (_) {}
-          if (!dataUrl || !dataUrl.startsWith('data:image/')) {
-            dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-          }
-          try {
-            localStorage.setItem(WP_CUSTOM_STORE, dataUrl);
-            applyWallpaperMode('custom');
-            say('已换上你的专属炫酷壁纸！✨', 2200);
-          } catch (_) {
-            say('图片过大，请换一张分辨率稍小的壁纸哦～', 2600);
-          }
-        };
-        img.src = String(reader.result || '');
-      };
-      reader.readAsDataURL(file);
+      applyCustomWallpaperFile(file);
     });
     document.body.appendChild(picker);
   }
+  picker.value = '';
   picker.click();
 }
 
@@ -586,7 +778,7 @@ const OWN_IDS = new Set([
   'agy-codex-ctx-btn', 'agy-codex-ctx-popover', 'agy-pulse-drawer',
   'agy-kit-update-wrap', 'agy-kit-update-pop',
   'agy-inline-ask-trigger', 'agy-inline-ask-popover', 'agy-inline-ask-pins',
-  'agy-wallpaper-layer', 'agy-wallpaper-img', 'agy-wallpaper-veil', 'agy-wp-file-input',
+  'agy-wallpaper-layer', 'agy-wallpaper-img', 'agy-wallpaper-img-alt', 'agy-wallpaper-veil', 'agy-wp-file-input',
   'agy-composer-sprint-bar', 'hakimi-wuhun-overlay', 'hakimi-shatter-canvas',
   'hakimi-comfort-card', 'hakimi-clones-layer', 'agy-real-effort-box'
 ]);
@@ -971,7 +1163,12 @@ html.agy-page-hidden .hakimi-glyph { animation-play-state: paused !important; }
   transform: translate3d(0, 0, 0);
   transition: opacity 0.28s ease;
 }
-#agy-wallpaper-img {
+#agy-wallpaper-img,
+#agy-wallpaper-img-alt,
+.agy-wp-img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -979,6 +1176,8 @@ html.agy-page-hidden .hakimi-glyph { animation-play-state: paused !important; }
   display: block;
   pointer-events: none;
   user-select: none;
+  will-change: opacity;
+  transition: opacity 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 #agy-wallpaper-veil {
   position: fixed;
@@ -1976,6 +2175,58 @@ html[data-agy-dark="1"] .agy-wp-card.active {
   display: flex;
   gap: 5px;
   padding: 2px 3px;
+}
+#agy-theme-menu.drag-over {
+  border-color: #cf2647 !important;
+  box-shadow: 0 0 0 2px rgba(207, 38, 71, 0.34), 0 16px 42px rgba(0, 0, 0, 0.45) !important;
+}
+#agy-wp-custom-card {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  margin: 2px 3px 3px;
+  padding: 4px 7px 4px 5px;
+  border-radius: 9px;
+  border: 1.5px solid var(--gs-line, rgba(128, 138, 155, 0.26));
+  background: var(--gs-side-hover, rgba(128, 138, 155, 0.08));
+  color: var(--gs-ink, #1f1f1f);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+#agy-wp-custom-card:hover {
+  border-color: var(--gs-accent, #1a73e8);
+}
+#agy-wp-custom-card.active {
+  border-color: #cf2647;
+  box-shadow: 0 0 0 2px rgba(207, 38, 71, 0.24);
+}
+html[data-agy-dark="1"] #agy-wp-custom-card.active {
+  border-color: #fb7185;
+  box-shadow: 0 0 0 2px rgba(251, 113, 133, 0.28);
+}
+.agy-wp-custom-thumb {
+  width: 34px;
+  height: 22px;
+  border-radius: 5px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(128, 138, 155, 0.28);
+}
+.agy-wp-custom-meta {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agy-wp-custom-tag {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.68;
 }
 .agy-wp-pill {
   flex: 1;
@@ -7197,9 +7448,14 @@ function openThemeMenu(anchorBtn) {
       '<div class="agy-tm-sep"></div>' +
       '<div class="agy-tm-sec">炫酷壁纸 · 毛玻璃画布</div>' +
       '<div class="agy-wp-grid">' + wpCardsHtml + '</div>' +
+      '<button type="button" id="agy-wp-custom-card" data-wp="custom" title="切换至已保存的本地壁纸（也可直接把图片拖入此菜单）">' +
+        '<span class="agy-wp-custom-thumb"></span>' +
+        '<span class="agy-wp-custom-meta">我的本地壁纸</span>' +
+        '<span class="agy-wp-custom-tag">一键应用</span>' +
+      '</button>' +
       '<div class="agy-wp-row">' +
         '<button type="button" class="agy-wp-pill" data-wp="none">纯净无图</button>' +
-        '<button type="button" class="agy-wp-pill" data-wp-upload="1">+ 本地壁纸</button>' +
+        '<button type="button" class="agy-wp-pill" data-wp-upload="1" title="支持 PNG / JPG / WebP / GIF / AVIF，也支持直接拖图到菜单里">+ 本地壁纸</button>' +
       '</div>' +
       '<div class="agy-wp-alpha-row">' +
         '<span>通透度</span>' +
@@ -7240,8 +7496,8 @@ function openThemeMenu(anchorBtn) {
       }
       if (t.closest('[data-wp-upload="1"]')) {
         e.stopPropagation();
-        closeThemeMenu();
         openCustomWallpaperPicker();
+        closeThemeMenu();
         return;
       }
       if (t.closest('[data-wuhun-toggle="1"], .agy-wuhun-row')) {
@@ -7265,6 +7521,23 @@ function openThemeMenu(anchorBtn) {
         applyWallpaperAlpha(alphaSlider.value);
       });
     }
+    menu.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      menu.classList.add('drag-over');
+    });
+    menu.addEventListener('dragleave', (e) => {
+      if (!menu.contains(e.relatedTarget)) menu.classList.remove('drag-over');
+    });
+    menu.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      menu.classList.remove('drag-over');
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) {
+        applyCustomWallpaperFile(file);
+      }
+    });
     document.body.appendChild(menu);
   }
   const wasOpen = menu.classList.contains('open');
@@ -7274,9 +7547,10 @@ function openThemeMenu(anchorBtn) {
   }
   updateThemeButtonUI(readThemeMode());
   const curWp = readWallpaperMode();
-  menu.querySelectorAll('.agy-wp-card, .agy-wp-pill').forEach((el) => {
+  menu.querySelectorAll('.agy-wp-card, .agy-wp-pill, #agy-wp-custom-card').forEach((el) => {
     el.classList.toggle('active', el.dataset.wp === curWp);
   });
+  syncCustomWallpaperCardUI();
   applyWuhunEnabled(readWuhunEnabled());
   const r = anchorBtn.getBoundingClientRect();
   menu.classList.add('open');
@@ -8935,7 +9209,7 @@ window.__AGY_THEME__ = {
   syncWallpaperShells: () => syncWallpaperShellTransparency(),
   debugWallpaper: () => {
     const bg = document.getElementById('agy-wallpaper-layer');
-    const img = document.getElementById('agy-wallpaper-img');
+    const img = document.getElementById(wpActiveSlot === 0 ? 'agy-wallpaper-img' : 'agy-wallpaper-img-alt') || document.getElementById('agy-wallpaper-img');
     const veil = document.getElementById('agy-wallpaper-veil');
     return {
       mode: readWallpaperMode(),
@@ -8943,6 +9217,7 @@ window.__AGY_THEME__ = {
       theme: document.documentElement.getAttribute('data-agy-theme'),
       dark: document.documentElement.getAttribute('data-agy-dark'),
       alpha: readWallpaperAlpha(),
+      hasLiveCustom: Boolean(liveCustomWallpaperUrl),
       imgComplete: Boolean(img && img.complete),
       imgSize: img ? [img.naturalWidth, img.naturalHeight] : [0, 0],
       layerOpacity: bg ? window.getComputedStyle(bg).opacity : null,
@@ -8975,6 +9250,7 @@ window.__AGY_I18N__ = {
 syncDarkAttribute();
 applyThemeMode(readThemeMode());
 applyWallpaperMode(readWallpaperMode());
+hydrateCustomWallpaperFromIDB();
 scan(document.body);
 ensureObserver();
 mountCodexRingAndTopTheme();
