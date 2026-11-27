@@ -9,6 +9,7 @@ const THEME_STORE = 'agy-theme-mode:v1';
 const WP_STORE = 'agy-wallpaper-mode:v1';
 const WP_CUSTOM_STORE = 'agy-wallpaper-custom:v1';
 const WP_ALPHA_STORE = 'agy-wallpaper-alpha:v1';
+const WUHUN_ENABLED_STORE = 'agy-wuhun-enabled:v1';
 const MUSE_COLLAPSED_STORE = 'agy-hakimi-collapsed:v1';
 const VALID_THEMES = ['codex', 'claude', 'google', 'off'];
 const VALID_WALLPAPERS = ['cyber-sakura', 'starlight-aurora', 'crimson-eclipse', 'cloud-atelier', 'custom', 'none'];
@@ -43,6 +44,34 @@ function readWallpaperAlpha() {
     if (Number.isFinite(raw) && raw >= 20 && raw <= 92) return Math.round(raw);
   } catch (_) {}
   return 68;
+}
+
+function readWuhunEnabled() {
+  try {
+    return localStorage.getItem(WUHUN_ENABLED_STORE) !== '0';
+  } catch (_) {
+    return true;
+  }
+}
+
+function applyWuhunEnabled(enabled) {
+  const on = Boolean(enabled);
+  try { localStorage.setItem(WUHUN_ENABLED_STORE, on ? '1' : '0'); } catch (_) {}
+  window.__agyWuhunEnabled = on;
+  const menu = document.getElementById('agy-theme-menu');
+  if (menu) {
+    const sw = menu.querySelector('[data-wuhun-toggle="1"]');
+    if (sw) {
+      sw.classList.toggle('on', on);
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    }
+    const demoBtn = menu.querySelector('[data-wuhun-demo="1"]');
+    if (demoBtn) demoBtn.style.display = on ? 'flex' : 'none';
+  }
+  if (!on && typeof wuhunState !== 'undefined' && (wuhunState.active || wuhunState.shattered)) {
+    healShatterScreen('quiet');
+  }
+  return on;
 }
 
 function readCustomWallpaperData() {
@@ -1812,6 +1841,46 @@ html[data-agy-dark="1"] .agy-wp-card.active {
   accent-color: var(--gs-accent, #1a73e8);
   cursor: pointer;
 }
+.agy-wuhun-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 6px 3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--gs-ink, #1f1f1f);
+}
+.agy-wuhun-switch {
+  position: relative;
+  width: 34px;
+  height: 19px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background: rgba(128, 138, 155, 0.34);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.16s ease;
+}
+.agy-wuhun-switch::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.agy-wuhun-switch.on {
+  background: linear-gradient(135deg, #cf2647, #9333ea);
+}
+.agy-wuhun-switch.on::after {
+  transform: translate3d(15px, 0, 0);
+}
 .agy-wuhun-trigger {
   margin-top: 2px;
   border: 1px solid rgba(207, 38, 71, 0.34);
@@ -1826,7 +1895,47 @@ html[data-agy-dark="1"] .agy-wp-card.active {
   align-items: center;
   justify-content: space-between;
 }
-html[data-agy-dark="1"] .agy-wuhun-trigger {
+html[data-agy-dark="1"] .agy-wuhun-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 6px 3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--gs-ink, #1f1f1f);
+}
+.agy-wuhun-switch {
+  position: relative;
+  width: 34px;
+  height: 19px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  background: rgba(128, 138, 155, 0.34);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.16s ease;
+}
+.agy-wuhun-switch::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.agy-wuhun-switch.on {
+  background: linear-gradient(135deg, #cf2647, #9333ea);
+}
+.agy-wuhun-switch.on::after {
+  transform: translate3d(15px, 0, 0);
+}
+.agy-wuhun-trigger {
   color: #fda4af;
   border-color: rgba(251, 113, 133, 0.36);
 }
@@ -4402,7 +4511,7 @@ function syncHakimiStateNow() {
     const curSteps = Number(window.__agyLastTelemetry?.metrics?.steps || 0);
     const stepBurst = curSteps - busyStepsBaseline;
     const cooldownOk = (Date.now() - lastWuhunAutoAt) > 360000;
-    if (cooldownOk && !wuhunState.active && !wuhunState.shattered && !stageEl.classList.contains('collapsed') && (busyElapsed >= 36000 || stepBurst >= 7)) {
+    if (readWuhunEnabled() && cooldownOk && !wuhunState.active && !wuhunState.shattered && !stageEl.classList.contains('collapsed') && (busyElapsed >= 36000 || stepBurst >= 7)) {
       triggerHakimiWuhunRage(false);
     }
   } else if (wasBusy) {
@@ -4576,6 +4685,7 @@ function mountMuseHakimi() {
     e.preventDefault();
     e.stopPropagation();
     if (e.altKey || e.metaKey || e.ctrlKey) {
+      if (!readWuhunEnabled()) return;
       triggerHakimiWuhunRage(true);
       return;
     }
@@ -6945,6 +7055,7 @@ function openThemeMenu(anchorBtn) {
     }).join('');
 
     const alphaVal = readWallpaperAlpha();
+    const wuhunOn = readWuhunEnabled();
     menu.innerHTML =
       '<div class="agy-tm-sec">工作台主题</div>' +
       themeHtml +
@@ -6961,7 +7072,11 @@ function openThemeMenu(anchorBtn) {
         '<span id="agy-wp-alpha-val">' + alphaVal + '%</span>' +
       '</div>' +
       '<div class="agy-tm-sep"></div>' +
-      '<button type="button" class="agy-wuhun-trigger" data-wuhun-demo="1">' +
+      '<div class="agy-wuhun-row">' +
+        '<span>⚡ 法天象地碎屏互动</span>' +
+        '<button type="button" role="switch" class="agy-wuhun-switch' + (wuhunOn ? ' on' : '') + '" data-wuhun-toggle="1" aria-checked="' + (wuhunOn ? 'true' : 'false') + '" title="不喜欢法天象地碎屏可随时一键关闭"></button>' +
+      '</div>' +
+      '<button type="button" class="agy-wuhun-trigger" data-wuhun-demo="1" style="display:' + (wuhunOn ? 'flex' : 'none') + '">' +
         '<span>⚡ 哈基米 · 法天象地碎屏</span><span>试玩</span>' +
       '</button>';
 
@@ -6994,6 +7109,13 @@ function openThemeMenu(anchorBtn) {
         openCustomWallpaperPicker();
         return;
       }
+      if (t.closest('[data-wuhun-toggle="1"]')) {
+        e.stopPropagation();
+        const nextOn = !readWuhunEnabled();
+        applyWuhunEnabled(nextOn);
+        say(nextOn ? '已开启「法天象地」碎屏互动 ⚡' : '已关闭「法天象地」碎屏互动，专注安安静静写代码～', 2200);
+        return;
+      }
       if (t.closest('[data-wuhun-demo="1"]')) {
         e.stopPropagation();
         closeThemeMenu();
@@ -7020,6 +7142,7 @@ function openThemeMenu(anchorBtn) {
   menu.querySelectorAll('.agy-wp-card, .agy-wp-pill').forEach((el) => {
     el.classList.toggle('active', el.dataset.wp === curWp);
   });
+  applyWuhunEnabled(readWuhunEnabled());
   const r = anchorBtn.getBoundingClientRect();
   menu.classList.add('open');
   const w = menu.offsetWidth || 248;
@@ -8672,6 +8795,8 @@ window.__AGY_THEME__ = {
   setWallpaperAlpha: (a) => applyWallpaperAlpha(a),
   pickWallpaper: () => openCustomWallpaperPicker(),
   wuhun: () => triggerHakimiWuhunRage(true),
+  setWuhunEnabled: (v) => applyWuhunEnabled(v),
+  getWuhunEnabled: () => readWuhunEnabled(),
   openPulse: () => togglePulseSidePanel(),
   closeInlineAsk: () => closeInlineAskPopover(),
 };
