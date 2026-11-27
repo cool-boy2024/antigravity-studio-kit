@@ -861,113 +861,145 @@ html[data-agy-dark="1"] #agy-wallpaper-veil {
   100% { opacity: 0; transform: translate3d(var(--rx, 0px), 0, 0) scale(2.4); }
 }
 
-/* ==================== 法天象地 · 武魂真身 · 碎屏破压互动 ==================== */
+/* ==================== 法天象地 · 武魂真身 · 丝滑长大收回 & 透明物理碎屏互动 ==================== */
 #hakimi-wuhun-overlay {
   position: fixed;
   inset: 0;
   z-index: 999990;
   pointer-events: none;
   display: none;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
 }
 #hakimi-wuhun-overlay.open {
-  display: flex;
+  display: block;
 }
-.wuhun-backdrop {
+.wuhun-aura-wash {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 54%, rgba(225, 29, 72, 0.22) 0%, rgba(88, 28, 135, 0.26) 44%, rgba(8, 10, 18, 0.42) 100%);
+  background:
+    radial-gradient(ellipse at 50% 68%, rgba(217, 158, 42, 0.16) 0%, rgba(16, 128, 118, 0.09) 38%, transparent 72%),
+    radial-gradient(ellipse at 50% 24%, rgba(251, 191, 36, 0.10) 0%, transparent 56%);
   opacity: 0;
-  transition: opacity 0.35s ease;
+  will-change: opacity;
 }
-#hakimi-wuhun-overlay.phase-avatar .wuhun-backdrop,
-#hakimi-wuhun-overlay.phase-punch .wuhun-backdrop {
-  opacity: 1;
-}
-.wuhun-ring {
+.wuhun-impact-flash {
   position: absolute;
-  border-radius: 50%;
-  border: 2px solid rgba(251, 191, 36, 0.72);
-  box-shadow: 0 0 28px rgba(244, 63, 94, 0.52), inset 0 0 22px rgba(251, 191, 36, 0.36);
+  inset: 0;
+  background: radial-gradient(circle at var(--ix, 50%) var(--iy, 44%), rgba(255, 251, 235, 0.50) 0%, rgba(245, 158, 11, 0.20) 28%, transparent 64%);
   opacity: 0;
-  transform: translate3d(0, 0, 0) scale(0.35);
-  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  will-change: opacity;
+}
+.wuhun-rings-anchor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
   will-change: transform, opacity;
 }
-.wuhun-ring.r1 { width: 320px; height: 320px; border-style: dashed; }
-.wuhun-ring.r2 { width: 450px; height: 450px; border-color: rgba(244, 63, 94, 0.76); border-width: 2.5px; }
-.wuhun-ring.r3 { width: 580px; height: 580px; border-color: rgba(168, 85, 247, 0.56); border-style: dotted; }
-#hakimi-wuhun-overlay.phase-avatar .wuhun-ring {
-  opacity: 0.92;
-  transform: translate3d(0, 0, 0) scale(1);
-  animation: wuhun-ring-spin 7.5s linear infinite;
-}
-#hakimi-wuhun-overlay.phase-avatar .wuhun-ring.r2 {
-  animation-direction: reverse;
-  animation-duration: 5.2s;
-}
-#hakimi-wuhun-overlay.phase-punch .wuhun-ring {
+.wuhun-wheel-svg {
+  position: absolute;
+  left: -240px;
+  top: -240px;
+  width: 480px;
+  height: 480px;
+  overflow: visible;
   opacity: 0;
-  transform: translate3d(0, 0, 0) scale(2.1);
-}
-@keyframes wuhun-ring-spin {
-  from { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
-  to   { transform: translate3d(0, 0, 0) rotate(360deg) scale(1); }
-}
-.wuhun-avatar {
-  position: relative;
-  width: 260px;
-  height: 220px;
-  opacity: 0;
-  transform: translate3d(0, 120px, 0) scale(0.55);
-  transition: transform 0.62s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.32s ease;
   will-change: transform, opacity;
 }
-.wuhun-avatar img {
+.wuhun-wheel-outer {
+  position: absolute;
+  left: -300px;
+  top: -300px;
+  width: 600px;
+  height: 600px;
+  overflow: visible;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.wuhun-ribbons-svg {
+  position: absolute;
+  left: -340px;
+  top: -190px;
+  width: 680px;
+  height: 380px;
+  overflow: visible;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.wuhun-actor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 110px;
+  height: 90px;
+  transform-origin: 50% 94%;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.wuhun-actor img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  opacity: 0.90;
+  pointer-events: none;
+  opacity: 0.86;
 }
-.wuhun-avatar-aura {
+.wuhun-actor-aura {
   position: absolute;
-  inset: -44px;
+  inset: -34px -44px -14px -44px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.45) 0%, rgba(244, 63, 94, 0.38) 45%, transparent 72%);
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(253, 224, 71, 0.42) 0%, rgba(217, 119, 6, 0.24) 36%, rgba(20, 184, 166, 0.14) 58%, transparent 76%);
   z-index: -1;
 }
-#hakimi-wuhun-overlay.phase-avatar .wuhun-avatar {
-  opacity: 0.96;
-  transform: translate3d(0, -10px, 0) scale(1.65);
+/* 额间天眼金印（杨戬元神标志性竖目金纹） */
+.wuhun-third-eye {
+  position: absolute;
+  left: 50%;
+  top: 23%;
+  width: 14px;
+  height: 22px;
+  margin-left: -7px;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
 }
-#hakimi-wuhun-overlay.phase-punch .wuhun-avatar {
-  opacity: 0.98;
-  transition: transform 0.20s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
-  transform: translate3d(0, 0, 0) scale(3.15);
+.wuhun-fist-orb {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 52px;
+  height: 52px;
+  margin: -26px 0 0 -26px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 251, 235, 0.98) 0%, rgba(251, 191, 36, 0.88) 34%, rgba(217, 119, 6, 0.48) 64%, rgba(13, 148, 136, 0.22) 82%, transparent 100%);
+  box-shadow: 0 0 32px rgba(245, 158, 11, 0.88), 0 0 54px rgba(253, 224, 71, 0.58);
+  opacity: 0;
+  transform: translate3d(0, 0, 0) scale(0.2);
+  will-change: transform, opacity;
 }
 .wuhun-banner {
-  position: absolute;
-  top: 16%;
-  padding: 10px 26px;
+  position: fixed;
+  left: 50%;
+  top: 52px;
+  padding: 8px 26px;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(136, 19, 55, 0.94), rgba(88, 28, 135, 0.94));
-  border: 1.5px solid rgba(251, 191, 36, 0.85);
-  box-shadow: 0 12px 36px rgba(225, 29, 72, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+  background: linear-gradient(135deg, rgba(24, 20, 14, 0.86), rgba(15, 38, 38, 0.86));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(251, 191, 36, 0.86);
+  box-shadow: 0 10px 30px rgba(217, 119, 6, 0.34), inset 0 1px 1px rgba(254, 243, 199, 0.42);
   color: #fef3c7;
-  font-size: 19px;
+  font-size: 16px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
+  white-space: nowrap;
   opacity: 0;
-  transform: translate3d(0, -18px, 0) scale(0.86);
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  transform: translate3d(-50%, -14px, 0) scale(0.90);
+  will-change: transform, opacity;
 }
-#hakimi-wuhun-overlay.phase-avatar .wuhun-banner,
-#hakimi-wuhun-overlay.phase-punch .wuhun-banner {
-  opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-}
+
 #hakimi-shatter-canvas {
   position: fixed;
   inset: 0;
@@ -982,48 +1014,49 @@ html[data-agy-dark="1"] #agy-wallpaper-veil {
 }
 @keyframes agy-screen-shake {
   0%, 100% { transform: translate3d(0, 0, 0); }
-  15% { transform: translate3d(-7px, 5px, 0); }
-  32% { transform: translate3d(7px, -6px, 0); }
-  48% { transform: translate3d(-5px, -4px, 0); }
-  66% { transform: translate3d(5px, 4px, 0); }
-  82% { transform: translate3d(-2px, 2px, 0); }
+  14% { transform: translate3d(-6px, 4px, 0); }
+  30% { transform: translate3d(6px, -5px, 0); }
+  48% { transform: translate3d(-4px, -3px, 0); }
+  66% { transform: translate3d(4px, 3px, 0); }
+  84% { transform: translate3d(-2px, 1px, 0); }
 }
 body.agy-wuhun-shake {
   animation: agy-screen-shake 0.36s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
+/* 轻巧不遮挡任务的底部安慰气泡（仅在哈基米缩回小小只后浮在会话框上方） */
 #hakimi-comfort-card {
   position: fixed;
-  left: 50%;
-  top: 56%;
+  left: 0;
+  top: 0;
   z-index: 999997;
-  width: min(408px, calc(100vw - 28px));
-  padding: 15px 16px 14px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.90);
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 20px 56px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(225, 29, 72, 0.18);
+  width: min(372px, calc(100vw - 24px));
+  padding: 11px 13px 11px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(175%);
+  -webkit-backdrop-filter: blur(20px) saturate(175%);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(225, 29, 72, 0.16);
   color: #1b1f24;
   display: none;
   flex-direction: column;
-  gap: 10px;
-  transform: translate3d(-50%, -50%, 0);
-  animation: agy-comfort-in 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+  gap: 8px;
+  will-change: transform, opacity;
+  animation: agy-comfort-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 html[data-agy-dark="1"] #hakimi-comfort-card {
-  background: rgba(24, 24, 34, 0.90);
+  background: rgba(24, 25, 36, 0.88);
   border-color: rgba(255, 255, 255, 0.16);
   color: #f3f4f6;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(251, 113, 133, 0.28);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(251, 113, 133, 0.26);
 }
 #hakimi-comfort-card.open {
   display: flex;
 }
 @keyframes agy-comfort-in {
-  from { opacity: 0; transform: translate3d(-50%, -44%, 0) scale(0.92); }
-  to   { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
+  from { opacity: 0; filter: blur(2px); }
+  to   { opacity: 1; filter: blur(0); }
 }
 .hcc-head {
   display: flex;
@@ -1032,28 +1065,41 @@ html[data-agy-dark="1"] #hakimi-comfort-card {
   gap: 8px;
 }
 .hcc-title {
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 700;
   color: #cf2647;
 }
 html[data-agy-dark="1"] .hcc-title { color: #fb7185; }
+.hcc-close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.62;
+  font-size: 14px;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.hcc-close:hover { opacity: 1; background: rgba(128, 138, 155, 0.16); }
 .hcc-desc {
-  font-size: 12px;
-  line-height: 1.5;
+  font-size: 11.5px;
+  line-height: 1.45;
   opacity: 0.86;
 }
 .hcc-actions {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 6px;
 }
 .hcc-btn {
   border: 1px solid rgba(128, 138, 155, 0.24);
   background: rgba(128, 138, 155, 0.08);
   color: inherit;
-  border-radius: 11px;
-  padding: 8px 12px;
-  font-size: 12px;
+  border-radius: 10px;
+  padding: 6.5px 10px;
+  font-size: 11.5px;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
@@ -1071,15 +1117,15 @@ html[data-agy-dark="1"] .hcc-title { color: #fb7185; }
   background: linear-gradient(135deg, #db2777 0%, #9333ea 55%, #2563eb 100%);
   border-color: transparent;
   color: #ffffff;
-  box-shadow: 0 6px 18px rgba(147, 51, 234, 0.34);
+  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.30);
 }
 .hcc-btn.subagent {
   background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
   border-color: transparent;
   color: #ffffff;
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.32);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.28);
 }
-.hcc-btn small { font-weight: 500; opacity: 0.86; font-size: 10.5px; }
+.hcc-btn small { font-weight: 500; opacity: 0.88; font-size: 10.5px; }
 
 /* Orbiting Parallel Sub-Agent Clone Badges beside Composer */
 #hakimi-clones-layer {
@@ -2560,6 +2606,8 @@ let lastWuhunAutoAt = 0;
 let wuhunState = {
   active: false,
   shattered: false,
+  shatterStartMs: 0,
+  cutsceneRafId: 0,
   cracks: [],
   shards: [],
   impactX: 0,
@@ -3528,6 +3576,7 @@ function layoutMuseStageNow() {
     museMotion.targetX = Math.max(minX, Math.min(maxX, museMotion.targetX));
   }
   applyStageTransform(museMotion.x, baseY);
+  positionComfortCardNearComposer();
 
   if (museMotion.reducedMotion && bodyEl) {
     bodyEl.style.transform = 'translate3d(0,0,0)';
@@ -3555,87 +3604,114 @@ function syncHakimiStateThrottled(immediate = false) {
   syncHakimiStateNow();
 }
 
-// ==================== 法天象地 · 武魂真身 · 物理碎屏互动系统 ====================
+// ==================== 法天象地 · 武魂真身 · 丝滑成长/收回 & 透明物理碎屏互动系统 ====================
 
 function generateGlassFractureModel(cx, cy, w, h) {
   const maxR = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy)) * 0.96;
   const rays = [];
-  const rayCount = 15;
+  const rayCount = 18;
   for (let i = 0; i < rayCount; i++) {
-    const baseAngle = (i / rayCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.24;
-    const len = maxR * (0.42 + Math.random() * 0.54);
-    const pts = [{ x: cx, y: cy }];
+    const baseAngle = (i / rayCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.22;
+    const len = maxR * (0.44 + Math.random() * 0.52);
+    const pts = [{ x: cx, y: cy, d: 0 }];
     let curX = cx;
     let curY = cy;
     let ang = baseAngle;
-    const steps = 8 + Math.floor(Math.random() * 6);
+    const steps = 9 + Math.floor(Math.random() * 6);
     const stepLen = len / steps;
     const branches = [];
     for (let s = 1; s <= steps; s++) {
-      ang += (Math.random() - 0.5) * 0.24;
-      curX += Math.cos(ang) * stepLen * (0.85 + Math.random() * 0.32);
-      curY += Math.sin(ang) * stepLen * (0.85 + Math.random() * 0.32);
-      pts.push({ x: curX, y: curY });
-      if (s >= 2 && s <= steps - 2 && Math.random() < 0.42) {
-        const bAng = ang + (Math.random() < 0.5 ? -1 : 1) * (0.34 + Math.random() * 0.45);
-        const bLen = stepLen * (1.2 + Math.random() * 2.2);
+      ang += (Math.random() - 0.5) * 0.22;
+      curX += Math.cos(ang) * stepLen * (0.85 + Math.random() * 0.30);
+      curY += Math.sin(ang) * stepLen * (0.85 + Math.random() * 0.30);
+      const dist = Math.hypot(curX - cx, curY - cy);
+      pts.push({ x: curX, y: curY, d: dist });
+      if (s >= 2 && s <= steps - 2 && Math.random() < 0.45) {
+        const bAng = ang + (Math.random() < 0.5 ? -1 : 1) * (0.32 + Math.random() * 0.44);
+        const bLen = stepLen * (1.1 + Math.random() * 2.1);
         const bMidX = curX + Math.cos(bAng) * bLen * 0.5;
         const bMidY = curY + Math.sin(bAng) * bLen * 0.5;
-        const bEndX = bMidX + Math.cos(bAng + (Math.random() - 0.5) * 0.28) * bLen * 0.55;
-        const bEndY = bMidY + Math.sin(bAng + (Math.random() - 0.5) * 0.28) * bLen * 0.55;
-        branches.push([{ x: curX, y: curY }, { x: bMidX, y: bMidY }, { x: bEndX, y: bEndY }]);
+        const bEndX = bMidX + Math.cos(bAng + (Math.random() - 0.5) * 0.26) * bLen * 0.55;
+        const bEndY = bMidY + Math.sin(bAng + (Math.random() - 0.5) * 0.26) * bLen * 0.55;
+        branches.push({
+          d: dist,
+          pts: [{ x: curX, y: curY }, { x: bMidX, y: bMidY }, { x: bEndX, y: bEndY }]
+        });
       }
     }
-    rays.push({ angle: baseAngle, pts, branches, width: 1.0 + Math.random() * 1.4 });
+    rays.push({ angle: baseAngle, maxDist: pts[pts.length - 1].d, pts, branches, width: 0.75 + Math.random() * 0.95 });
   }
 
-  // Concentric spiderweb rings linking neighboring radial rays
+  // Concentric spiderweb rings & subtle ultra-transparent polygonal glass facets near impact core
   const rings = [];
-  const ringRadii = [34, 72, 128, 205, 310];
+  const facets = [];
+  const ringRadii = [22, 52, 96, 158, 240, 345];
+  const ringPts = [];
   for (let rIdx = 0; rIdx < ringRadii.length; rIdx++) {
-    const targetR = ringRadii[rIdx] + (Math.random() - 0.5) * 14;
+    const targetR = ringRadii[rIdx] + (Math.random() - 0.5) * 10;
     const segs = [];
+    const ptsAtR = [];
     for (let i = 0; i < rays.length; i++) {
-      if (rIdx >= 2 && Math.random() < 0.26) continue;
       const a = rays[i];
-      const b = rays[(i + 1) % rays.length];
       const pickPt = (ray) => {
         for (let k = 1; k < ray.pts.length; k++) {
-          const d = Math.hypot(ray.pts[k].x - cx, ray.pts[k].y - cy);
-          if (d >= targetR) {
+          if (ray.pts[k].d >= targetR) {
             const p0 = ray.pts[k - 1];
             const p1 = ray.pts[k];
-            const d0 = Math.hypot(p0.x - cx, p0.y - cy);
-            const t = d > d0 ? Math.max(0, Math.min(1, (targetR - d0) / (d - d0))) : 0;
+            const t = p1.d > p0.d ? Math.max(0, Math.min(1, (targetR - p0.d) / (p1.d - p0.d))) : 0;
             return { x: p0.x + (p1.x - p0.x) * t, y: p0.y + (p1.y - p0.y) * t };
           }
         }
         return null;
       };
-      const pa = pickPt(a);
-      const pb = pickPt(b);
+      ptsAtR.push(pickPt(a));
+    }
+    ringPts.push(ptsAtR);
+    for (let i = 0; i < rays.length; i++) {
+      if (rIdx >= 3 && Math.random() < 0.30) continue;
+      const pa = ptsAtR[i];
+      const pb = ptsAtR[(i + 1) % rays.length];
       if (pa && pb) segs.push([pa, pb]);
+      if (rIdx >= 1 && rIdx <= 2 && Math.random() < 0.32) {
+        const prevA = ringPts[rIdx - 1][i];
+        const prevB = ringPts[rIdx - 1][(i + 1) % rays.length];
+        if (pa && pb && prevA && prevB) {
+          facets.push({ poly: [prevA, prevB, pb, pa], tint: Math.random(), d: targetR });
+        }
+      }
     }
     rings.push({ r: targetR, segs });
   }
 
-  // Flying micro glass shards
+  // Natural gravity-falling micro glass shards
   const shards = [];
-  for (let i = 0; i < 38; i++) {
+  for (let i = 0; i < 34; i++) {
     const ang = Math.random() * Math.PI * 2;
-    const spd = 2.8 + Math.random() * 9.5;
+    const spd = 2.4 + Math.random() * 8.2;
     shards.push({
-      x: cx + (Math.random() - 0.5) * 26,
-      y: cy + (Math.random() - 0.5) * 26,
+      x: cx + (Math.random() - 0.5) * 20,
+      y: cy + (Math.random() - 0.5) * 20,
       vx: Math.cos(ang) * spd,
-      vy: Math.sin(ang) * spd - 1.6,
-      size: 4 + Math.random() * 11,
+      vy: Math.sin(ang) * spd - 2.0,
+      size: 3.5 + Math.random() * 9.5,
       rot: Math.random() * Math.PI * 2,
-      vrot: (Math.random() - 0.5) * 0.22,
-      alpha: 0.92
+      vrot: (Math.random() - 0.5) * 0.20,
+      alpha: 0.88
     });
   }
-  return { rays, rings, shards };
+  return { maxR, rays, rings, facets, shards };
+}
+
+function positionComfortCardNearComposer() {
+  const card = document.getElementById('hakimi-comfort-card');
+  if (!card || !card.classList.contains('open')) return;
+  const cw = card.offsetWidth || 368;
+  const ch = card.offsetHeight || 164;
+  const anchorX = museGeom.visible ? (museGeom.composerLeft + museGeom.composerWidth * 0.5) : (window.innerWidth * 0.5);
+  const anchorTop = museGeom.visible ? (museGeom.baseY - ch - 12) : (window.innerHeight - ch - 110);
+  const left = Math.max(12, Math.min(window.innerWidth - cw - 12, Math.round(anchorX - cw * 0.5)));
+  const top = Math.max(52, Math.min(window.innerHeight - ch - 16, Math.round(anchorTop)));
+  card.style.transform = 'translate3d(' + left + 'px,' + top + 'px,0)';
 }
 
 function drawShatterFrame() {
@@ -3653,6 +3729,13 @@ function drawShatterFrame() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
+  // Progressive outward crack propagation (0 -> 1 over 380ms) & smooth reverse golden healing
+  const now = performance.now();
+  let growP = 1;
+  if (wuhunState.shatterStartMs) {
+    growP = Math.min(1, Math.max(0.05, (now - wuhunState.shatterStartMs) / 380));
+    growP = 1 - Math.pow(1 - growP, 3);
+  }
   const heal = wuhunState.healing ? wuhunState.healProgress : 0;
   const alphaMul = Math.max(0, 1 - heal);
   if (alphaMul <= 0.01) {
@@ -3666,25 +3749,52 @@ function drawShatterFrame() {
   const cx = wuhunState.impactX;
   const cy = wuhunState.impactY;
   const dark = isDarkMode();
+  const model = wuhunState.cracks;
+  const activeRadius = (model ? model.maxR : 800) * growP * (wuhunState.healing ? Math.max(0, 1 - heal * 0.92) : 1);
 
-  // Impact core radial glass stress glow + subtle prism refraction shifting with pointer
-  const glareShiftX = (wuhunState.mouseX - cx) * 0.06;
-  const glareShiftY = (wuhunState.mouseY - cy) * 0.06;
-  const impactGrad = ctx.createRadialGradient(cx + glareShiftX, cy + glareShiftY, 2, cx, cy, 185);
-  impactGrad.addColorStop(0, 'rgba(255, 255, 255, ' + (0.62 * alphaMul).toFixed(3) + ')');
-  impactGrad.addColorStop(0.18, 'rgba(251, 113, 133, ' + (0.28 * alphaMul).toFixed(3) + ')');
-  impactGrad.addColorStop(0.55, 'rgba(56, 189, 248, ' + (0.10 * alphaMul).toFixed(3) + ')');
-  impactGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-  ctx.fillStyle = impactGrad;
+  // Ultra-clean transparent glass stress core (tiny pulverized center, NEVER blocks reading!)
+  const glareShiftX = (wuhunState.mouseX - cx) * 0.04;
+  const glareShiftY = (wuhunState.mouseY - cy) * 0.04;
+  const coreGrad = ctx.createRadialGradient(cx + glareShiftX, cy + glareShiftY, 1, cx, cy, 46);
+  coreGrad.addColorStop(0, 'rgba(255, 255, 255, ' + (0.48 * alphaMul).toFixed(3) + ')');
+  coreGrad.addColorStop(0.32, 'rgba(226, 232, 240, ' + (0.14 * alphaMul).toFixed(3) + ')');
+  coreGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  ctx.fillStyle = coreGrad;
   ctx.beginPath();
-  ctx.arc(cx, cy, 185, 0, Math.PI * 2);
+  ctx.arc(cx, cy, 46, 0, Math.PI * 2);
   ctx.fill();
 
-  const drawPolyline = (pts, strokeStyle, lw) => {
+  // Ultra-faint refractive glass facets that catch light subtly when moving the mouse
+  if (model && model.facets) {
+    const pointerAng = Math.atan2(wuhunState.mouseY - cy, wuhunState.mouseX - cx);
+    for (let i = 0; i < model.facets.length; i++) {
+      const f = model.facets[i];
+      if (f.d > activeRadius) continue;
+      const glint = 0.5 + 0.5 * Math.cos(pointerAng + f.tint * Math.PI * 2);
+      const a = (0.015 + glint * 0.045) * alphaMul;
+      ctx.beginPath();
+      ctx.moveTo(f.poly[0].x, f.poly[0].y);
+      for (let k = 1; k < f.poly.length; k++) ctx.lineTo(f.poly[k].x, f.poly[k].y);
+      ctx.closePath();
+      ctx.fillStyle = (f.tint > 0.5 ? 'rgba(224, 242, 254, ' : 'rgba(255, 255, 255, ') + a.toFixed(3) + ')';
+      ctx.fill();
+    }
+  }
+
+  const drawClippedPolyline = (pts, strokeStyle, lw) => {
     if (!pts || pts.length < 2) return;
     ctx.beginPath();
     ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i];
+      if (typeof p.d === 'number' && p.d > activeRadius) {
+        const prev = pts[i - 1];
+        const t = p.d > prev.d ? Math.max(0, Math.min(1, (activeRadius - prev.d) / (p.d - prev.d))) : 0;
+        ctx.lineTo(prev.x + (p.x - prev.x) * t, prev.y + (p.y - prev.y) * t);
+        break;
+      }
+      ctx.lineTo(p.x, p.y);
+    }
     ctx.strokeStyle = strokeStyle;
     ctx.lineWidth = lw;
     ctx.stroke();
@@ -3693,40 +3803,41 @@ function drawShatterFrame() {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // Dark fracture shadow edge + crisp specular white glass reflection edge
   const shadowCol = dark
-    ? 'rgba(0, 0, 0, ' + (0.68 * alphaMul).toFixed(3) + ')'
-    : 'rgba(15, 23, 42, ' + (0.34 * alphaMul).toFixed(3) + ')';
-  const prismCol = wuhunState.healing
-    ? 'rgba(250, 204, 21, ' + (0.95 * alphaMul).toFixed(3) + ')'
+    ? 'rgba(0, 0, 0, ' + (0.58 * alphaMul).toFixed(3) + ')'
+    : 'rgba(15, 23, 42, ' + (0.28 * alphaMul).toFixed(3) + ')';
+  const glassCol = wuhunState.healing
+    ? 'rgba(250, 204, 21, ' + (0.92 * alphaMul).toFixed(3) + ')'
     : (dark
-      ? 'rgba(241, 245, 249, ' + (0.86 * alphaMul).toFixed(3) + ')'
-      : 'rgba(255, 255, 255, ' + (0.94 * alphaMul).toFixed(3) + ')');
+      ? 'rgba(226, 232, 240, ' + (0.76 * alphaMul).toFixed(3) + ')'
+      : 'rgba(255, 255, 255, ' + (0.88 * alphaMul).toFixed(3) + ')');
 
-  const model = wuhunState.cracks;
   if (model && model.rays) {
     for (let i = 0; i < model.rays.length; i++) {
       const ray = model.rays[i];
       ctx.save();
-      ctx.translate(1.2, 1.4);
-      drawPolyline(ray.pts, shadowCol, ray.width + 0.9);
+      ctx.translate(0.9, 1.0);
+      drawClippedPolyline(ray.pts, shadowCol, ray.width + 0.6);
       ctx.restore();
-      drawPolyline(ray.pts, prismCol, ray.width);
+      drawClippedPolyline(ray.pts, glassCol, ray.width);
       for (let b = 0; b < ray.branches.length; b++) {
-        drawPolyline(ray.branches[b], shadowCol, 1.3);
-        drawPolyline(ray.branches[b], prismCol, 0.85);
+        const br = ray.branches[b];
+        if (br.d > activeRadius) continue;
+        drawClippedPolyline(br.pts, shadowCol, 1.0);
+        drawClippedPolyline(br.pts, glassCol, 0.65);
       }
     }
     for (let r = 0; r < model.rings.length; r++) {
       const ring = model.rings[r];
+      if (ring.r > activeRadius) continue;
       for (let s = 0; s < ring.segs.length; s++) {
-        drawPolyline(ring.segs[s], shadowCol, 1.4);
-        drawPolyline(ring.segs[s], prismCol, 0.9);
+        drawClippedPolyline(ring.segs[s], shadowCol, 1.1);
+        drawClippedPolyline(ring.segs[s], glassCol, 0.72);
       }
     }
   }
 
-  // Shimmering flying shards (only animated while active)
+  // Gravity glass shards flying outward & fading naturally
   let hasMovingShards = false;
   for (let i = 0; i < wuhunState.shards.length; i++) {
     const sh = wuhunState.shards[i];
@@ -3734,37 +3845,36 @@ function drawShatterFrame() {
     hasMovingShards = true;
     sh.x += sh.vx;
     sh.y += sh.vy;
-    sh.vy += 0.24;
-    sh.vx *= 0.985;
+    sh.vy += 0.26;
+    sh.vx *= 0.986;
     sh.rot += sh.vrot;
-    sh.alpha *= 0.965;
+    sh.alpha *= 0.962;
     ctx.save();
     ctx.translate(sh.x, sh.y);
     ctx.rotate(sh.rot);
     ctx.beginPath();
     ctx.moveTo(0, -sh.size * 0.65);
-    ctx.lineTo(sh.size * 0.55, sh.size * 0.45);
+    ctx.lineTo(sh.size * 0.52, sh.size * 0.45);
     ctx.lineTo(-sh.size * 0.45, sh.size * 0.35);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255, 255, 255, ' + (sh.alpha * 0.72 * alphaMul).toFixed(3) + ')';
+    ctx.fillStyle = 'rgba(255, 255, 255, ' + (sh.alpha * 0.62 * alphaMul).toFixed(3) + ')';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(186, 230, 253, ' + (sh.alpha * 0.85 * alphaMul).toFixed(3) + ')';
-    ctx.lineWidth = 0.8;
+    ctx.strokeStyle = 'rgba(186, 230, 253, ' + (sh.alpha * 0.78 * alphaMul).toFixed(3) + ')';
+    ctx.lineWidth = 0.75;
     ctx.stroke();
     ctx.restore();
   }
 
-  // Golden healing stardust wave when comforted!
   if (wuhunState.healing) {
-    wuhunState.healProgress += 0.045;
-    const waveR = wuhunState.healProgress * Math.max(w, h) * 0.85;
+    wuhunState.healProgress += 0.026;
+    const waveR = wuhunState.healProgress * Math.max(w, h) * 0.9;
     ctx.beginPath();
     ctx.arc(cx, cy, waveR, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(250, 204, 21, ' + (0.78 * alphaMul).toFixed(3) + ')';
-    ctx.lineWidth = 6 * alphaMul;
+    ctx.strokeStyle = 'rgba(250, 204, 21, ' + (0.72 * alphaMul).toFixed(3) + ')';
+    ctx.lineWidth = 4.5 * alphaMul;
     ctx.stroke();
     wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
-  } else if (hasMovingShards) {
+  } else if (growP < 1 || hasMovingShards) {
     wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
   } else {
     wuhunState.rafId = 0;
@@ -3776,6 +3886,11 @@ function clearWuhunTimers() {
     window.clearTimeout(wuhunState.timers[i]);
   }
   wuhunState.timers = [];
+  if (wuhunState.cutsceneRafId) {
+    window.cancelAnimationFrame(wuhunState.cutsceneRafId);
+    wuhunState.cutsceneRafId = 0;
+  }
+  if (spriteEl) spriteEl.style.opacity = '';
 }
 
 function healShatterScreen(mode) {
@@ -3783,9 +3898,7 @@ function healShatterScreen(mode) {
   wuhunState.active = false;
   document.body.classList.remove('agy-wuhun-shake');
   const overlay = document.getElementById('hakimi-wuhun-overlay');
-  if (overlay) {
-    overlay.classList.remove('open', 'phase-avatar', 'phase-punch');
-  }
+  if (overlay) overlay.classList.remove('open');
   const card = document.getElementById('hakimi-comfort-card');
   if (card) card.classList.remove('open');
 
@@ -3798,12 +3911,12 @@ function healShatterScreen(mode) {
   }
 
   if (mode === 'praise') {
-    triggerHakimiCelebration('victory', '嘿嘿～被夸得充满电啦！屏幕修好，本哈基米满血全开冲刺！⚡✨');
+    triggerHakimiCelebration('victory', '嘿嘿～被夸得满血复活啦！屏幕修好，本哈基米冲刺全开！⚡✨');
   } else if (mode === 'subagents') {
-    triggerHakimiCelebration('victory', '好耶！哈基米召唤 3 个并行子 Agent 一起冲刺干活啦！🚀✨');
+    triggerHakimiCelebration('victory', '好耶！哈基米召唤 3 个并行子 Agent 一起冲刺分担啦！🚀✨');
     spawnSubagentCloneSprint();
   } else {
-    say('屏幕修好啦～下次别把这么多活一口气堆给我哟 (｡•́︿•̀｡)', 2800);
+    say('屏幕修好啦～下次别一口气堆这么多活哟 (｡•́︿•̀｡)', 2800);
   }
 }
 
@@ -3837,18 +3950,82 @@ function triggerHakimiWuhunRage(manual = false) {
   lastWuhunAutoAt = Date.now();
 
   let overlay = document.getElementById('hakimi-wuhun-overlay');
+  if (overlay && !overlay.querySelector('.wuhun-wheel-svg')) {
+    overlay.remove();
+    overlay = null;
+  }
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'hakimi-wuhun-overlay';
     overlay.className = 'notranslate';
     const poseSrc = (poseLayers.done && poseLayers.done.src) || (poseLayers.idle && poseLayers.idle.src) || '';
+    const innerWheelSvg =
+      '<svg class="wuhun-wheel-svg" viewBox="0 0 480 480" fill="none">' +
+        '<defs>' +
+          '<linearGradient id="yjGold" x1="0" y1="0" x2="1" y2="1">' +
+            '<stop offset="0%" stop-color="#fef08a" stop-opacity="0.95"/>' +
+            '<stop offset="50%" stop-color="#f59e0b" stop-opacity="0.88"/>' +
+            '<stop offset="100%" stop-color="#14b8a6" stop-opacity="0.80"/>' +
+          '</linearGradient>' +
+        '</defs>' +
+        '<circle cx="240" cy="240" r="192" stroke="url(#yjGold)" stroke-width="2.4" stroke-dasharray="18 8 4 8"/>' +
+        '<circle cx="240" cy="240" r="168" stroke="#fde68a" stroke-width="1.3" stroke-opacity="0.78"/>' +
+        '<circle cx="240" cy="240" r="144" stroke="#14b8a6" stroke-width="1.2" stroke-opacity="0.52" stroke-dasharray="6 10"/>' +
+        '<g stroke="#fef08a" stroke-width="1.6" stroke-opacity="0.84">' +
+          '<path d="M240 24 L250 56 L240 48 L230 56 Z" fill="#fde68a" fill-opacity="0.55"/>' +
+          '<path d="M240 456 L250 424 L240 432 L230 424 Z" fill="#fde68a" fill-opacity="0.55"/>' +
+          '<path d="M24 240 L56 230 L48 240 L56 250 Z" fill="#fde68a" fill-opacity="0.55"/>' +
+          '<path d="M456 240 L424 230 L432 240 L424 250 Z" fill="#fde68a" fill-opacity="0.55"/>' +
+          '<path d="M88 88 L116 106 L104 104 L106 116 Z" fill="#14b8a6" fill-opacity="0.52"/>' +
+          '<path d="M392 88 L364 106 L376 104 L374 116 Z" fill="#14b8a6" fill-opacity="0.52"/>' +
+          '<path d="M88 392 L116 374 L104 376 L106 364 Z" fill="#14b8a6" fill-opacity="0.52"/>' +
+          '<path d="M392 392 L364 374 L376 376 L374 364 Z" fill="#14b8a6" fill-opacity="0.52"/>' +
+        '</g>' +
+        '<g stroke="#f59e0b" stroke-width="1.4" stroke-opacity="0.62">' +
+          '<polygon points="240,68 388,325 92,325" fill="none"/>' +
+          '<polygon points="240,412 388,155 92,155" fill="none"/>' +
+        '</g>' +
+      '</svg>';
+    const outerWheelSvg =
+      '<svg class="wuhun-wheel-outer" viewBox="0 0 600 600" fill="none">' +
+        '<circle cx="300" cy="300" r="268" stroke="#f59e0b" stroke-width="1.8" stroke-opacity="0.65" stroke-dasharray="36 14 8 14"/>' +
+        '<circle cx="300" cy="300" r="246" stroke="#2dd4bf" stroke-width="1.2" stroke-opacity="0.48" stroke-dasharray="3 11"/>' +
+        '<circle cx="300" cy="300" r="284" stroke="#fef08a" stroke-width="1" stroke-opacity="0.38"/>' +
+      '</svg>';
+    const ribbonsSvg =
+      '<svg class="wuhun-ribbons-svg" viewBox="0 0 680 380" fill="none">' +
+        '<defs>' +
+          '<linearGradient id="yjRib" x1="0" y1="0" x2="1" y2="0">' +
+            '<stop offset="0%" stop-color="#14b8a6" stop-opacity="0"/>' +
+            '<stop offset="28%" stop-color="#fde047" stop-opacity="0.72"/>' +
+            '<stop offset="50%" stop-color="#fef3c7" stop-opacity="0.92"/>' +
+            '<stop offset="72%" stop-color="#f59e0b" stop-opacity="0.72"/>' +
+            '<stop offset="100%" stop-color="#14b8a6" stop-opacity="0"/>' +
+          '</linearGradient>' +
+        '</defs>' +
+        '<path d="M30 290 C130 150, 210 110, 340 165 C470 220, 540 120, 650 75" stroke="url(#yjRib)" stroke-width="10" stroke-linecap="round" opacity="0.65"/>' +
+        '<path d="M50 115 C160 220, 240 250, 340 190 C440 130, 530 230, 635 285" stroke="url(#yjRib)" stroke-width="6.5" stroke-linecap="round" opacity="0.52"/>' +
+      '</svg>';
+    const thirdEyeSvg =
+      '<svg class="wuhun-third-eye" viewBox="0 0 24 38" fill="none">' +
+        '<path d="M12 2 C17 11, 18 25, 12 36 C6 25, 7 11, 12 2 Z" fill="#fef08a" fill-opacity="0.92" stroke="#f59e0b" stroke-width="1.6"/>' +
+        '<ellipse cx="12" cy="19" rx="2.6" ry="7.2" fill="#fffbeb"/>' +
+      '</svg>';
     overlay.innerHTML =
-      '<div class="wuhun-backdrop"></div>' +
-      '<div class="wuhun-ring r3"></div>' +
-      '<div class="wuhun-ring r2"></div>' +
-      '<div class="wuhun-ring r1"></div>' +
-      '<div class="wuhun-banner">✦ 法天象地 · 不吃压力！！ ✦</div>' +
-      '<div class="wuhun-avatar"><div class="wuhun-avatar-aura"></div><img src="' + poseSrc + '" alt="哈基米武魂真身"/></div>';
+      '<div class="wuhun-aura-wash"></div>' +
+      '<div class="wuhun-impact-flash"></div>' +
+      '<div class="wuhun-rings-anchor">' +
+        outerWheelSvg +
+        innerWheelSvg +
+        ribbonsSvg +
+      '</div>' +
+      '<div class="wuhun-banner">✦ 法天象地 · 元神觉醒 · 不吃压力 ✦</div>' +
+      '<div class="wuhun-actor">' +
+        '<div class="wuhun-actor-aura"></div>' +
+        '<img src="' + poseSrc + '" alt="哈基米元神法相"/>' +
+        thirdEyeSvg +
+        '<div class="wuhun-fist-orb"></div>' +
+      '</div>';
     document.body.appendChild(overlay);
   }
 
@@ -3875,19 +4052,24 @@ function triggerHakimiWuhunRage(manual = false) {
     card.className = 'notranslate';
     card.innerHTML =
       '<div class="hcc-head">' +
-        '<span class="hcc-title">💥 哈基米开启「法天象地」一拳把屏幕锤裂啦！</span>' +
+        '<span class="hcc-title">💢 哈基米委屈缩回来了 · 碎屏不影响任何操作</span>' +
+        '<button type="button" class="hcc-close" data-act="hide-card" title="先收起气泡（点哈基米或夸夸它即可修屏）">×</button>' +
       '</div>' +
-      '<div class="hcc-desc">「这么多繁琐任务全堆过来，本哈基米不吃压力！！」—— 快夸夸它安抚一下，或者召唤多个子 Agent 帮它一起并行冲刺吧～</div>' +
+      '<div class="hcc-desc">开完杨戬同款「法天象地」把屏幕锤裂啦，任务和页面都照常能点能看～要你夸夸安慰一下，碎屏才会消失哟！</div>' +
       '<div class="hcc-actions">' +
         '<button type="button" class="hcc-btn primary" data-act="praise"><span>✨ 摸摸头夸夸：哈基米你可以的！</span><small>金光修屏 + 满血冲刺</small></button>' +
-        '<button type="button" class="hcc-btn subagent" data-act="subagents"><span>🚀 夸夸它 + 开多个子 Agent 并行分担！</span><small>召唤分身 + 填入并行提示</small></button>' +
-        '<button type="button" class="hcc-btn" data-act="quiet"><span>🩹 先默默修好屏幕</span><small>Esc 也可随时关闭</small></button>' +
+        '<button type="button" class="hcc-btn subagent" data-act="subagents"><span>🚀 夸夸它 + 开多个子 Agent 并行！</span><small>召唤分身 + 填入并行提示</small></button>' +
       '</div>';
     card.addEventListener('click', (e) => {
       const btn = e.target instanceof Element ? e.target.closest('button[data-act]') : null;
       if (!btn) return;
       e.stopPropagation();
       const act = btn.getAttribute('data-act');
+      if (act === 'hide-card') {
+        card.classList.remove('open');
+        say('哼…不夸我就不修屏！点我一下或在输入框夸我也可以哟～', 3200);
+        return;
+      }
       if (act === 'subagents') {
         healShatterScreen('subagents');
         const composer = document.querySelector('.surface-composer');
@@ -3901,48 +4083,292 @@ function triggerHakimiWuhunRage(manual = false) {
     });
     document.body.appendChild(card);
   }
+  card.classList.remove('open');
 
-  // Phase 1: Hakimi complains loudly
-  say('呜哇！这么多繁琐任务堆过来要累死猫啦！不吃压力！！💢', 2400);
-  museMotion.hopStartMs = performance.now();
+  // Also listen passively for genuine praise typed into the composer (e.g. "哈基米你可以的")!
+  if (!window.__AGY_PRAISE_LISTENER__) {
+    window.__AGY_PRAISE_LISTENER__ = true;
+    const PRAISE_RX = /哈基米.{0,12}(?:可以|加油|真棒|厉害|辛苦|乖|摸摸|别气|不气|好棒|最棒)|(?:你可以的|摸摸头|乖啦|别生气|辛苦啦|开多个子\s*agent|并行完成)/i;
+    document.addEventListener('keydown', (e) => {
+      if (!wuhunState.shattered || wuhunState.healing) return;
+      if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+      const t = e.target;
+      if (!(t instanceof Element) || !t.closest('.surface-composer')) return;
+      const txt = readComposerValue(t);
+      if (PRAISE_RX.test(txt)) {
+        const wantSub = /子\s*agent|并行|分身|一起干/i.test(txt);
+        window.setTimeout(() => healShatterScreen(wantSub ? 'subagents' : 'praise'), 80);
+      }
+    }, true);
+    document.addEventListener('pointerdown', (e) => {
+      if (!wuhunState.shattered || wuhunState.healing) return;
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      const btn = t.closest('.surface-composer button');
+      if (!btn) return;
+      const composer = btn.closest('.surface-composer');
+      const input = composer && composer.querySelector('[contenteditable="true"][role="textbox"], [contenteditable="true"], textarea');
+      if (!input) return;
+      const txt = readComposerValue(input);
+      if (PRAISE_RX.test(txt)) {
+        const wantSub = /子\s*agent|并行|分身|一起干/i.test(txt);
+        window.setTimeout(() => healShatterScreen(wantSub ? 'subagents' : 'praise'), 100);
+      }
+    }, true);
+  }
 
-  // Phase 2: 武魂真身 / 法天象地 rises with spinning spirit rings
-  wuhunState.timers.push(window.setTimeout(() => {
-    overlay.classList.remove('phase-punch');
-    overlay.classList.add('open', 'phase-avatar');
-    say('✦ 法天象地 · 武魂真身降临！！不吃压力！！ ✦', 2000);
-  }, 1150));
+  const washEl = overlay.querySelector('.wuhun-aura-wash');
+  const flashEl = overlay.querySelector('.wuhun-impact-flash');
+  const ringsAnchor = overlay.querySelector('.wuhun-rings-anchor');
+  const wheelInner = overlay.querySelector('.wuhun-wheel-svg');
+  const wheelOuter = overlay.querySelector('.wuhun-wheel-outer');
+  const ribbonsEl = overlay.querySelector('.wuhun-ribbons-svg');
+  const thirdEyeEl = overlay.querySelector('.wuhun-third-eye');
+  const bannerEl = overlay.querySelector('.wuhun-banner');
+  const actorEl = overlay.querySelector('.wuhun-actor');
+  const orbEl = overlay.querySelector('.wuhun-fist-orb');
+  const actorImg = actorEl ? actorEl.querySelector('img') : null;
+  if (actorImg && poseLayers.done && poseLayers.done.src) {
+    actorImg.src = poseLayers.done.src;
+  }
 
-  // Phase 3: Lunge punch at screen -> realistic glass shatter + screen shake!
-  wuhunState.timers.push(window.setTimeout(() => {
-    overlay.classList.remove('phase-avatar');
-    overlay.classList.add('phase-punch');
-    const ix = Math.round(window.innerWidth * 0.50);
-    const iy = Math.round(window.innerHeight * 0.44);
-    wuhunState.impactX = ix;
-    wuhunState.impactY = iy;
-    wuhunState.mouseX = ix;
-    wuhunState.mouseY = iy;
-    wuhunState.cracks = generateGlassFractureModel(ix, iy, window.innerWidth, window.innerHeight);
-    wuhunState.shards = wuhunState.cracks.shards;
-    wuhunState.shattered = true;
-    wuhunState.healing = false;
-    wuhunState.healProgress = 0;
-    canvas.classList.add('active');
-    document.body.classList.remove('agy-wuhun-shake');
-    void document.body.offsetWidth;
-    document.body.classList.add('agy-wuhun-shake');
-    if (wuhunState.rafId) window.cancelAnimationFrame(wuhunState.rafId);
-    wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
-    fireHakimiSparkles();
-  }, 2450));
+  const easeOutCubic = (x) => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
+  const easeInOutSine = (x) => -(Math.cos(Math.PI * Math.max(0, Math.min(1, x))) - 1) / 2;
+  const easeOutBack = (x) => {
+    const t = Math.max(0, Math.min(1, x));
+    const c1 = 1.35;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  };
 
-  // Phase 4: Fade avatar slightly & pop Developer Comfort Interactive Card
-  wuhunState.timers.push(window.setTimeout(() => {
-    document.body.classList.remove('agy-wuhun-shake');
-    overlay.classList.remove('open', 'phase-avatar', 'phase-punch');
-    card.classList.add('open');
-  }, 3050));
+  // Seamless start/return coordinates right on Hakimi's live perch on the composer!
+  const getPerch = () => {
+    const x = museGeom.visible ? museMotion.x : Math.round(window.innerWidth * 0.5 - 55);
+    const y = museGeom.visible ? museGeom.baseY : Math.round(window.innerHeight - 150);
+    return { x, y, w: museGeom.stageW || 110, h: museGeom.stageH || 90 };
+  };
+
+  overlay.classList.add('open');
+  const startTs = performance.now();
+  let saidAct2 = false;
+  let didPunchImpact = false;
+  let saidAct4 = false;
+
+  // Act 1 complaint immediately while standing on composer!
+  say('呜哇！这么多繁琐任务全堆过来啦…本哈基米不吃压力！！💢', 2400);
+  museMotion.hopStartMs = startTs;
+
+  const stepCutscene = (now) => {
+    if (!wuhunState.active) return;
+    const t = (now - startTs) / 1000; // ~9.2s full cinematic Yang-Jian 法天象地 arc
+    const perch = getPerch();
+    const targetCx = Math.round(window.innerWidth * 0.5 - perch.w * 0.5);
+    const targetCy = Math.round(window.innerHeight * 0.62 - perch.h * 0.5);
+
+    if (t < 2.00) {
+      // ACT 1 (0.0s -> 2.0s): Little Hakimi angrily shakes & gathers ink-gold Qi on the composer!
+      const p = t / 2.00;
+      if (spriteEl) spriteEl.style.opacity = '1';
+      if (actorEl) actorEl.style.opacity = '0';
+      if (washEl) washEl.style.opacity = (p * 0.36).toFixed(3);
+      if (bannerEl) bannerEl.style.opacity = '0';
+      if (orbEl) orbEl.style.opacity = '0';
+      if (wheelInner) wheelInner.style.opacity = '0';
+      if (wheelOuter) wheelOuter.style.opacity = '0';
+      if (ribbonsEl) ribbonsEl.style.opacity = '0';
+      if (thirdEyeEl) thirdEyeEl.style.opacity = '0';
+      if (bodyEl && p > 0.22) {
+        const vib = Math.sin(t * 46) * (2.2 * p);
+        bodyEl.style.transform = 'translate3d(' + vib.toFixed(1) + 'px,' + (-Math.abs(Math.sin(t * 14)) * 5 * p).toFixed(1) + 'px,0) scale(' + (1 + p * 0.09).toFixed(3) + ')';
+      }
+    } else if (t < 5.45) {
+      // ACT 2 (2.00s -> 5.45s, 3.45 full seconds!): Yang Jian-style colossal 元神 slowly rises & stands tall from composer!
+      const p = (t - 2.00) / 3.45;
+      const growEase = easeInOutSine(p);
+      const standUpStretch = 1 + Math.sin(p * Math.PI) * 0.095; // organic rising / standing-up elongation!
+      const surgeBreath = 1 + Math.sin(p * Math.PI * 3.5) * 0.030;
+      const curScale = (1.0 + growEase * 2.85) * surgeBreath; // grows smoothly from 1.0x up to majestic 3.85x!
+      const curX = perch.x + (targetCx - perch.x) * easeOutCubic(p);
+      const curY = perch.y + (targetCy - perch.y) * easeInOutSine(p) - Math.sin(p * Math.PI) * 24;
+      const hoverRot = Math.sin(t * 2.2) * 1.8;
+
+      if (!saidAct2) {
+        saidAct2 = true;
+        say('✦ 法天象地 · 元神觉醒！！天眼开，不吃压力！！ ✦', 3100);
+        fireHakimiSparkles();
+      }
+      // Keep little Hakimi softly anchored at base then seamlessly morph into towering translucent 元神法相
+      if (spriteEl) spriteEl.style.opacity = String(Math.max(0.28, 1 - p * 1.2).toFixed(2));
+      if (actorEl) {
+        // Semi-transparent ethereal golden spirit avatar so live running chat remains readable right through her!
+        actorEl.style.opacity = String(Math.min(0.84, 0.25 + p * 2.4).toFixed(3));
+        actorEl.style.transform =
+          'translate3d(' + curX.toFixed(1) + 'px,' + curY.toFixed(1) + 'px,0) ' +
+          'scaleX(' + curScale.toFixed(3) + ') ' +
+          'scaleY(' + (curScale * standUpStretch).toFixed(3) + ') ' +
+          'rotate(' + hoverRot.toFixed(2) + 'deg)';
+      }
+      // Forehead Celestial Third Eye ignites in gold!
+      if (thirdEyeEl) {
+        const ep = Math.max(0, Math.min(1, (p - 0.18) / 0.35));
+        thirdEyeEl.style.opacity = (ep * 0.96).toFixed(3);
+        thirdEyeEl.style.transform = 'translate3d(0,0,0) scale(' + (0.4 + easeOutBack(ep) * 0.72).toFixed(3) + ')';
+      }
+      if (washEl) washEl.style.opacity = (0.36 + growEase * 0.56).toFixed(3);
+      if (bannerEl) {
+        const bp = easeOutCubic(Math.min(1, p * 2.4));
+        bannerEl.style.opacity = bp.toFixed(3);
+        bannerEl.style.transform = 'translate3d(-50%,' + (-14 + bp * 14).toFixed(1) + 'px,0) scale(' + (0.90 + bp * 0.10).toFixed(3) + ')';
+      }
+      // Yang Jian Celestial Star-Wheel Halo & Dunhuang Golden Ribbons unfurl behind shoulders!
+      if (ringsAnchor) {
+        const rx = curX + perch.w * 0.5;
+        const ry = curY + perch.h * 0.35 - (curScale - 1) * 48;
+        ringsAnchor.style.transform = 'translate3d(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px,0)';
+      }
+      if (wheelInner) {
+        const wp1 = Math.max(0, Math.min(1, (p - 0.08) / 0.42));
+        wheelInner.style.opacity = (wp1 * 0.86).toFixed(3);
+        wheelInner.style.transform = 'translate3d(0,0,0) rotate(' + (t * 24).toFixed(1) + 'deg) scale(' + (0.28 + easeOutBack(wp1) * 0.76).toFixed(3) + ')';
+      }
+      if (wheelOuter) {
+        const wp2 = Math.max(0, Math.min(1, (p - 0.28) / 0.45));
+        wheelOuter.style.opacity = (wp2 * 0.72).toFixed(3);
+        wheelOuter.style.transform = 'translate3d(0,0,0) rotate(' + (-t * 16).toFixed(1) + 'deg) scale(' + (0.32 + easeOutBack(wp2) * 0.74).toFixed(3) + ')';
+      }
+      if (ribbonsEl) {
+        const rp = Math.max(0, Math.min(1, (p - 0.22) / 0.48));
+        const sway = Math.sin(t * 2.4) * 5;
+        ribbonsEl.style.opacity = (rp * 0.78).toFixed(3);
+        ribbonsEl.style.transform = 'translate3d(0,' + sway.toFixed(1) + 'px,0) scaleX(' + (0.35 + easeOutCubic(rp) * 0.72).toFixed(3) + ') scaleY(' + (0.7 + easeOutCubic(rp) * 0.34).toFixed(3) + ')';
+      }
+      if (orbEl) orbEl.style.opacity = '0';
+    } else if (t < 6.85) {
+      // ACT 3 (5.45s -> 6.85s): Majestic pullback fist-charge -> Thunderous Yang-Jian Golden Punch -> Progressive Shatter!
+      const p = (t - 5.45) / 1.40;
+      let curScale = 3.85;
+      let curY = targetCy;
+      let rot = 0;
+      if (p < 0.45) {
+        const wp = p / 0.45;
+        curScale = 3.85 - easeInOutSine(wp) * 0.42;
+        curY = targetCy + easeInOutSine(wp) * 16;
+        rot = -easeInOutSine(wp) * 7.5;
+        if (orbEl) {
+          orbEl.style.opacity = (wp * 0.96).toFixed(3);
+          orbEl.style.transform = 'translate3d(0,0,0) scale(' + (0.24 + wp * 1.25).toFixed(3) + ')';
+        }
+      } else if (p < 0.68) {
+        const lp = (p - 0.45) / 0.23;
+        const le = easeOutCubic(lp);
+        curScale = 3.43 + le * 1.75;
+        curY = targetCy + 16 - le * 30;
+        rot = -7.5 + le * 12.5;
+        if (orbEl) {
+          orbEl.style.opacity = String((1 - lp * 0.45).toFixed(3));
+          orbEl.style.transform = 'translate3d(0,0,0) scale(' + (1.49 + le * 2.1).toFixed(3) + ')';
+        }
+        if (lp >= 0.50 && !didPunchImpact) {
+          didPunchImpact = true;
+          const ix = Math.round(window.innerWidth * 0.50);
+          const iy = Math.round(window.innerHeight * 0.44);
+          wuhunState.impactX = ix;
+          wuhunState.impactY = iy;
+          wuhunState.mouseX = ix;
+          wuhunState.mouseY = iy;
+          wuhunState.shatterStartMs = performance.now();
+          wuhunState.cracks = generateGlassFractureModel(ix, iy, window.innerWidth, window.innerHeight);
+          wuhunState.shards = wuhunState.cracks.shards;
+          wuhunState.shattered = true;
+          wuhunState.healing = false;
+          wuhunState.healProgress = 0;
+          canvas.classList.add('active');
+          document.body.classList.remove('agy-wuhun-shake');
+          void document.body.offsetWidth;
+          document.body.classList.add('agy-wuhun-shake');
+          if (wuhunState.rafId) window.cancelAnimationFrame(wuhunState.rafId);
+          wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
+          fireHakimiSparkles();
+          if (flashEl) {
+            flashEl.style.setProperty('--ix', ix + 'px');
+            flashEl.style.setProperty('--iy', iy + 'px');
+          }
+        }
+      } else {
+        const rp = (p - 0.68) / 0.32;
+        curScale = 5.18 - easeOutCubic(rp) * 1.38;
+        curY = targetCy - 14 + easeOutCubic(rp) * 14;
+        rot = 5.0 * (1 - easeOutCubic(rp));
+        if (orbEl) orbEl.style.opacity = Math.max(0, 0.55 - rp * 1.6).toFixed(3);
+      }
+
+      if (flashEl && didPunchImpact) {
+        const fp = Math.max(0, 1 - (now - wuhunState.shatterStartMs) / 220);
+        flashEl.style.opacity = (fp * 0.72).toFixed(3);
+      }
+      if (actorEl) {
+        actorEl.style.transform =
+          'translate3d(' + targetCx.toFixed(1) + 'px,' + curY.toFixed(1) + 'px,0) ' +
+          'scale(' + curScale.toFixed(3) + ') rotate(' + rot.toFixed(2) + 'deg)';
+      }
+      const ringBurst = didPunchImpact ? Math.min(1, (now - wuhunState.shatterStartMs) / 560) : 0;
+      const ringAlpha = Math.max(0, 0.84 * (1 - ringBurst));
+      const ringBoost = 1.04 + ringBurst * 0.55;
+      if (wheelInner) { wheelInner.style.opacity = ringAlpha.toFixed(3); wheelInner.style.transform = 'translate3d(0,0,0) rotate(' + (t * 36).toFixed(1) + 'deg) scale(' + ringBoost.toFixed(3) + ')'; }
+      if (wheelOuter) { wheelOuter.style.opacity = (ringAlpha * 0.85).toFixed(3); wheelOuter.style.transform = 'translate3d(0,0,0) rotate(' + (-t * 24).toFixed(1) + 'deg) scale(' + (ringBoost * 1.05).toFixed(3) + ')'; }
+      if (ribbonsEl) { ribbonsEl.style.opacity = (ringAlpha * 0.85).toFixed(3); }
+    } else if (t < 9.15) {
+      // ACT 4 (6.85s -> 9.15s, 2.30 full seconds!): Colossal 元神 gently retracts & shrinks back into cute little Hakimi on composer!
+      const p = (t - 6.85) / 2.30;
+      const shrinkEase = easeInOutSine(p);
+      const curScale = 3.80 - shrinkEase * 2.80; // 3.80 -> 1.00
+      const curX = targetCx + (perch.x - targetCx) * easeInOutSine(p);
+      const curY = targetCy + (perch.y - targetCy) * easeInOutSine(p) - Math.sin(p * Math.PI) * 18;
+      const landingSquash = p > 0.88 ? Math.sin(((p - 0.88) / 0.12) * Math.PI) * 0.10 : 0;
+
+      if (!saidAct4) {
+        saidAct4 = true;
+        document.body.classList.remove('agy-wuhun-shake');
+      }
+      if (washEl) washEl.style.opacity = Math.max(0, 0.86 * (1 - p * 1.35)).toFixed(3);
+      if (flashEl) flashEl.style.opacity = '0';
+      if (thirdEyeEl) thirdEyeEl.style.opacity = Math.max(0, 0.92 * (1 - p * 2.2)).toFixed(3);
+      if (bannerEl) {
+        const bo = Math.max(0, 1 - p * 2.1);
+        bannerEl.style.opacity = bo.toFixed(3);
+        bannerEl.style.transform = 'translate3d(-50%,' + (-p * 18).toFixed(1) + 'px,0) scale(' + (1 - p * 0.08).toFixed(3) + ')';
+      }
+      if (actorEl) {
+        const handoff = p > 0.84 ? Math.max(0, 1 - (p - 0.84) / 0.16) : 0.84;
+        actorEl.style.opacity = handoff.toFixed(3);
+        actorEl.style.transform =
+          'translate3d(' + curX.toFixed(1) + 'px,' + curY.toFixed(1) + 'px,0) ' +
+          'scaleX(' + (curScale * (1 + landingSquash)).toFixed(3) + ') ' +
+          'scaleY(' + (curScale * (1 - landingSquash)).toFixed(3) + ')';
+      }
+      if (spriteEl) {
+        spriteEl.style.opacity = p > 0.72 ? Math.min(1, 0.28 + ((p - 0.72) / 0.24) * 0.72).toFixed(2) : '0.28';
+      }
+    } else {
+      // ACT 5 (9.15s+): Little Hakimi is safely back & moving on the composer -> NOW gently pop the non-blocking comfort pill!
+      wuhunState.active = false;
+      wuhunState.cutsceneRafId = 0;
+      if (spriteEl) spriteEl.style.opacity = '1';
+      overlay.classList.remove('open');
+      museMotion.hopStartMs = performance.now();
+      say('哼…刚开完杨戬同款法天象地舒坦多了，不过屏幕被我锤裂啦… (｡•́︿•̀｡)', 3800);
+      wuhunState.timers.push(window.setTimeout(() => {
+        if (!wuhunState.shattered) return;
+        card.classList.add('open');
+        positionComfortCardNearComposer();
+      }, 360));
+      return;
+    }
+
+    wuhunState.cutsceneRafId = window.requestAnimationFrame(stepCutscene);
+  };
+
+  wuhunState.cutsceneRafId = window.requestAnimationFrame(stepCutscene);
 }
 
 function syncHakimiStateNow() {
@@ -4113,7 +4539,7 @@ function mountMuseHakimi() {
 
   spriteEl.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (wuhunState.shattered) {
+    if (wuhunState.shattered && !wuhunState.active && !e.altKey) {
       healShatterScreen('praise');
       return;
     }
@@ -4202,6 +4628,9 @@ function mountMuseHakimi() {
     window.addEventListener('resize', () => {
       scheduleLayoutMuseStage();
       positionCodexPopover();
+      if (wuhunState.shattered && !wuhunState.rafId) {
+        wuhunState.rafId = window.requestAnimationFrame(drawShatterFrame);
+      }
     }, { passive: true });
     document.addEventListener('visibilitychange', () => {
       document.documentElement.classList.toggle('agy-page-hidden', document.hidden);
@@ -4385,7 +4814,14 @@ if (!window.__AGY_GLOBAL_LISTENERS__) {
   document.addEventListener('click', dismissPulseOutside, true);
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-      if (wuhunState.active || wuhunState.shattered) {
+      const comfortCard = document.getElementById('hakimi-comfort-card');
+      if (comfortCard && comfortCard.classList.contains('open')) {
+        comfortCard.classList.remove('open');
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (wuhunState.active) {
         healShatterScreen('quiet');
         event.preventDefault();
         event.stopPropagation();
