@@ -777,16 +777,17 @@ html[data-agy-dark="1"] #hakimi-muse-pill {
   to { opacity: 1; }
 }
 
-/* --- Codex-Style Context Ring Left of Permissions Button --- */
+/* --- Bottom Bar Tri-Metric Telemetry Strip (Context / 5h Quota / Weekly Quota) --- */
 #agy-codex-ctx-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 9px;
   height: 26px;
   padding: 0 8px;
-  margin-right: 3px;
-  border-radius: 7px;
+  margin-left: 4px;
+  margin-right: 4px;
+  border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
   color: var(--gs-ink-2, #5f6368);
@@ -805,37 +806,56 @@ html[data-agy-dark="1"] #hakimi-muse-pill {
   color: var(--gs-ink, #1f1f1f);
   border-color: var(--gs-line, rgba(128, 138, 155, 0.22));
 }
-#agy-codex-ctx-btn svg.codex-ring-svg {
-  width: 14px;
-  height: 14px;
-  transform: rotate(-90deg);
+#agy-codex-ctx-btn .agy-tm-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  white-space: nowrap;
+}
+#agy-codex-ctx-btn .agy-tm-metric.is-hidden {
+  display: none;
+}
+#agy-codex-ctx-btn .agy-tm-ico {
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
+  opacity: 0.78;
 }
-#agy-codex-ctx-btn .codex-ring-bg {
-  stroke: currentColor;
-  stroke-opacity: 0.18;
+#agy-codex-ctx-btn .agy-tm-val {
+  letter-spacing: -0.01em;
 }
-#agy-codex-ctx-btn .codex-ring-fg {
-  stroke: var(--gs-accent, #1a73e8);
-  transition: stroke-dashoffset 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), stroke 0.16s ease;
+#agy-codex-ctx-btn .agy-tm-metric[data-level="warn"] {
+  color: #b45309;
 }
-#agy-codex-ctx-btn[data-level="warn"] .codex-ring-fg { stroke: #d97706; }
-#agy-codex-ctx-btn[data-level="warn"] .codex-ctx-pct { color: #b45309; }
-html[data-agy-dark="1"] #agy-codex-ctx-btn[data-level="warn"] .codex-ctx-pct { color: #fbbf24; }
-#agy-codex-ctx-btn[data-level="danger"] .codex-ring-fg { stroke: #dc2626; }
-#agy-codex-ctx-btn[data-level="danger"] .codex-ctx-pct { color: #dc2626; font-weight: 600; }
-html[data-agy-dark="1"] #agy-codex-ctx-btn[data-level="danger"] .codex-ctx-pct { color: #f87171; }
+#agy-codex-ctx-btn .agy-tm-metric[data-level="warn"] .agy-tm-ico {
+  opacity: 0.95;
+}
+html[data-agy-dark="1"] #agy-codex-ctx-btn .agy-tm-metric[data-level="warn"] {
+  color: #fbbf24;
+}
+#agy-codex-ctx-btn .agy-tm-metric[data-level="danger"] {
+  color: #cf2647;
+  font-weight: 600;
+}
+#agy-codex-ctx-btn .agy-tm-metric[data-level="danger"] .agy-tm-ico {
+  opacity: 1;
+}
+html[data-agy-dark="1"] #agy-codex-ctx-btn .agy-tm-metric[data-level="danger"] {
+  color: #fb7185;
+}
 
-/* Codex Hover Popover Card */
+/* Codex Hover Popover Card (Frosted Glass Polish) */
 #agy-codex-ctx-popover {
   position: fixed;
   z-index: 999992;
   width: 288px;
   padding: 12px 13px 10px;
-  border-radius: 12px;
-  background: var(--gs-side-elev, #ffffff);
-  border: 1px solid var(--gs-line, #e3e8ef);
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.05);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(18px) saturate(165%);
+  -webkit-backdrop-filter: blur(18px) saturate(165%);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.90);
   color: var(--gs-ink, #1f1f1f);
   font-size: 12px;
   line-height: 1.45;
@@ -846,7 +866,9 @@ html[data-agy-dark="1"] #agy-codex-ctx-btn[data-level="danger"] .codex-ctx-pct {
   animation: codex-pop-in 0.13s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 html[data-agy-dark="1"] #agy-codex-ctx-popover {
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.48);
+  background: rgba(26, 28, 36, 0.88);
+  border-color: rgba(255, 255, 255, 0.13);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 #agy-codex-ctx-popover.open {
   display: block;
@@ -3303,18 +3325,50 @@ function updateTelemetryUI(payload) {
   const m = payload.metrics;
 
   const btn = document.getElementById('agy-codex-ctx-btn');
-  if (btn && m) {
-    const pct = Math.max(0, Math.min(100, Number(m.contextPct || 0)));
-    const circ = 33.93;
-    const offset = circ * (1 - pct / 100);
-    const fg = btn.querySelector('.codex-ring-fg');
-    const lbl = btn.querySelector('.codex-ctx-pct');
-    if (fg) fg.setAttribute('stroke-dashoffset', offset.toFixed(2));
-    const label = Math.round(pct) + '%';
-    if (lbl && lbl.textContent !== label) lbl.textContent = label;
+  if (btn) {
+    if (m) {
+      const pct = Math.max(0, Math.min(100, Number(m.contextPct || 0)));
+      const ctxItem = btn.querySelector('.agy-ctx-item');
+      const ctxVal = btn.querySelector('.agy-ctx-val');
+      const label = Math.round(pct) + '%';
+      if (ctxVal && ctxVal.textContent !== label) ctxVal.textContent = label;
+      const level = pct >= 82 ? 'danger' : (pct >= 60 ? 'warn' : 'normal');
+      if (ctxItem && ctxItem.getAttribute('data-level') !== level) ctxItem.setAttribute('data-level', level);
+      if (btn.getAttribute('data-level') !== level) btn.setAttribute('data-level', level);
+    }
 
-    const level = pct >= 82 ? 'danger' : (pct >= 60 ? 'warn' : 'normal');
-    if (btn.getAttribute('data-level') !== level) btn.setAttribute('data-level', level);
+    const activePool = payload.quota && payload.quota.activePool;
+    const q5hItem = btn.querySelector('.agy-q5h-item');
+    const q5hVal = btn.querySelector('.agy-q5h-val');
+    if (q5hItem && q5hVal) {
+      const rem5h = activePool && activePool.window5h && activePool.window5h.remainingPct;
+      if (Number.isFinite(rem5h)) {
+        const pct5h = Math.max(0, Math.min(100, Math.round(rem5h)));
+        const txt5h = pct5h + '%';
+        if (q5hVal.textContent !== txt5h) q5hVal.textContent = txt5h;
+        q5hItem.classList.remove('is-hidden');
+        const lv5h = pct5h <= 10 ? 'danger' : (pct5h <= 25 ? 'warn' : 'normal');
+        if (q5hItem.getAttribute('data-level') !== lv5h) q5hItem.setAttribute('data-level', lv5h);
+      } else {
+        q5hItem.classList.add('is-hidden');
+      }
+    }
+
+    const qwkItem = btn.querySelector('.agy-qwk-item');
+    const qwkVal = btn.querySelector('.agy-qwk-val');
+    if (qwkItem && qwkVal) {
+      const remWk = activePool && activePool.windowWeekly && activePool.windowWeekly.remainingPct;
+      if (Number.isFinite(remWk)) {
+        const pctWk = Math.max(0, Math.min(100, Math.round(remWk)));
+        const txtWk = pctWk + '%';
+        if (qwkVal.textContent !== txtWk) qwkVal.textContent = txtWk;
+        qwkItem.classList.remove('is-hidden');
+        const lvWk = pctWk <= 10 ? 'danger' : (pctWk <= 25 ? 'warn' : 'normal');
+        if (qwkItem.getAttribute('data-level') !== lvWk) qwkItem.setAttribute('data-level', lvWk);
+      } else {
+        qwkItem.classList.add('is-hidden');
+      }
+    }
   }
 
   const pop = document.getElementById('agy-codex-ctx-popover');
@@ -5233,6 +5287,221 @@ function findThemeButtonHost() {
   return null;
 }
 
+// ==================== Part 4.7: Liquid-Glass Model Popover & Bottom Bar Decorator ====================
+
+const MODEL_TONE_RULES = [
+  [/\bneon\b/i, 'neon'],
+  [/\bcarbon\b/i, 'carbon'],
+  [/\bargon\b/i, 'argon'],
+  [/\bhydrogen\b/i, 'hydrogen'],
+  [/\bflash\b/i, 'flash'],
+  [/\bopus\b/i, 'opus'],
+  [/\b(sonnet|haiku|claude)\b/i, 'sonnet'],
+  [/\b(gpt|o[134])\b/i, 'gpt'],
+  [/\bgemini\b/i, 'neon'],
+];
+
+const EFFORT_WORD_RX = /^(?:XHigh|High|Medium|Low|Minimal|Max|Thinking|极高|高|中|低)$/i;
+const MODEL_NAME_STRICT_RX = /\b(?:Gemini|Claude|GPT-OSS|GPT|Opus|Sonnet|Haiku|Neon|Carbon|Argon|Hydrogen|Flash)\b/i;
+const THINKING_LABEL_RX = /思考强度|思考深度|Thinking\s*(?:effort|level|strength|budget)|Reasoning\s*effort/i;
+const ORCHESTRATOR_RX = /\bOrchestrator\b|编排器|调度器/i;
+
+function classifyModelTone(text) {
+  if (!text) return '';
+  for (let i = 0; i < MODEL_TONE_RULES.length; i++) {
+    if (MODEL_TONE_RULES[i][0].test(text)) return MODEL_TONE_RULES[i][1];
+  }
+  return '';
+}
+
+function findComposerModelButton(composer) {
+  if (!composer) return null;
+  const permRx = /\b(Turbo|Auto|Strict|Review|Ask|Sandbox|Always\s*proceed|Request\s*review)\b|极速|自动|严格|审核|沙箱|权限/i;
+  const buttons = composer.querySelectorAll('button, [role="button"]');
+  let fallback = null;
+  for (let i = 0; i < buttons.length; i++) {
+    const b = buttons[i];
+    if (b.id === 'agy-codex-ctx-btn' || isOwnControlElement(b)) continue;
+    const tid = (b.getAttribute('data-testid') || '').toLowerCase();
+    const aria = (b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('title') || '');
+    const txt = (b.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!txt || txt.length > 64 || permRx.test(txt)) continue;
+    if (tid.includes('model') || /model|模型/i.test(aria)) return b;
+    if (!fallback && MODEL_NAME_STRICT_RX.test(txt)) fallback = b;
+  }
+  return fallback;
+}
+
+function decorateComposerModelTrigger(composer) {
+  const btn = findComposerModelButton(composer);
+  if (!btn) return null;
+  const txt = (btn.textContent || '').replace(/\s+/g, ' ').trim();
+  const tone = classifyModelTone(txt);
+  if (!btn.classList.contains('agy-composer-model-btn')) {
+    btn.classList.add('agy-composer-model-btn');
+  }
+  if (tone && btn.getAttribute('data-agy-model-tone') !== tone) {
+    btn.setAttribute('data-agy-model-tone', tone);
+  }
+
+  let taggedChild = false;
+  const spans = btn.querySelectorAll('span');
+  for (let i = 0; i < spans.length; i++) {
+    const sp = spans[i];
+    if (sp.children.length > 0) continue;
+    const st = (sp.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!st || ORCHESTRATOR_RX.test(st)) continue;
+    if (MODEL_NAME_STRICT_RX.test(st) || EFFORT_WORD_RX.test(st)) {
+      if (sp.getAttribute('data-agy-model-label') !== '1') {
+        sp.setAttribute('data-agy-model-label', '1');
+      }
+      taggedChild = true;
+    }
+  }
+  if (!taggedChild && !/Orchestrator/i.test(txt)) {
+    if (btn.getAttribute('data-agy-whole-tint') !== '1') {
+      btn.setAttribute('data-agy-whole-tint', '1');
+    }
+  } else if (btn.hasAttribute('data-agy-whole-tint')) {
+    btn.removeAttribute('data-agy-whole-tint');
+  }
+  return btn;
+}
+
+function syncNativeRangeProgress(input) {
+  if (!input) return;
+  const min = Number(input.min === '' ? 0 : input.min);
+  const max = Number(input.max === '' ? 100 : input.max);
+  const val = Number(input.value === '' ? min : input.value);
+  const span = max - min;
+  const pct = span > 0 ? Math.max(0, Math.min(100, ((val - min) / span) * 100)) : 50;
+  input.style.setProperty('--agy-slider-pct', pct.toFixed(1) + '%');
+}
+
+function decorateSingleModelPopover(pop) {
+  if (!pop || pop.nodeType !== 1 || isOwnControlElement(pop)) return;
+  if (pop.classList.contains('settings-modal-container')) return;
+
+  const fullText = (pop.textContent || '').slice(0, 2600);
+  if (!MODEL_NAME_STRICT_RX.test(fullText)) return;
+
+  const rowCandidates = pop.querySelectorAll('[role="menuitem"], [role="menuitemradio"], [role="option"], button, div[tabindex="0"]');
+  const matchedRows = [];
+  let orchestratorBtn = null;
+
+  for (let i = 0; i < rowCandidates.length; i++) {
+    const el = rowCandidates[i];
+    if (el === pop || el.getAttribute('role') === 'slider') continue;
+    const txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!txt || txt.length > 96) continue;
+    if (ORCHESTRATOR_RX.test(txt) && txt.length <= 28 && !MODEL_NAME_STRICT_RX.test(txt)) {
+      orchestratorBtn = el;
+      continue;
+    }
+    const tone = classifyModelTone(txt);
+    if (tone) {
+      // Avoid matching outer wrapper containers that hold multiple rows
+      if (el.querySelector('[role="menuitem"], [role="menuitemradio"], [role="option"]')) continue;
+      matchedRows.push({ el, tone });
+    }
+  }
+
+  const hasControlHint = Boolean(orchestratorBtn) || THINKING_LABEL_RX.test(fullText) || /主\s*Agent|Main\s*Agent/i.test(fullText);
+  if (matchedRows.length < 2 && !(matchedRows.length >= 1 && hasControlHint)) return;
+
+  if (!pop.classList.contains('agy-model-popover')) {
+    pop.classList.add('agy-model-popover');
+  }
+
+  // 1. Decorate each model row with its signature dot tone & effort-tier highlight
+  for (let i = 0; i < matchedRows.length; i++) {
+    const { el, tone } = matchedRows[i];
+    if (!el.classList.contains('agy-model-item')) el.classList.add('agy-model-item');
+    if (el.getAttribute('data-agy-model-tone') !== tone) {
+      el.setAttribute('data-agy-model-tone', tone);
+    }
+    const leafSpans = el.querySelectorAll('span, small');
+    for (let j = 0; j < leafSpans.length; j++) {
+      const sp = leafSpans[j];
+      if (sp.children.length > 0) continue;
+      const st = (sp.textContent || '').trim();
+      if (EFFORT_WORD_RX.test(st)) {
+        if (sp.getAttribute('data-agy-effort') !== '1') sp.setAttribute('data-agy-effort', '1');
+      }
+    }
+  }
+
+  // 2. Decorate glossy crimson Orchestrator pill button
+  if (orchestratorBtn && !orchestratorBtn.classList.contains('agy-orchestrator-pill')) {
+    orchestratorBtn.classList.add('agy-orchestrator-pill');
+  }
+
+  // 3. Decorate Thinking Effort level label in crimson
+  const allLeafNodes = pop.querySelectorAll('span, div, label, p');
+  for (let i = 0; i < allLeafNodes.length; i++) {
+    const node = allLeafNodes[i];
+    if (node.children.length > 0) continue;
+    const nt = (node.textContent || '').trim();
+    if (!THINKING_LABEL_RX.test(nt)) continue;
+    let row = node.parentElement;
+    if (row && row.parentElement && row.parentElement !== pop && (row.parentElement.textContent || '').trim().length <= 60) {
+      row = row.parentElement;
+    }
+    if (!row) continue;
+    const siblings = row.querySelectorAll('span, div, strong, b');
+    for (let j = 0; j < siblings.length; j++) {
+      const sib = siblings[j];
+      if (sib === node || sib.children.length > 0) continue;
+      if (EFFORT_WORD_RX.test((sib.textContent || '').trim())) {
+        if (!sib.classList.contains('agy-thinking-level')) sib.classList.add('agy-thinking-level');
+      }
+    }
+  }
+
+  // 4. Decorate Thinking Effort slider (native range OR Radix / ARIA slider)
+  const nativeRanges = pop.querySelectorAll('input[type="range"]');
+  for (let i = 0; i < nativeRanges.length; i++) {
+    const inp = nativeRanges[i];
+    if (!inp.classList.contains('agy-thinking-range-input')) {
+      inp.classList.add('agy-thinking-range-input');
+    }
+    syncNativeRangeProgress(inp);
+    if (!inp.dataset.agyRangeBound) {
+      inp.dataset.agyRangeBound = '1';
+      inp.addEventListener('input', () => syncNativeRangeProgress(inp));
+      inp.addEventListener('change', () => syncNativeRangeProgress(inp));
+    }
+  }
+
+  const ariaSliders = pop.querySelectorAll('[role="slider"]');
+  for (let i = 0; i < ariaSliders.length; i++) {
+    const thumb = ariaSliders[i];
+    if (!thumb.classList.contains('agy-thinking-thumb')) thumb.classList.add('agy-thinking-thumb');
+    const root = thumb.closest('[data-orientation="horizontal"], [data-radix-slider-root]') || thumb.parentElement?.parentElement;
+    if (!root || !pop.contains(root)) continue;
+    if (!root.classList.contains('agy-thinking-slider')) root.classList.add('agy-thinking-slider');
+    const track = root.querySelector('[data-radix-slider-track]') || Array.from(root.children).find((c) => c !== thumb && !c.contains(thumb));
+    if (track) {
+      if (!track.classList.contains('agy-thinking-track')) track.classList.add('agy-thinking-track');
+      const range = track.querySelector('[data-radix-slider-range]') || track.firstElementChild;
+      if (range && !range.classList.contains('agy-thinking-range')) {
+        range.classList.add('agy-thinking-range');
+      }
+    }
+  }
+}
+
+function decorateModelPopovers() {
+  const candidates = document.querySelectorAll(
+    '[role="menu"], [role="listbox"], [data-radix-menu-content], [data-radix-select-content], ' +
+    '[data-radix-popper-content-wrapper] > div, [data-floating-ui-portal] > div, ' +
+    'div[class*="popover-content"], div[class*="dropdown-content"]'
+  );
+  for (let i = 0; i < candidates.length; i++) {
+    decorateSingleModelPopover(candidates[i]);
+  }
+}
+
 function mountCodexRingAndTopTheme() {
   for (const oldId of ['agy-theme-switch', 'agy-theme-tip', 'agy-theme-switch-style', 'agy-theme-switcher-host', 'agy-token-telemetry-style', 'agy-composer-top-strip', 'agy-token-telemetry-bar']) {
     const el = document.getElementById(oldId);
@@ -5247,27 +5516,72 @@ function mountCodexRingAndTopTheme() {
   }
   if (st.textContent !== CUSTOM_UI_CSS) st.textContent = CUSTOM_UI_CSS;
 
-  // 1. Mount Codex Context Ring immediately left of Permissions button inside .surface-composer
+  // 1. Mount Bottom-Bar Tri-Metric Telemetry Strip right next to Model Trigger (fallback: left of Permissions button)
   const composer = document.querySelector('.surface-composer');
   if (composer) {
     bindComposerResizeObserver(composer);
-    const anchor = findPermissionButtonInComposer(composer);
-    if (anchor && anchor.parentElement) {
+    const modelBtn = decorateComposerModelTrigger(composer);
+    let mountHost = null;
+    let mountRef = null;
+
+    if (modelBtn && modelBtn.parentElement) {
+      let hostEl = modelBtn;
+      while (
+        hostEl.parentElement &&
+        hostEl.parentElement !== composer &&
+        hostEl.parentElement.children.length === 1
+      ) {
+        hostEl = hostEl.parentElement;
+      }
+      if (hostEl.parentElement) {
+        mountHost = hostEl.parentElement;
+        mountRef = hostEl.nextElementSibling;
+      }
+    }
+
+    if (!mountHost) {
+      const permAnchor = findPermissionButtonInComposer(composer);
+      if (permAnchor && permAnchor.parentElement) {
+        mountHost = permAnchor.parentElement;
+        mountRef = permAnchor;
+      }
+    }
+
+    if (mountHost) {
       let ctxBtn = document.getElementById('agy-codex-ctx-btn');
       if (!ctxBtn) {
         ctxBtn = document.createElement('button');
         ctxBtn.id = 'agy-codex-ctx-btn';
         ctxBtn.type = 'button';
         ctxBtn.className = 'notranslate';
-        ctxBtn.setAttribute('aria-label', '查看上下文窗口与模型额度');
+        ctxBtn.setAttribute('aria-label', '查看上下文占用与 5 小时/每周模型配额');
         ctxBtn.setAttribute('aria-controls', 'agy-pulse-drawer');
         ctxBtn.setAttribute('aria-expanded', String(document.getElementById('agy-pulse-drawer')?.classList.contains('open') === true));
         ctxBtn.innerHTML =
-          '<svg class="codex-ring-svg" viewBox="0 0 16 16" fill="none">' +
-            '<circle class="codex-ring-bg" cx="8" cy="8" r="5.4" stroke-width="2.1"/>' +
-            '<circle class="codex-ring-fg" cx="8" cy="8" r="5.4" stroke-width="2.1" stroke-dasharray="33.93" stroke-dashoffset="33.93" stroke-linecap="round"/>' +
-          '</svg>' +
-          '<span class="codex-ctx-pct">--%</span>';
+          '<span class="agy-tm-metric agy-ctx-item" data-level="normal" title="上下文窗口占用">' +
+            '<svg class="agy-tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+              '<ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/>' +
+              '<path d="M4.5 5.5v13c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8v-13"/>' +
+              '<path d="M4.5 12c0 1.55 3.36 2.8 7.5 2.8s7.5-1.25 7.5-2.8"/>' +
+            '</svg>' +
+            '<span class="agy-tm-val agy-ctx-val">0%</span>' +
+          '</span>' +
+          '<span class="agy-tm-metric agy-q5h-item is-hidden" data-level="normal" title="5 小时配额余量">' +
+            '<svg class="agy-tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+              '<circle cx="12" cy="12" r="8.5"/>' +
+              '<polyline points="12 7.5 12 12 15.2 13.8"/>' +
+            '</svg>' +
+            '<span class="agy-tm-val agy-q5h-val">--%</span>' +
+          '</span>' +
+          '<span class="agy-tm-metric agy-qwk-item is-hidden" data-level="normal" title="每周配额余量">' +
+            '<svg class="agy-tm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
+              '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/>' +
+              '<line x1="8" y1="3" x2="8" y2="6.5"/>' +
+              '<line x1="16" y1="3" x2="16" y2="6.5"/>' +
+              '<line x1="3.5" y1="10" x2="20.5" y2="10"/>' +
+            '</svg>' +
+            '<span class="agy-tm-val agy-qwk-val">--%</span>' +
+          '</span>';
 
         ctxBtn.addEventListener('mouseenter', () => {
           if (document.getElementById('agy-pulse-drawer')?.classList.contains('open')) return;
@@ -5304,12 +5618,13 @@ function mountCodexRingAndTopTheme() {
         });
       }
 
-      if (ctxBtn.parentElement !== anchor.parentElement || ctxBtn.nextElementSibling !== anchor) {
-        anchor.parentElement.insertBefore(ctxBtn, anchor);
+      if (ctxBtn !== mountRef && (ctxBtn.parentElement !== mountHost || ctxBtn.nextElementSibling !== mountRef)) {
+        mountHost.insertBefore(ctxBtn, mountRef || null);
       }
       if (window.__agyLastTelemetry) updateTelemetryUI(window.__agyLastTelemetry);
     }
   }
+  decorateModelPopovers();
 
   // 2. Mount Topbar Theme Switcher Pill (Windows title-menu-bar & macOS pane-titlebar-toolbar)
   const themeHost = findThemeButtonHost();
@@ -5389,6 +5704,8 @@ function ensureObserver() {
     } else if (composerChanged) {
       bindComposerResizeObserver(composer);
     }
+    if (composer) decorateComposerModelTrigger(composer);
+    decorateModelPopovers();
     if (window.__agyUpdateState && window.__agyUpdateState.available && !document.getElementById('agy-kit-update-wrap')) {
       syncSidebarUpdatePill();
     }

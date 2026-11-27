@@ -1557,7 +1557,19 @@
   ],
   [
     "Thinking effort",
-    "思考深度"
+    "思考强度"
+  ],
+  [
+    "Reasoning effort",
+    "思考强度"
+  ],
+  [
+    "Thinking level",
+    "思考强度"
+  ],
+  [
+    "Main Agent",
+    "主 Agent"
   ],
   [
     "Toggle Terminal",
